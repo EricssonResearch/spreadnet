@@ -4,13 +4,10 @@
     @Author  : Haodong Zhao
     
 """
-from typing import Tuple, Any
 
-# %%
 import torch
 from torch import Tensor, nn
 from torch_geometric.nn import MessagePassing
-from torch_geometric.utils import add_self_loops, degree
 
 
 class SPMLP(nn.Module):
@@ -48,8 +45,8 @@ class SPGNN(MessagePassing):
                  node_out,
                  edge_in,
                  edge_out,
-                 num_mlp_hidden_layers,
-                 mlp_hidden_size
+                 num_mlp_hidden_layers: int,
+                 mlp_hidden_size: int
                  ):
         super(SPGNN, self).__init__(aggr='add')  # "Add" aggregation
         self.node_fn = nn.Sequential(*[
@@ -80,6 +77,6 @@ class SPGNN(MessagePassing):
     def update(self, x_aggregated, x, edge_features):
         # x_aggregated: (E, edge_out)
         # x: (E, node_in)
-        x_aggregated = torch.cat([x_aggregated, x], dim=-1)
-        x_aggregated = self.node_fn(x_aggregated)
-        return x_aggregated, edge_features
+        x_updated = torch.cat([x_aggregated, x], dim=-1)
+        x_updated = self.node_fn(x_updated)
+        return x_updated, edge_features
