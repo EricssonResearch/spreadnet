@@ -41,7 +41,7 @@ class SPGraphDataset(Dataset):
     def process(self):
         idx = 0
         for raw_path in self.raw_paths:
-            print("-----", raw_path, "\n")
+            # print("-----", raw_path, "\n")
             graph_nx = pickle.load(open(raw_path, 'rb'))
 
             data = from_networkx(graph_nx)
