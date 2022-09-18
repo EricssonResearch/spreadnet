@@ -14,6 +14,8 @@ import torch
 from torch_geometric.data import Dataset
 from torch_geometric.utils import from_networkx
 
+from utils.convertor import graphnx_to_dict_spec
+
 
 class SPGraphDataset(Dataset):
     def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
@@ -43,8 +45,23 @@ class SPGraphDataset(Dataset):
         for raw_path in self.raw_paths:
             # print("-----", raw_path, "\n")
             graph_nx = pickle.load(open(raw_path, 'rb'))
+            graph_dict = graphnx_to_dict_spec(graph_nx)
+            # Get ground truth labels.
+            node_tensor = torch.tensor(graph_dict["nodes_feature"]["is_in_path"])
+            node_labels = node_tensor.type(torch.int64)
+
+            edge_tensor = torch.tensor(graph_dict["edges_feature"]["is_in_path"])
+            edge_labels = edge_tensor.type(torch.int64)
+
+            # remove node and edge features
+            for (n, d) in graph_nx.nodes(data=True):
+                del d["is_in_path"]
+
+            for (s, e, d) in graph_nx.edges(data=True):
+                del d["is_in_path"]
 
             data = from_networkx(graph_nx)
+            data.label = (node_labels, edge_labels)
 
             if self.pre_filter is not None and not self.pre_filter(data):
                 continue

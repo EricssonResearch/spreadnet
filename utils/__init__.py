@@ -1,5 +1,7 @@
 from .graph_generator import GraphGenerator
 from .dataset_generator import SPGraphDataset
+from .convertor import *
+
 from pathlib import Path
 
 
