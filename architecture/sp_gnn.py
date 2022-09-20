@@ -4,6 +4,7 @@
     @Author  : Haodong Zhao
     
 """
+from typing import Optional
 
 import torch
 from torch import Tensor, nn
@@ -12,18 +13,22 @@ from torch_geometric.nn import MessagePassing
 
 class SPMLP(nn.Module):
     def __init__(self,
-                 input_size: int,
                  num_hidden_layers: int,
                  hidden_size: int,
                  output_size: int,
                  use_layer_norm: bool = True,
                  activation=torch.nn.ReLU,
                  activate_final=torch.nn.Identity,
+                 input_size: Optional[int] = None,
                  ):
         super(SPMLP, self).__init__()
-        sizes = [input_size] + [hidden_size] * num_hidden_layers + [output_size]
-
         self.mlp = nn.Sequential()
+        if input_size is not None:
+            sizes = [input_size] + [hidden_size] * num_hidden_layers + [output_size]
+        else:
+            self.mlp.append(nn.LazyLinear(out_features=hidden_size))
+            sizes = [hidden_size] * num_hidden_layers + [output_size]
+
         for i in range(len(sizes) - 1):
             layer_activation = activation
             if i == len(sizes) - 2:
@@ -41,10 +46,10 @@ class SPMLP(nn.Module):
 
 class SPGNN(MessagePassing):
     def __init__(self,
-                 node_in,
-                 node_out,
-                 edge_in,
-                 edge_out,
+                 node_in: int,
+                 node_out: int,
+                 edge_in: int,
+                 edge_out: int,
                  num_mlp_hidden_layers: int,
                  mlp_hidden_size: int
                  ):
@@ -64,7 +69,8 @@ class SPGNN(MessagePassing):
         # x: (E, node_in)
         # edge_index: (2, E)
         # edge_features: (E, edge_in)
-        _x = x, _edge_feature = edge_features
+        _x = x
+        _edge_feature = edge_features
         x, edge_features = self.propagate(edge_index=edge_index, x=x, edge_features=edge_features)
         return x + _x, edge_features + _edge_feature
 

@@ -4,6 +4,8 @@
     @Author  : Haodong Zhao
     
 """
+from typing import Optional
+
 from torch import nn
 from torch_geometric.nn import MessagePassing
 
@@ -16,28 +18,28 @@ class EncodeProcessDecode(nn.Module):
     """
 
     def __init__(self,
-                 node_in,
-                 node_out,
-                 edge_in,
-                 edge_out,
+                 node_out: int,
+                 edge_out: int,
                  latent_size: int,
                  num_message_passing_steps: int,
                  num_mlp_hidden_layers: int,
-                 mlp_hidden_size: int
+                 mlp_hidden_size: int,
+                 node_in: Optional[int] = None,
+                 edge_in: Optional[int] = None,
                  ):
         super(EncodeProcessDecode, self).__init__()
         self._encoder = _Encoder(
             node_in=node_in,
-            node_out=node_out,
+            node_out=latent_size,
             edge_in=edge_in,
             edge_out=latent_size,
             num_mlp_hidden_layers=num_mlp_hidden_layers,
             mlp_hidden_size=mlp_hidden_size
         )
         self._processor = _Processor(
-            node_in=node_in,
-            node_out=node_out,
-            edge_in=edge_in,
+            node_in=latent_size,
+            node_out=latent_size,
+            edge_in=latent_size,
             edge_out=latent_size,
             num_mlp_hidden_layers=num_mlp_hidden_layers,
             mlp_hidden_size=mlp_hidden_size,
@@ -55,8 +57,8 @@ class EncodeProcessDecode(nn.Module):
     def forward(self, x, edge_index, edge_features):
         x, edge_features = self._encoder(x, edge_index, edge_features)
         x, edge_features = self._processor(x, edge_index, edge_features)
-        x, edge_features = self._decoder(x, edge_features)
-        return x, edge_features
+        output_node, output_edge = self._decoder(x, edge_features)
+        return output_node, output_edge
 
 
 class _Encoder(nn.Module):
@@ -65,12 +67,12 @@ class _Encoder(nn.Module):
     """
 
     def __init__(self,
-                 node_in,
-                 node_out,
-                 edge_in,
-                 edge_out,
+                 node_out: int,
+                 edge_out: int,
                  num_mlp_hidden_layers: int,
-                 mlp_hidden_size: int
+                 mlp_hidden_size: int,
+                 node_in: Optional[int] = None,
+                 edge_in: Optional[int] = None,
                  ):
         super(_Encoder, self).__init__()
         self.node_fn = nn.Sequential(
@@ -100,10 +102,10 @@ class _Processor(MessagePassing):
     """
 
     def __init__(self,
-                 node_in,
-                 node_out,
-                 edge_in,
-                 edge_out,
+                 node_in: int,
+                 node_out: int,
+                 edge_in: int,
+                 edge_out: int,
                  num_message_passing_steps: int,
                  num_mlp_hidden_layers: int,
                  mlp_hidden_size: int,
@@ -136,10 +138,10 @@ class _Decoder(nn.Module):
 
     def __init__(
             self,
-            node_in,
-            node_out,
-            edge_in,
-            edge_out,
+            node_in: int,
+            node_out: int,
+            edge_in: int,
+            edge_out: int,
             num_mlp_hidden_layers: int,
             mlp_hidden_size: int
     ):
