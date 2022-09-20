@@ -4,15 +4,16 @@ from utils import GraphGenerator, SPGraphDataset, get_project_root
 
 # ------------------------------------------
 # Params
-random_seed = 5
-num_nodes_min_max = (10, 20)
-dataset_size = 100
+random_seed = 0
+num_nodes_min_max = (8, 17)
+dataset_size = 1000
 
 raw_path = str(get_project_root()) + "/dataset/raw/"
 # ------------------------------------------
 if __name__ == '__main__':
     graph_generator = GraphGenerator(random_seed=random_seed,
-                                     num_nodes_min_max=num_nodes_min_max).task_graph_generator()
+                                     num_nodes_min_max=num_nodes_min_max,
+                                     theta=20).task_graph_generator()
 
     for idx in range(dataset_size):
         graph_nx = next(graph_generator)
