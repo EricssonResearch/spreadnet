@@ -6,9 +6,10 @@
 """
 from random import randrange
 import torch
-from utils import get_project_root, SPGraphDataset
+from utils import get_project_root, SPGraphDataset, data_to_input_label
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 def load_model(model_path):
     """
