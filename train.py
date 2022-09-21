@@ -36,7 +36,7 @@ def train(epoch_num, dataloader, trainable_model, loss_func, optimizer,
             losses, corrects = loss_func(data, trainable_model)
             optimizer.zero_grad()
             losses['nodes'].backward(retain_graph=True)
-            losses['edges'].backward()
+            losses['edges'].backward(retain_graph=True)
             optimizer.step()
 
             assert (data.num_nodes >= corrects['nodes'])
