@@ -1,4 +1,7 @@
 """
+    The basic Blocks for EncodeProcessDecode:
+    1. SPMLP: simple multi-layer Perceptron
+    2. SPGNN: GNN Block
 
     @Time    : 9/15/2022 11:31 PM
     @Author  : Haodong Zhao
@@ -65,24 +68,51 @@ class SPGNN(MessagePassing):
                   output_size=edge_out)
         ])
 
-    def forward(self, x, edge_index, edge_features):
-        # x: (E, node_in)
-        # edge_index: (2, E)
-        # edge_features: (E, edge_in)
-        _x = x
-        _edge_feature = edge_features
-        x, edge_features = self.propagate(edge_index=edge_index, x=x, edge_features=edge_features)
-        return x + _x, edge_features + _edge_feature
-
     def message(self, edge_index, x_i, x_j, edge_features):
-        """ Construct Message """
-        edge_features = torch.cat([x_i, x_j, edge_features], dim=-1)
+        """
+        Construct Message.
+        This function overrides `message()` in class MassagePassing, which can take any argument as input which was initially
+            passed to `propagate`
+
+        :param edge_index: the source, target information of the edges.
+        :param x_i: the nodes which aggregate information. (message passing flow is source_to_target)
+        :param x_j: the nodes which send information along the edges. (message passing flow is source_to_target)
+        :param edge_features: the edge features.
+        :return: the constructed edge message
+        """
+        edge_features = torch.concat([x_i, x_j, edge_features], dim=-1)
         edge_features = self.edge_fn(edge_features)
         return edge_features
 
-    def update(self, x_aggregated, x, edge_features):
-        # x_aggregated: (E, edge_out)
-        # x: (E, node_in)
-        x_updated = torch.cat([x_aggregated, x], dim=-1)
+    def update(self, aggregated, x, edge_features):
+        """
+         Update nodes.
+
+            Takes in the output of aggregation as first argument and any argument
+            which was initially passed to `propagate`.
+
+        :param aggregated: the aggregated information
+        :param x: node features
+        :param edge_features: edge_features
+        :return: the updated node data and edges features.
+        """
+        x_updated = torch.concat([aggregated, x], dim=-1)
         x_updated = self.node_fn(x_updated)
         return x_updated, edge_features
+
+    def forward(self, x, edge_index, edge_features):
+        """
+        Define the GNN computation.
+        It utilizes `propagate`(message => aggregate => update).
+
+        :param x: the node features.
+        :param edge_index: the source, target information of the edges.
+        :param edge_features: the edge features.
+        :return: the output of the model
+        """
+
+        _x = x
+        _edge_feature = edge_features
+        # propagate: message => aggregate => update
+        x, edge_features = self.propagate(edge_index=edge_index, x=x, edge_features=edge_features)
+        return x + _x, edge_features + _edge_feature

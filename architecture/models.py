@@ -1,9 +1,13 @@
 """
+    EncodeProcessDecode Model
 
     @Time    : 9/15/2022 11:27 PM
     @Author  : Haodong Zhao
     
 """
+
+__all__ = ['EncodeProcessDecode', 'Encoder', 'Processor', 'Decoder']
+
 from typing import Optional
 
 from torch import nn
@@ -28,7 +32,7 @@ class EncodeProcessDecode(nn.Module):
                  edge_in: Optional[int] = None,
                  ):
         super(EncodeProcessDecode, self).__init__()
-        self._encoder = _Encoder(
+        self._encoder = Encoder(
             node_in=node_in,
             node_out=latent_size,
             edge_in=edge_in,
@@ -36,7 +40,7 @@ class EncodeProcessDecode(nn.Module):
             num_mlp_hidden_layers=num_mlp_hidden_layers,
             mlp_hidden_size=mlp_hidden_size
         )
-        self._processor = _Processor(
+        self._processor = Processor(
             node_in=latent_size,
             node_out=latent_size,
             edge_in=latent_size,
@@ -45,7 +49,7 @@ class EncodeProcessDecode(nn.Module):
             mlp_hidden_size=mlp_hidden_size,
             num_message_passing_steps=num_message_passing_steps
         )
-        self._decoder = _Decoder(
+        self._decoder = Decoder(
             node_in=latent_size,
             node_out=node_out,
             edge_in=latent_size,
@@ -61,7 +65,7 @@ class EncodeProcessDecode(nn.Module):
         return output_node, output_edge
 
 
-class _Encoder(nn.Module):
+class Encoder(nn.Module):
     """
         Encoder
     """
@@ -74,7 +78,7 @@ class _Encoder(nn.Module):
                  node_in: Optional[int] = None,
                  edge_in: Optional[int] = None,
                  ):
-        super(_Encoder, self).__init__()
+        super(Encoder, self).__init__()
         self.node_fn = nn.Sequential(
             *[SPMLP(
                 input_size=node_in,
@@ -95,7 +99,7 @@ class _Encoder(nn.Module):
         return self.node_fn(x), self.edge_fn(edge_features)
 
 
-class _Processor(MessagePassing):
+class Processor(MessagePassing):
     """
         Processor:
             consists of a list of GNN Blocks
@@ -110,7 +114,7 @@ class _Processor(MessagePassing):
                  num_mlp_hidden_layers: int,
                  mlp_hidden_size: int,
                  ):
-        super(_Processor, self).__init__(aggr='add')
+        super(Processor, self).__init__(aggr='add')
         self.sub_processors = nn.ModuleList(
             [
                 SPGNN(
@@ -131,7 +135,7 @@ class _Processor(MessagePassing):
         return x, edge_features
 
 
-class _Decoder(nn.Module):
+class Decoder(nn.Module):
     """
         Decoder
     """
@@ -145,7 +149,7 @@ class _Decoder(nn.Module):
             num_mlp_hidden_layers: int,
             mlp_hidden_size: int
     ):
-        super(_Decoder, self).__init__()
+        super(Decoder, self).__init__()
         self.node_fn = SPMLP(
             input_size=node_in,
             num_hidden_layers=num_mlp_hidden_layers,
