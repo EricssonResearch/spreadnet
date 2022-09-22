@@ -9,14 +9,19 @@ import copy
 from typing import Optional
 
 import torch
-from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 
 from architecture.loss import loss_fn
 from architecture.models import EncodeProcessDecode
-from utils import get_project_root, SPGraphDataset
+from utils import get_project_root, SPGraphDataset, yaml_parser
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+yaml_path = str(get_project_root()) + "/configs.yaml"
+configs = yaml_parser(yaml_path)
+train_configs = configs.train
+model_configs = configs.model
+data_configs = configs.data
 
 
 def train(epoch_num, dataloader, trainable_model, loss_func, optimizer,
@@ -67,12 +72,12 @@ def train(epoch_num, dataloader, trainable_model, loss_func, optimizer,
             f"\n\t\t    Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}")
 
         if save_path is not None:
-            if epoch % 50 == 0:
+            if epoch % train_configs["weight_save_freq"] == 0:
                 weight_name = "model_weights_ep_{ep}.pth".format(ep=epoch)
                 torch.save(model.state_dict(), save_path + weight_name)
 
     if save_path is not None:
-        weight_name = "model_weights_best.pth"
+        weight_name = train_configs["best_weight_name"]
         model.load_state_dict(best_model_wts)
         torch.save(model, save_path + weight_name)
 
@@ -80,25 +85,26 @@ def train(epoch_num, dataloader, trainable_model, loss_func, optimizer,
 if __name__ == '__main__':
     print(f"Using {device} device...")
 
-    epochs = 2000
-    dataset = SPGraphDataset(root=str(get_project_root()) + "/dataset/")
-    loader = DataLoader(dataset, batch_size=32, shuffle=True)
+    epochs = train_configs["epochs"]
+    dataset = SPGraphDataset(root=str(get_project_root()) + data_configs["dataset_path"])
+    loader = DataLoader(dataset, batch_size=train_configs["batch_size"], shuffle=train_configs["shuffle"])
 
     model = EncodeProcessDecode(
-        node_in=3,
-        edge_in=1,
-        node_out=2,
-        edge_out=2,
-        latent_size=128,
-        num_message_passing_steps=12,
-        num_mlp_hidden_layers=2,
-        mlp_hidden_size=128
+        node_in=model_configs["node_in"],
+        edge_in=model_configs["edge_in"],
+        node_out=model_configs["node_out"],
+        edge_out=model_configs["edge_out"],
+        latent_size=model_configs["latent_size"],
+        num_message_passing_steps=model_configs["num_message_passing_steps"],
+        num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
+        mlp_hidden_size=model_configs["mlp_hidden_size"]
     ).to(device)
 
-    opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
+    opt = torch.optim.Adam(model.parameters(), lr=train_configs["adam_lr"],
+                           weight_decay=train_configs["adam_weight_decay"])
     # print(model)
 
-    weight_base_path = str(get_project_root()) + "/weights/"
+    weight_base_path = str(get_project_root()) + train_configs["weight_base_path"]
 
     train(epoch_num=epochs, dataloader=loader,
           trainable_model=model, loss_func=loss_fn, optimizer=opt,

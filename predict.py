@@ -8,10 +8,14 @@
 from random import randrange
 import torch
 from architecture import *
-from utils import get_project_root, SPGraphDataset, data_to_input_label
+from utils import get_project_root, SPGraphDataset, data_to_input_label, yaml_parser
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+yaml_path = str(get_project_root()) + "/configs.yaml"
+configs = yaml_parser(yaml_path)
+train_configs = configs.train
+model_configs = configs.model
+data_configs = configs.data
 
 def load_model(model_path):
     """
@@ -44,26 +48,28 @@ def infer(model, graph_data):
 
 
 if __name__ == '__main__':
+    which_model = "model_weights_ep_1950.pth"
+
     # load model
     model = EncodeProcessDecode(
-        node_in=3,
-        edge_in=1,
-        node_out=2,
-        edge_out=2,
-        latent_size=128,
-        num_message_passing_steps=12,
-        num_mlp_hidden_layers=2,
-        mlp_hidden_size=128
+        node_in=model_configs["node_in"],
+        edge_in=model_configs["edge_in"],
+        node_out=model_configs["node_out"],
+        edge_out=model_configs["edge_out"],
+        latent_size=model_configs["latent_size"],
+        num_message_passing_steps=model_configs["num_message_passing_steps"],
+        num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
+        mlp_hidden_size=model_configs["mlp_hidden_size"]
     ).to(device)
 
-    weight_base_path = str(get_project_root()) + "/weights/"
+    weight_base_path = str(get_project_root()) + train_configs["weight_base_path"]
     # model_path = weight_base_path + "model_weights_best.pth"
-    model_path = weight_base_path + "model_weights_ep_1950.pth"
+    model_path = weight_base_path + which_model
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
     # test data
-    dataset = SPGraphDataset(root=str(get_project_root()) + "/dataset/")
-    graph = dataset.get(randrange(1000))
+    dataset = SPGraphDataset(root=str(get_project_root()) + data_configs["dataset_path"])
+    graph = dataset.get(randrange(data_configs["dataset_size"]))
     node_label, edge_label = graph.label
     print("--- Ground_truth --- ")
     print('node: ', node_label)

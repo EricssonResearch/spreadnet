@@ -1,14 +1,19 @@
 import pickle
 
-from utils import GraphGenerator, SPGraphDataset, get_project_root
+from utils import GraphGenerator, SPGraphDataset, get_project_root, yaml_parser
 
 # ------------------------------------------
 # Params
-random_seed = 0
-num_nodes_min_max = (8, 17)
-dataset_size = 1000
+yaml_path = str(get_project_root()) + "/configs.yaml"
+configs = yaml_parser(yaml_path)
+data_configs = configs.data
 
-raw_path = str(get_project_root()) + "/dataset/raw/"
+random_seed = data_configs["random_seed"]
+num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
+dataset_size = data_configs["dataset_size"]
+dataset_path = data_configs["dataset_path"]
+
+raw_path = str(get_project_root()) + dataset_path + "raw/"
 # ------------------------------------------
 if __name__ == '__main__':
     graph_generator = GraphGenerator(random_seed=random_seed,
@@ -21,6 +26,6 @@ if __name__ == '__main__':
 
     print("Graph Generation Done...\n")
 
-    ds_generator = SPGraphDataset(root=str(get_project_root()) + "/dataset/")
+    ds_generator = SPGraphDataset(root=str(get_project_root()) + dataset_path)
     ds_generator.process()
 
