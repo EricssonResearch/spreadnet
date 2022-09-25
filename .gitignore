@@ -7,6 +7,7 @@ __pycache__/
 *.so
 *.pt
 *.pickle
+*.pth
 # Distribution / packaging
 .Python
 build/

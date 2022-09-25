@@ -1,10 +1,11 @@
+import os
 import pickle
 
-from utils import GraphGenerator, SPGraphDataset, get_project_root, yaml_parser
+from spreadnet.utils import GraphGenerator, SPGraphDataset, yaml_parser
 
 # ------------------------------------------
 # Params
-yaml_path = str(get_project_root()) + "/configs.yaml"
+yaml_path = "./configs.yaml"
 configs = yaml_parser(yaml_path)
 data_configs = configs.data
 
@@ -13,7 +14,10 @@ num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
 dataset_size = data_configs["dataset_size"]
 dataset_path = data_configs["dataset_path"]
 
-raw_path = str(get_project_root()) + dataset_path + "raw/"
+raw_path = dataset_path + "raw/"
+if not os.path.exists(raw_path):
+    os.makedirs(raw_path)
+# raw_path = str(get_project_root()) + dataset_path + "raw/"
 # ------------------------------------------
 if __name__ == "__main__":
     graph_generator = GraphGenerator(
@@ -28,5 +32,5 @@ if __name__ == "__main__":
 
     print("Graph Generation Done...\n")
 
-    ds_generator = SPGraphDataset(root=str(get_project_root()) + dataset_path)
+    ds_generator = SPGraphDataset(root=os.path.join(raw_path, ".."))
     ds_generator.process()

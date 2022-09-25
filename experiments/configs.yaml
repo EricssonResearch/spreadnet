@@ -5,11 +5,11 @@ data:
   num_node_max: 17
 
   # dataset generator
-  dataset_path: "/dataset/"
+  dataset_path: "./dataset/"
   dataset_size: 1000
 
 train:
-  weight_base_path: "/weights/"
+  weight_base_path: "./weights/"
   weight_save_freq: 50
   best_weight_name: "model_weights_best.pth"
 
@@ -29,5 +29,3 @@ model:
   num_message_passing_steps: 12
   num_mlp_hidden_layers: 2
   mlp_hidden_size: 128
-
-

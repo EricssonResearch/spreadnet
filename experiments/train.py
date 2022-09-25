@@ -4,23 +4,25 @@
 @Author  : Haodong Zhao
 """
 import copy
+import os
 from typing import Optional
 
 import torch
 from torch_geometric.loader import DataLoader
 
-from loss.loss import hybrid_loss
-from models.models import EncodeProcessDecode
-from utils import data_to_input_label
-from utils import get_project_root, SPGraphDataset, yaml_parser
+from spreadnet.loss.loss import hybrid_loss
+from spreadnet.models.models import EncodeProcessDecode
+from spreadnet.utils import data_to_input_label, SPGraphDataset, yaml_parser
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-yaml_path = str(get_project_root()) + "/configs.yaml"
+# yaml_path = str(get_project_root()) + "/configs.yaml"
+yaml_path = "./configs.yaml"
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model
 data_configs = configs.data
+dataset_path = data_configs["dataset_path"]
 
 
 def train(
@@ -96,9 +98,8 @@ if __name__ == "__main__":
     print(f"Using {device} device...")
 
     epochs = train_configs["epochs"]
-    dataset = SPGraphDataset(
-        root=str(get_project_root()) + data_configs["dataset_path"]
-    )
+
+    dataset = SPGraphDataset(root=dataset_path)
     loader = DataLoader(
         dataset,
         batch_size=train_configs["batch_size"],
@@ -123,8 +124,9 @@ if __name__ == "__main__":
     )
     # print(model)
 
-    weight_base_path = str(get_project_root()) + train_configs["weight_base_path"]
-
+    weight_base_path = train_configs["weight_base_path"]
+    if not os.path.exists(weight_base_path):
+        os.makedirs(weight_base_path)
     train(
         epoch_num=epochs,
         dataloader=loader,

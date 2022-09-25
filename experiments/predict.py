@@ -7,8 +7,13 @@ from random import randrange
 
 import torch
 
-from models import EncodeProcessDecode
-from utils import get_project_root, SPGraphDataset, data_to_input_label, yaml_parser
+from spreadnet.models import EncodeProcessDecode
+from spreadnet.utils import (
+    get_project_root,
+    SPGraphDataset,
+    data_to_input_label,
+    yaml_parser,
+)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 yaml_path = str(get_project_root()) + "/configs.yaml"
