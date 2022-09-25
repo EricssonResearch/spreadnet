@@ -1,16 +1,13 @@
-"""
-    Dataset Generator.
+"""Dataset Generator.
 
-    @Time    : 9/16/2022 2:59 PM
-    @Author  : Haodong Zhao
-    
+@Time    : 9/16/2022 2:59 PM
+@Author  : Haodong Zhao
 """
 
 import os.path as osp
 import pickle
 from glob import glob
 
-import networkx as nx
 import torch
 from torch_geometric.data import Dataset
 from torch_geometric.utils import from_networkx
@@ -34,7 +31,10 @@ class SPGraphDataset(Dataset):
 
     @property
     def processed_file_names(self):
-        """ return list of files should be in processed dir, if found - skip processing."""
+        """return list of files should be in processed dir,
+
+        if found - skip processing.
+        """
         processed_filename = []
         for idx in range(len(self.raw_file_names)):
             filename = "data_{idx}.pt".format(idx=idx)
@@ -45,7 +45,7 @@ class SPGraphDataset(Dataset):
         idx = 0
         for raw_path in self.raw_paths:
             # print("-----", raw_path, "\n")
-            graph_nx = pickle.load(open(raw_path, 'rb'))
+            graph_nx = pickle.load(open(raw_path, "rb"))
             graph_dict = graphnx_to_dict_spec(graph_nx)
             # Get ground truth labels.
             node_tensor = torch.tensor(graph_dict["nodes_feature"]["is_in_path"])
@@ -70,12 +70,12 @@ class SPGraphDataset(Dataset):
             if self.pre_transform is not None:
                 data = self.pre_transform(data)
 
-            torch.save(data, osp.join(self.processed_dir, f'data_{idx}.pt'))
+            torch.save(data, osp.join(self.processed_dir, f"data_{idx}.pt"))
             idx += 1
 
     def len(self):
         return len(self.processed_file_names)
 
     def get(self, idx):
-        data = torch.load(osp.join(self.processed_dir, f'data_{idx}.pt'))
+        data = torch.load(osp.join(self.processed_dir, f"data_{idx}.pt"))
         return data

@@ -15,19 +15,20 @@
 # Modifications copyright (C) 2022 Haodong Zhao
 # ==============================================================================
 
-"""
-    Graph generator to generate graphs randomly.The graphs are geographic threshold graphs,
-    but with added edges via a minimum spanning tree algorithm, to ensure all nodes are connected.
+"""Graph generator to generate graphs randomly.The graphs are geographic
+threshold graphs, but with added edges via a minimum spanning tree algorithm,
+to ensure all nodes are connected.
 
-    This Graph generator is modified from the graph generation part of tensorflow/gnn
-        https://github.com/tensorflow/gnn/blob/main/examples/notebooks/graph_network_shortest_path.ipynb
+This Graph generator is modified from the graph generation part of tensorflow/gnn
+    https://github.com/tensorflow/gnn/blob/main/examples/notebooks/graph_network_shortest_path.ipynb
 """
 
 import collections
 import itertools
-import numpy as np
 from typing import Tuple
+
 import networkx as nx
+import numpy as np
 from scipy import spatial  # Spatial algorithms and data structures
 
 
@@ -44,25 +45,30 @@ def _pairwise(iterable):
 
 
 class GraphGenerator:
-    """
-        A graph generator that creates a connected graph.
-    """
+    """A graph generator that creates a connected graph."""
 
-    def __init__(self,
-                 random_seed: int,
-                 num_nodes_min_max: Tuple[int, int],
-                 dimensions: int = 2,
-                 theta: float = 1000.0,
-                 min_length: int = 1,
-                 rate: float = 1.0, ):
+    def __init__(
+        self,
+        random_seed: int,
+        num_nodes_min_max: Tuple[int, int],
+        dimensions: int = 2,
+        theta: float = 1000.0,
+        min_length: int = 1,
+        rate: float = 1.0,
+    ):
         """
-            :param random_state: A random seed for the graph generator. Default= None.
-            :param num_nodes_min_max: A sequence [lower, upper) number of nodes per graph.
-            :param dimensions: (optional) An `int` number of dimensions for the positions.Default= 2.
-            :param theta: (optional) A `float` threshold parameters for the geographic
-            :param threshold: graph's threshold. Large values (1000+) make mostly trees. Try 20-60 for good non-trees. Default=1000.0.
-            :param min_length: (optional) An `int` minimum number of edges in the shortest path. Default= 1.
-            :param rate: (optional) A rate parameter for the node weight exponential sampling distribution. Default= 1.0.
+
+        :param random_seed: A random seed for the graph generator. Default= None.
+        :param num_nodes_min_max: A sequence [lower, upper) number of nodes per graph.
+        :param dimensions: (optional) An `int` number of dimensions for the positions.
+                        Default= 2.
+        :param theta: (optional) A `float` threshold parameters for the geographic
+        :param threshold: graph's threshold. Large values (1000+) make mostly trees.
+                            Try 20-60 for good non-trees. Default=1000.0.
+        :param min_length: (optional) An `int` minimum number of edges in the shortest
+                            path. Default= 1.
+        :param rate: (optional) A rate parameter for the node weight exponential
+                            sampling distribution. Default= 1.0.
         """
         self.random_state = np.random.RandomState(random_seed)
         self.num_nodes_min_max = num_nodes_min_max
@@ -72,22 +78,21 @@ class GraphGenerator:
         self.rate = rate
 
     def task_graph_generator(self):
-        """
-            The graphs are geographic threshold graphs, but with added edges via a minimum spanning tree algorithm,
-            to ensure all nodes are connected.
-            The generated graph is a directed graph, and it contains path information.
+        """The graphs are geographic threshold graphs, but with added edges via
+        a minimum spanning tree algorithm, to ensure all nodes are connected.
+        The generated graph is a directed graph, and it contains path
+        information.
 
-            :return: Generator of networkx.DiGraph
+        :return: Generator of networkx.DiGraph
         """
         while True:
             yield self._generate_task_graph()
 
     def base_graph_generator(self):
-        """
-            The graphs are geographic threshold graphs, but with added edges via a
-            minimum spanning tree algorithm, to ensure all nodes are connected.
+        """The graphs are geographic threshold graphs, but with added edges via
+        a minimum spanning tree algorithm, to ensure all nodes are connected.
 
-            :return: Generator of networkx.Graph
+        :return: Generator of networkx.Graph
         """
         while True:
             yield self._generate_base_graph()
@@ -104,23 +109,29 @@ class GraphGenerator:
 
         # 2. Create geographic threshold graph.
         pos_array = self.random_state.uniform(
-            size=(num_nodes, self.dimensions))  # Draw samples from a uniform distribution. num_node ✕ dimensions
+            size=(num_nodes, self.dimensions)
+        )  # Draw samples from a uniform distribution. num_node ✕ dimensions
 
         pos = dict(enumerate(pos_array))  # len(pos) = num_nodes, {0: [,], 1:[,], ...}
-        weight = dict(enumerate(
-            self.random_state.exponential(self.rate, size=num_nodes)))  # Draw samples from an exponential distribution.
+        weight = dict(
+            enumerate(self.random_state.exponential(self.rate, size=num_nodes))
+        )  # Draw samples from an exponential distribution.
         # weight: {0:num0, 1:num1, 2:num2, ...}, len(weight) = num_nodes
         geo_graph = nx.geographical_threshold_graph(
-            num_nodes, self.theta, pos=pos, weight=weight)
+            num_nodes, self.theta, pos=pos, weight=weight
+        )
 
         # 3. Create minimum spanning tree across geo_graph's nodes.
         # pdist: Pairwise distances between observations in n-dimensional space.
-        # squareform: Convert a vector-form distance vector to a square-form distance matrix, and vice-versa.
+        # squareform: Convert a vector-form distance vector to a square-form distance
+        # matrix, and vice-versa.
         distances = spatial.distance.squareform(spatial.distance.pdist(pos_array))
 
         i_, j_ = np.meshgrid(range(num_nodes), range(num_nodes), indexing="ij")
         # revel: Return a contiguous flattened array.
-        weighted_edges = list(zip(i_.ravel(), j_.ravel(), distances.ravel()))  # list [(0, 0, w), (0, 1, w).....]
+        weighted_edges = list(
+            zip(i_.ravel(), j_.ravel(), distances.ravel())
+        )  # list [(0, 0, w), (0, 1, w).....]
 
         mst_graph = nx.Graph()
         mst_graph.add_weighted_edges_from(weighted_edges, weight="weight")
@@ -135,8 +146,7 @@ class GraphGenerator:
 
         # 6. Put all distance weights into edge attributes.
         for i, j in combined_graph.edges():
-            combined_graph.get_edge_data(i, j) \
-                .setdefault("weight", distances[i, j])
+            combined_graph.get_edge_data(i, j).setdefault("weight", distances[i, j])
         return combined_graph
 
     def add_shortest_path(self, graph, min_length=1):
@@ -145,9 +155,9 @@ class GraphGenerator:
         pair_to_length_dict = {}
         lengths = list(nx.all_pairs_shortest_path_length(graph))
         for x, yy in lengths:
-            for y, l in yy.items():
-                if l >= min_length:
-                    pair_to_length_dict[x, y] = l
+            for y, length in yy.items():
+                if length >= min_length:
+                    pair_to_length_dict[x, y] = length
         if max(pair_to_length_dict.values()) < min_length:
             raise ValueError("All shortest paths are below the minimum length")
         # The node pairs which exceed the minimum length.
@@ -165,8 +175,7 @@ class GraphGenerator:
         # Choose the start and end points.
         i = self.random_state.choice(len(node_pairs), p=probabilities)
         start, end = node_pairs[i]
-        path = nx.shortest_path(
-            graph, source=start, target=end, weight="length")
+        path = nx.shortest_path(graph, source=start, target=end, weight="length")
 
         # Creates a directed graph, to store the directed path from start to end.
         digraph = graph.to_directed()
