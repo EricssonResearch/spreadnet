@@ -9,18 +9,18 @@ import torch
 
 from spreadnet.models import EncodeProcessDecode
 from spreadnet.utils import (
-    get_project_root,
     SPGraphDataset,
     data_to_input_label,
     yaml_parser,
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-yaml_path = str(get_project_root()) + "/configs.yaml"
+yaml_path = "./configs.yaml"
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model
 data_configs = configs.data
+dataset_path = data_configs["dataset_path"]
 
 
 def load_model(model_path):
@@ -53,7 +53,7 @@ def infer(model, graph_data):
 
 
 if __name__ == "__main__":
-    which_model = "model_weights_ep_1950.pth"
+    which_model = "model_weights_ep_0.pth"
 
     # load model
     model = EncodeProcessDecode(
@@ -67,15 +67,13 @@ if __name__ == "__main__":
         mlp_hidden_size=model_configs["mlp_hidden_size"],
     ).to(device)
 
-    weight_base_path = str(get_project_root()) + train_configs["weight_base_path"]
+    weight_base_path = train_configs["weight_base_path"]
     # model_path = weight_base_path + "model_weights_best.pth"
     model_path = weight_base_path + which_model
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
     # test data
-    dataset = SPGraphDataset(
-        root=str(get_project_root()) + data_configs["dataset_path"]
-    )
+    dataset = SPGraphDataset(dataset_path)
     graph = dataset.get(randrange(data_configs["dataset_size"]))
     node_label, edge_label = graph.label
     print("--- Ground_truth --- ")
