@@ -48,28 +48,26 @@ class GraphGenerator:
     """A graph generator that creates a connected graph."""
 
     def __init__(
-        self,
-        random_seed: int,
-        num_nodes_min_max: Tuple[int, int],
-        dimensions: int = 2,
-        theta: float = 1000.0,
-        min_length: int = 1,
-        rate: float = 1.0,
+            self,
+            random_seed: int,
+            num_nodes_min_max: Tuple[int, int],
+            dimensions: int = 2,
+            theta: float = 1000.0,
+            min_length: int = 1,
+            rate: float = 1.0,
     ):
         """
 
-        :param random_seed: A random seed for the graph generator. Default= None.
-        :param num_nodes_min_max: A sequence [lower, upper) number of nodes per graph.
-        :param dimensions: (optional) An `int` number of dimensions for the positions.
-                        Default= 2.
-        :param theta: (optional) A `float` threshold parameters for the geographic
-        :param threshold: graph's threshold. Large values (1000+) make mostly trees.
-                            Try 20-60 for good non-trees. Default=1000.0.
-        :param min_length: (optional) An `int` minimum number of edges in the shortest
-                            path. Default= 1.
-        :param rate: (optional) A rate parameter for the node weight exponential
-                            sampling distribution. Default= 1.0.
+        Args:
+            random_seed:  A random seed for the graph generator. Default= None.
+            num_nodes_min_max: A sequence [lower, upper) number of nodes per graph.
+            dimensions: (optional) An `int` number of dimensions for the positions. Default= 2.
+            theta: graph's threshold. Large values (1000+) make mostly trees.Try 20-60 for good non-trees.
+                    Default=1000.0.
+            min_length: (optional) An `int` minimum number of edges in the shortest path. Default= 1.
+                        sampling distribution. Default= 1.0.
         """
+
         self.random_state = np.random.RandomState(random_seed)
         self.num_nodes_min_max = num_nodes_min_max
         self.dimensions = dimensions
@@ -78,21 +76,25 @@ class GraphGenerator:
         self.rate = rate
 
     def task_graph_generator(self):
-        """The graphs are geographic threshold graphs, but with added edges via
+        """
+        The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.
         The generated graph is a directed graph, and it contains path
         information.
 
-        :return: Generator of networkx.DiGraph
+        Returns:
+            Generator of networkx.DiGraph
         """
         while True:
             yield self._generate_task_graph()
 
     def base_graph_generator(self):
-        """The graphs are geographic threshold graphs, but with added edges via
+        """
+        The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.
 
-        :return: Generator of networkx.Graph
+        returns:
+            Generator of networkx.Graph
         """
         while True:
             yield self._generate_base_graph()
@@ -103,7 +105,13 @@ class GraphGenerator:
         return graph
 
     def _generate_base_graph(self):
-        """Generates the base graph for the task."""
+        """
+        Generate the base graph for the task.
+
+        Returns:
+            A basic graph.
+
+        """
         # 1. Sample num_nodes.
         num_nodes = self.random_state.randint(*self.num_nodes_min_max)
 
@@ -150,7 +158,16 @@ class GraphGenerator:
         return combined_graph
 
     def add_shortest_path(self, graph, min_length=1):
-        """Samples the shortest path in the graph."""
+        """
+            Sample the shortest path in the graph
+        Args:
+            graph: A basic graph.
+            min_length: the minimum length of the shortest path.
+
+        Returns:
+            A directed graph with the shortest path data.
+
+        """
         # Map from node pairs to the length of their shortest path.
         pair_to_length_dict = {}
         lengths = list(nx.all_pairs_shortest_path_length(graph))

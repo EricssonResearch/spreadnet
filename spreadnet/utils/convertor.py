@@ -9,10 +9,15 @@ import torch
 
 
 def graphnx_to_dict_spec(graph_nx):
-    """convert networkx graph to dict.
+    """
+    Convert networkx graph to a dictionary.
 
-    :param graph_nx: a networkx graph
-    :return: a dict contains graph data
+    Args:
+        graph_nx: a networkx graph
+
+    Returns:
+        A dictionary that contains graph data.
+
     """
     ret_dict = {}
 
@@ -48,10 +53,16 @@ def graphnx_to_dict_spec(graph_nx):
 
 
 def data_to_input_label(pyg_data):
-    """convert PyG data to input_data and ground-truth labels.
+    """
+    Convert PyG data to input_data and ground-truth labels.
 
-    :param pyg_data: one graph data from pyg dataset set
-    :return: input_data(Tuple:[nodes_data, edges_data]), labels(ground-truth)
+    Args:
+        pyg_data: one graph data from pyg dataset set
+
+    Returns:
+        input_data: Tuple:[nodes_data, edges_data],
+        labels: the ground-truth labels of nodes and edges
+
     """
     node_labels, edge_labels = pyg_data.label
 

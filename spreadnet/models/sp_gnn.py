@@ -15,16 +15,32 @@ from torch_geometric.nn import MessagePassing
 
 
 class SPMLP(nn.Module):
+    """
+        simple multi-layer Perceptron
+    """
+
     def __init__(
-        self,
-        num_hidden_layers: int,
-        hidden_size: int,
-        output_size: int,
-        use_layer_norm: bool = True,
-        activation=torch.nn.ReLU,
-        activate_final=torch.nn.Identity,
-        input_size: Optional[int] = None,
+            self,
+            num_hidden_layers: int,
+            hidden_size: int,
+            output_size: int,
+            use_layer_norm: bool = True,
+            activation=torch.nn.ReLU,
+            activate_final=torch.nn.Identity,
+            input_size: Optional[int] = None,
     ):
+        """
+
+        Args:
+            input_size: the input size of the MLP.
+            num_hidden_layers: the number of hidden layers in the MLP.
+            hidden_size: the size of each hidden layer in the MLP.
+            output_size: the output size of the MLP.
+            use_layer_norm: if apply Layer Normalization. If true, add `torch.nn.LayerNorm(output_size)` to the MLP.
+            activation: the activation function. By default, it's `torch.nn.ReLU`.
+            activate_final: the activation of the final layer.
+
+        """
         super(SPMLP, self).__init__()
         self.mlp = nn.Sequential()
         if input_size is not None:
@@ -51,15 +67,31 @@ class SPMLP(nn.Module):
 
 
 class SPGNN(MessagePassing):
+    """
+        The basic GN block.
+
+        It only contains the computations for the nodes and edges, no computations related to "global" so far.
+    """
+
     def __init__(
-        self,
-        node_in: int,
-        node_out: int,
-        edge_in: int,
-        edge_out: int,
-        num_mlp_hidden_layers: int,
-        mlp_hidden_size: int,
+            self,
+            node_in: int,
+            node_out: int,
+            edge_in: int,
+            edge_out: int,
+            num_mlp_hidden_layers: int,
+            mlp_hidden_size: int,
     ):
+        """
+
+        Args:
+            node_in: the node input size
+            node_out: the node output size
+            edge_in: the edge input size
+            edge_out: the edge output size
+            num_mlp_hidden_layers: the number of hidden layers in the MLPs.
+            mlp_hidden_size: the size of the hidden layer in the MLP.
+        """
         super(SPGNN, self).__init__(aggr="add")  # "Add" aggregation
         self.node_fn = nn.Sequential(
             *[
@@ -104,28 +136,37 @@ class SPGNN(MessagePassing):
         return edge_features
 
     def update(self, aggregated, x, edge_features):
-        """Update nodes.
+        """
+        Update nodes.
 
             Takes in the output of aggregation as first argument and any argument
             which was initially passed to `propagate`.
 
-        :param aggregated: the aggregated information
-        :param x: node features
-        :param edge_features: edge_features
-        :return: the updated node data and edges features.
+        Args:
+            aggregated: the aggregated information
+            x: node features
+            edge_features: edge_features
+
+        Returns:
+            the updated node data and edges features.
         """
+
         x_updated = torch.concat([aggregated, x], dim=-1)
         x_updated = self.node_fn(x_updated)
         return x_updated, edge_features
 
     def forward(self, x, edge_index, edge_features):
-        """Define the GNN computation. It utilizes `propagate`(message =>
+        """
+        Define the GNN computation. It utilizes `propagate`(message =>
         aggregate => update).
 
-        :param x: the node features.
-        :param edge_index: the source, target information of the edges.
-        :param edge_features: the edge features.
-        :return: the output of the model
+        Args:
+            x: the node features.
+            edge_index: the source, target information of the edges.
+            edge_features: the edge features.
+
+        Returns:
+            the output of the model
         """
 
         _x = x

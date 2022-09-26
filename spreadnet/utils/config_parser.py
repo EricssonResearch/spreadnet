@@ -9,6 +9,16 @@ import yaml
 
 
 def yaml_parser(yaml_path: str):
+    """
+    Parse `.yaml` config file.
+
+    Args:
+        yaml_path: The path of the `.yaml` config file.
+
+    Returns:
+        A dictionary that contains the configs.
+
+    """
     with open(yaml_path, "r") as file:
         configs = argparse.Namespace(**yaml.load(file.read(), Loader=yaml.FullLoader))
 

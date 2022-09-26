@@ -15,19 +15,36 @@ from spreadnet.models.sp_gnn import SPMLP, SPGNN
 
 
 class EncodeProcessDecode(nn.Module):
-    """The encode-process-decode model."""
+    """
+        The encode-process-decode model.
+            It combines `Encoder`, `Processor`  and `Decoder`.
+
+    """
 
     def __init__(
-        self,
-        node_out: int,
-        edge_out: int,
-        latent_size: int,
-        num_message_passing_steps: int,
-        num_mlp_hidden_layers: int,
-        mlp_hidden_size: int,
-        node_in: Optional[int] = None,
-        edge_in: Optional[int] = None,
+            self,
+            node_out: int,
+            edge_out: int,
+            latent_size: int,
+            num_message_passing_steps: int,
+            num_mlp_hidden_layers: int,
+            mlp_hidden_size: int,
+            node_in: Optional[int] = None,
+            edge_in: Optional[int] = None,
     ):
+        """
+
+        Args:
+            node_out: the output size for the node output
+            edge_out: the output size for the edge output
+            latent_size: the latent size.
+                latent_size = encoder output size = processor input size = processor output size = decoder input size
+            num_message_passing_steps: the num of message passing steps.
+            num_mlp_hidden_layers:  the num of the hidden layers in the MLPs.
+            mlp_hidden_size: the size of the hidden layers in the MLPs.
+            node_in: the input size of the node features
+            edge_in:  the input size of the edge features
+        """
         super(EncodeProcessDecode, self).__init__()
         self._encoder = Encoder(
             node_in=node_in,
@@ -66,13 +83,13 @@ class Encoder(nn.Module):
     """Encoder."""
 
     def __init__(
-        self,
-        node_out: int,
-        edge_out: int,
-        num_mlp_hidden_layers: int,
-        mlp_hidden_size: int,
-        node_in: Optional[int] = None,
-        edge_in: Optional[int] = None,
+            self,
+            node_out: int,
+            edge_out: int,
+            num_mlp_hidden_layers: int,
+            mlp_hidden_size: int,
+            node_in: Optional[int] = None,
+            edge_in: Optional[int] = None,
     ):
         super(Encoder, self).__init__()
         self.node_fn = nn.Sequential(
@@ -105,19 +122,18 @@ class Encoder(nn.Module):
 
 class Processor(MessagePassing):
     """
-    Processor:
-        consists of a list of GNN Blocks
+    Processor: a list of GNN Blocks
     """
 
     def __init__(
-        self,
-        node_in: int,
-        node_out: int,
-        edge_in: int,
-        edge_out: int,
-        num_message_passing_steps: int,
-        num_mlp_hidden_layers: int,
-        mlp_hidden_size: int,
+            self,
+            node_in: int,
+            node_out: int,
+            edge_in: int,
+            edge_out: int,
+            num_message_passing_steps: int,
+            num_mlp_hidden_layers: int,
+            mlp_hidden_size: int,
     ):
         super(Processor, self).__init__(aggr="add")
         self.sub_processors = nn.ModuleList(
@@ -145,13 +161,13 @@ class Decoder(nn.Module):
     """Decoder."""
 
     def __init__(
-        self,
-        node_in: int,
-        node_out: int,
-        edge_in: int,
-        edge_out: int,
-        num_mlp_hidden_layers: int,
-        mlp_hidden_size: int,
+            self,
+            node_in: int,
+            node_out: int,
+            edge_in: int,
+            edge_out: int,
+            num_mlp_hidden_layers: int,
+            mlp_hidden_size: int,
     ):
         super(Decoder, self).__init__()
         self.node_fn = SPMLP(

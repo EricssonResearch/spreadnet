@@ -7,7 +7,19 @@ import torch
 
 
 def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
-    """A hybrid cross entropy loss combining edges and nodes."""
+    """
+    A hybrid cross entropy loss combining edges and nodes.
+
+    Args:
+        node_pred: the node prediction
+        edge_pred: the edge prediction
+        node_true: the ground-truth node label
+        edge_true: the ground-truth edge label
+
+    Returns:
+        losses: (node_loss, edge_loss)
+        corrects: (node_corrects, edge_corrects)
+    """
 
     # print("[in loss] node_pred: ", node_pred.size())
     # print("[in loss] node_true: ", node_true.size())
