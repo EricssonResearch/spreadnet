@@ -99,21 +99,22 @@ al. when
 
 
 6. Review process:
+
    * When you first create a PR, add at least two reviewer to the `reviewer` section.
 
    * Reviewers will write inline and/or general comments on your PR to help
      you improve its implementation, documentation, and style. Reviewer should
-     add the `@author-action-required` label if further actions are required.
+     add the ``@author-action-required`` label if further actions are required.
 
    * To update your PR, make your changes on your local repository
-     and commit, and remove the `@author-action-required` label from the PR.
+     and commit, and remove the ``@author-action-required`` label from the PR.
      As soon as those changes are pushed up (to the same branch as before) the
      PR will update automatically.
 
    * Repeat this process until assignees approve your PR.
 
    * Once the PR is approved, the author is in charge of ensuring the PR passes
-     the build. Add the `test-ok` label if the build succeeds.
+     the build. Add the ``test-ok`` label if the build succeeds.
 
    * Committers will merge the PR once the build is passing.
 
