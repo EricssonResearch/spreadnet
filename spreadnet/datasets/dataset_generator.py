@@ -12,7 +12,7 @@ import torch
 from torch_geometric.data import Dataset
 from torch_geometric.utils import from_networkx
 
-from spreadnet.utils.convertor import graphnx_to_dict_spec
+from spreadnet.datasets.data_utils.convertor import graphnx_to_dict_spec
 
 
 class SPGraphDataset(Dataset):
