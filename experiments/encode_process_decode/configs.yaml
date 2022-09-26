@@ -5,7 +5,7 @@ data:
   num_node_max: 17
 
   # dataset generator
-  dataset_path: "./dataset/"
+  dataset_path: "../dataset/"
   dataset_size: 1000
 
 train:

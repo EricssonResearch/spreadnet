@@ -15,19 +15,17 @@ from torch_geometric.nn import MessagePassing
 
 
 class SPMLP(nn.Module):
-    """
-        simple multi-layer Perceptron
-    """
+    """simple multi-layer Perceptron."""
 
     def __init__(
-            self,
-            num_hidden_layers: int,
-            hidden_size: int,
-            output_size: int,
-            use_layer_norm: bool = True,
-            activation=torch.nn.ReLU,
-            activate_final=torch.nn.Identity,
-            input_size: Optional[int] = None,
+        self,
+        num_hidden_layers: int,
+        hidden_size: int,
+        output_size: int,
+        use_layer_norm: bool = True,
+        activation=torch.nn.ReLU,
+        activate_final=torch.nn.Identity,
+        input_size: Optional[int] = None,
     ):
         """
 
@@ -36,7 +34,8 @@ class SPMLP(nn.Module):
             num_hidden_layers: the number of hidden layers in the MLP.
             hidden_size: the size of each hidden layer in the MLP.
             output_size: the output size of the MLP.
-            use_layer_norm: if apply Layer Normalization. If true, add `torch.nn.LayerNorm(output_size)` to the MLP.
+            use_layer_norm: if apply Layer Normalization. If true, add
+            `torch.nn.LayerNorm(output_size)` to the MLP.
             activation: the activation function. By default, it's `torch.nn.ReLU`.
             activate_final: the activation of the final layer.
 
@@ -67,20 +66,20 @@ class SPMLP(nn.Module):
 
 
 class SPGNN(MessagePassing):
-    """
-        The basic GN block.
+    """The basic GN block.
 
-        It only contains the computations for the nodes and edges, no computations related to "global" so far.
+    It only contains the computations for the nodes and edges, no computations
+    related to "global" so far.
     """
 
     def __init__(
-            self,
-            node_in: int,
-            node_out: int,
-            edge_in: int,
-            edge_out: int,
-            num_mlp_hidden_layers: int,
-            mlp_hidden_size: int,
+        self,
+        node_in: int,
+        node_out: int,
+        edge_in: int,
+        edge_out: int,
+        num_mlp_hidden_layers: int,
+        mlp_hidden_size: int,
     ):
         """
 
@@ -136,8 +135,7 @@ class SPGNN(MessagePassing):
         return edge_features
 
     def update(self, aggregated, x, edge_features):
-        """
-        Update nodes.
+        """Update nodes.
 
             Takes in the output of aggregation as first argument and any argument
             which was initially passed to `propagate`.
@@ -156,8 +154,7 @@ class SPGNN(MessagePassing):
         return x_updated, edge_features
 
     def forward(self, x, edge_index, edge_features):
-        """
-        Define the GNN computation. It utilizes `propagate`(message =>
+        """Define the GNN computation. It utilizes `propagate`(message =>
         aggregate => update).
 
         Args:

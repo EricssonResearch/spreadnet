@@ -5,7 +5,7 @@ from spreadnet.utils import GraphGenerator, SPGraphDataset, yaml_parser
 
 # ------------------------------------------
 # Params
-yaml_path = "./configs.yaml"
+yaml_path = "configs.yaml"
 configs = yaml_parser(yaml_path)
 data_configs = configs.data
 
@@ -32,5 +32,5 @@ if __name__ == "__main__":
 
     print("Graph Generation Done...\n")
 
-    ds_generator = SPGraphDataset(root=os.path.join(raw_path, ".."))
+    ds_generator = SPGraphDataset(root=dataset_path)
     ds_generator.process()

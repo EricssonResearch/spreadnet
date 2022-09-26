@@ -7,7 +7,7 @@ from random import randrange
 
 import torch
 
-from spreadnet.models import EncodeProcessDecode
+from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import (
     SPGraphDataset,
     data_to_input_label,
@@ -15,7 +15,7 @@ from spreadnet.utils import (
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-yaml_path = "./configs.yaml"
+yaml_path = "configs.yaml"
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model

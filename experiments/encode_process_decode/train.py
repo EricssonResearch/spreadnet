@@ -10,14 +10,14 @@ from typing import Optional
 import torch
 from torch_geometric.loader import DataLoader
 
-from spreadnet.loss.loss import hybrid_loss
-from spreadnet.models.models import EncodeProcessDecode
+from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import data_to_input_label, SPGraphDataset, yaml_parser
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # yaml_path = str(get_project_root()) + "/configs.yaml"
-yaml_path = "./configs.yaml"
+yaml_path = "configs.yaml"
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model

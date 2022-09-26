@@ -7,8 +7,7 @@ import torch
 
 
 def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
-    """
-    A hybrid cross entropy loss combining edges and nodes.
+    """A hybrid cross entropy loss combining edges and nodes.
 
     Args:
         node_pred: the node prediction
