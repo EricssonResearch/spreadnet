@@ -1,11 +1,15 @@
 """Train the model.
 
+Usage:
+    python train.py [--config config_file_path]
+
 @Time    : 9/16/2022 1:31 PM
 @Author  : Haodong Zhao
 """
 import copy
 import os
 from typing import Optional
+import argparse
 
 import torch
 from torch_geometric.loader import DataLoader
@@ -14,10 +18,17 @@ from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import data_to_input_label, SPGraphDataset, yaml_parser
 
+parser = argparse.ArgumentParser(description="Train the model.")
+parser.add_argument(
+    "--config", default="configs.yaml", help="Specify the path of the config file. "
+)
+
+args = parser.parse_args()
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # yaml_path = str(get_project_root()) + "/configs.yaml"
-yaml_path = "configs.yaml"
+yaml_path = args.config
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model
