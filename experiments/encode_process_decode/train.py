@@ -100,6 +100,7 @@ if __name__ == "__main__":
     epochs = train_configs["epochs"]
 
     dataset = SPGraphDataset(root=dataset_path)
+
     loader = DataLoader(
         dataset,
         batch_size=train_configs["batch_size"],

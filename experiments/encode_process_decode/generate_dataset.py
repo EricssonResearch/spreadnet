@@ -34,3 +34,4 @@ if __name__ == "__main__":
 
     ds_generator = SPGraphDataset(root=dataset_path)
     ds_generator.process()
+    print("Size of the dataset:" + str(ds_generator.len()))
