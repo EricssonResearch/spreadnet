@@ -22,16 +22,20 @@ Development Workflow
 
          # Create a virtualenv named ``spreadnet-dev`` that lives in the directory of
          # the same name
+         # It is recommended that Python>=3.9
          python -m venv spreadnet-dev
          # Activate it
          source spreadnet-dev/bin/activate
-         # Install the dependencies of spreadnet
+         # Install Pytorch: https://pytorch.org/get-started/locally/
+         # Install PyG: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+         # Make sure that Pytorch and PyG are both corectly installed
+         
+         # Install the other dependencies of spreadnet
          pip install -r requirements.txt
          #
          # (Optional) Install pygraphviz and pydot packages
          # These packages require that you have your system properly configured
          # and what that involves differs on various systems.
-         # pip install -r requirements/extra.txt
          #
          # Build and install spreadnet from source
          pip install -e .
@@ -43,10 +47,14 @@ Development Workflow
        ::
 
          # Create a conda environment named ``spreadnet-dev``
-         conda create --name spreadnet-dev
+         conda create --name spreadnet-dev python=3.9
          # Activate it
          conda activate spreadnet-dev
-         # Install main dependencies
+         
+         # Install Pytorch: https://pytorch.org/get-started/locally/
+         # Install PyG: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+         # Make sure that Pytorch and PyG are both corectly installed
+         # Install the other dependencies of spreadnet
          conda install -c conda-forge --file requirements.txt
          #
          # (Optional) Install pygraphviz and pydot packages
