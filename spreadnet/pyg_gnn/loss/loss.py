@@ -5,8 +5,6 @@
 """
 import torch
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
     """A hybrid cross entropy loss combining edges and nodes.
@@ -40,10 +38,10 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
     predicted_edge_labels = torch.argmax(edge_pred, dim=-1).type(torch.int64)
 
     node_comps = torch.tensor(
-        (node_true == predicted_node_labels).to(torch.float), device=device
+        (node_true == predicted_node_labels).to(torch.float), device=node_pred.device
     ).type(torch.int64)
     edge_comps = torch.tensor(
-        (edge_true == predicted_edge_labels).to(torch.float), device=device
+        (edge_true == predicted_edge_labels).to(torch.float), device=node_pred.device
     ).type(torch.int64)
 
     corrects = {"nodes": torch.sum(node_comps), "edges": torch.sum(edge_comps)}
