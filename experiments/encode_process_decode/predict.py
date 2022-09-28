@@ -1,8 +1,12 @@
 """Use the trained model to do the prediction.
 
+Usage:
+    python predict.py [--config config_file_path] [--model weight_file_path]
+
 @Time    : 9/20/2022 8:28 PM
 @Author  : Haodong Zhao
 """
+import argparse
 from random import randrange
 
 import torch
@@ -14,8 +18,23 @@ from spreadnet.utils import (
     yaml_parser,
 )
 
+parser = argparse.ArgumentParser(description="Do predictions.")
+parser.add_argument(
+    "--config", default="configs.yaml", help="Specify the path of the config file. "
+)
+
+parser.add_argument(
+    "--model",
+    default="model_weights_best.pth",
+    help="Specify the model we want to use.",
+)
+
+args = parser.parse_args()
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-yaml_path = "configs.yaml"
+
+yaml_path = args.config
+which_model = args.model
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model
@@ -53,7 +72,6 @@ def infer(model, graph_data):
 
 
 if __name__ == "__main__":
-    which_model = "model_weights_ep_0.pth"
 
     # load model
     model = EncodeProcessDecode(

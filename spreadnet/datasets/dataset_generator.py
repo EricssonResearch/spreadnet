@@ -23,7 +23,7 @@ class SPGraphDataset(Dataset):
     @property
     def raw_file_names(self):
         raw_filename = []
-        dataset_size = len(glob("./dataset/raw/*.pickle"))
+        dataset_size = len(glob(self.root + "/raw/*.pickle"))
         for idx in range(dataset_size):
             filename = "raw_{idx}.pickle".format(idx=idx)
             raw_filename.append(filename)
