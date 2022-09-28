@@ -4,3 +4,4 @@ pre-commit
 pyyaml>=6.0
 scipy>=1.8.0
 torch>=1.11.0
+webdataset>=0.2.26
