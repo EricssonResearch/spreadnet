@@ -105,8 +105,7 @@ def train(
 
     if save_path is not None:
         weight_name = train_configs["best_weight_name"]
-        model.load_state_dict(best_model_wts)
-        torch.save(model, os.path.join(save_path, weight_name))
+        torch.save(best_model_wts, os.path.join(save_path, weight_name))
 
 
 if __name__ == "__main__":
