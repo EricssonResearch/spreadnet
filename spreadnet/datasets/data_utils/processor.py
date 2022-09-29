@@ -63,35 +63,8 @@ def process(dataset_path):
             edge_index_t = torch.tensor(edge_index_data, dtype=torch.long)
             edge_index = edge_index_t.t().contiguous()
 
-            data = Data(edge_index=edge_index)
-            data.pos = nodes_pos
-            data.x = x
-            data.edge_attr = edges_weight
-            data.y = (node_labels, edge_labels)
-            # print(data)
-
-            # remove node and edge features
-            # for (n, d) in graph_nx.nodes(data=True):
-            #     del d["is_in_path"]
-            #     del d["weight"]
-            #     del d["is_end"]
-            #     del d["is_start"]
-            #
-            # for (s, e, d) in graph_nx.edges(data=True):
-            #     del d["is_in_path"]
-            #     del d["weight"]
-
-            # data_ori = from_networkx(graph_nx)
-            # data_ori.x = x
-            # data_ori.edge_attr = edges_weight
-            # data_ori.y = (node_labels, edge_labels)
-            # print(data_ori)
-
-            # print(torch.eq(data_ori.edge_index, data.edge_index))
-            # print(torch.eq(data_ori.x, data.x))
-            # print(torch.eq(data_ori.edge_attr, data.edge_attr))
-            # print(torch.eq(data_ori.y[0], data.y[0]))
-            # print(torch.eq(data_ori.y[1], data.y[1]))
+            data = Data(edge_index=edge_index, pos=nodes_pos, x=x, edge_attr=edges_weight,
+                        y=(node_labels, edge_labels))
 
             sink.write(
                 {
