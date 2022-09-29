@@ -152,7 +152,7 @@ class TfGNNUtils:
 
         node_labels = {}
         edge_labels = {}
-        print(output_graph.node_sets["cities"][tfgnn.HIDDEN_STATE].numpy())
+
         node_logits = ot_graph.node_sets["cities"][tfgnn.HIDDEN_STATE]
         node_prob = tf.nn.softmax(node_logits)  # assume nodes are in order
 
