@@ -35,15 +35,30 @@ def process(dataset_path):
             edge_tensor = torch.tensor(graph_dict["edges_feature"]["is_in_path"])
             edge_labels = edge_tensor.type(torch.int64)
 
+            nodes_data = [data for _, data in graph_nx.nodes(data=True)]
+            nodes_weight = torch.tensor([data["weight"] for data in nodes_data], dtype=torch.float).view(-1, 1)
+            nodes_is_start = torch.tensor([data["is_start"] for data in nodes_data], dtype=torch.int).view(-1, 1)
+            nodes_is_end = torch.tensor([data["is_end"] for data in nodes_data], dtype=torch.int).view(-1, 1)
+            x = torch.cat((nodes_weight, nodes_is_start, nodes_is_end), 1)
+
+            _, _, edges_data = zip(*graph_nx.edges(data=True))
+            edges_weight = torch.tensor([data["weight"] for data in edges_data], dtype=torch.float).view(-1, 1)
+
             # remove node and edge features
             for (n, d) in graph_nx.nodes(data=True):
                 del d["is_in_path"]
+                del d["weight"]
+                del d["is_end"]
+                del d["is_start"]
 
             for (s, e, d) in graph_nx.edges(data=True):
                 del d["is_in_path"]
+                del d["weight"]
 
             data = from_networkx(graph_nx)
-            data.label = (node_labels, edge_labels)
+            data.x = x
+            data.edge_attr = edges_weight
+            data.y = (node_labels, edge_labels)
 
             sink.write(
                 {

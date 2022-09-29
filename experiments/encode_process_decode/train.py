@@ -16,7 +16,7 @@ from typing import Optional
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
-from spreadnet.utils import data_to_input_label, yaml_parser
+from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
@@ -61,9 +61,9 @@ def train(
         for batch, (data,) in enumerate(dataloader):
             data = data.to(device)
 
-            (nodes_data, edges_data), (node_true, edge_true) = data_to_input_label(data)
+            (node_true, edge_true) = data.y
             edge_index = data.edge_index
-            node_pred, edge_pred = trainable_model(nodes_data, edge_index, edges_data)
+            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
             # losses, corrects = loss_func(data, trainable_model)
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
