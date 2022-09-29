@@ -164,8 +164,8 @@ cython_debug/
 
 
 # random generated dataset
-dataset/raw/*.pickle
-dataset/processed/*.pt
+experiments/dataset/raw/*.json
+experiments/dataset/processed/*.tar
 
 # model weights
 weights/*.pth
