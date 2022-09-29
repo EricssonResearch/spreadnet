@@ -6,6 +6,12 @@
 
 """
 
+import networkx as nx
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow_gnn as tfgnn
+import tensorflow as tf
+
 
 class VisualUtils:
     def __init__(self) -> None:
@@ -71,7 +77,7 @@ class VisualUtils:
             for i in range(0, len(G.nodes)):
                 node_labels[i] = round(G.nodes[i]["weight"], 2)
         else:
-            node_labels, labels_edge = prob_labels(output_graph)
+            node_labels, labels_edge = self.prob_labels(output_graph)
 
         nx.draw_networkx(G, pos=pos, labels=node_labels)
 
@@ -109,7 +115,7 @@ class VisualUtils:
 
         node_labels = {}
         edge_labels = {}
-        print(ot_graph.node_sets["cities"][tfgnn.HIDDEN_STATE].numpy())
+
         node_logits = ot_graph.node_sets["cities"][tfgnn.HIDDEN_STATE]
         node_prob = tf.nn.softmax(node_logits)  # assume nodes are in order
 

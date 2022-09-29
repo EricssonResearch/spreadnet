@@ -17,9 +17,14 @@ Reminder:
     in the utils not here. 
 """
 
+import sys
 from spreadnet.utils.testing_utils import TestingUtils
 from spreadnet.utils.visualization_utils import VisualUtils
 from spreadnet.utils.tf_utils import TfGNNUtils
+from spreadnet.tf_gnn.model import gnn
+
+sys.modules["gnn"] = gnn
+
 
 import tensorflow_gnn as tfgnn
 import tensorflow as tf
@@ -70,10 +75,6 @@ def single_graph_implementation_test_helper(trained_gnn):
 
     tensor_graph_sp = tf_utils._convert_to_graph_tensor(graph_sp)
 
-    with (open("../pickled_200_model_50_60_g_size", "rb")) as openfile:
-
-        trained_gnn = pickle.load(openfile)
-
     input_graph = build_initial_hidden_state(tensor_graph_sp)
     output_graph = trained_gnn(input_graph)
 
@@ -89,13 +90,13 @@ def single_graph_implementation_test_helper(trained_gnn):
     # print("Edge outputs: ", output_graph.edge_sets["roads"][tfgnn.HIDDEN_STATE])
     # print("Node outputs: ", output_graph.node_sets["cities"][tfgnn.HIDDEN_STATE])
 
-    predicted_task_graph = predict_from_final_hidden_state(
+    predicted_task_graph = tf_utils.predict_from_final_hidden_state(
         tensor_graph_sp, output_graph
     )
 
     # # 	print(predicted_task_graph.node_sets["cities"]["is_in_path"])
 
-    predicted_graph_nx = pred_tensor_graph_to_nx_graph(predicted_task_graph)
+    predicted_graph_nx = tf_utils.tf_pred_tensor_graph_to_nx_graph(predicted_task_graph)
     # otuput_graph_nx = pred_tensor_graph_to_nx_graph(output_graph)
 
     # 	print(predicted_graph_nx)
@@ -131,7 +132,6 @@ def single_graph_vis_test3():
 
 
 if __name__ == "__main__":
-    yaml_path = "configs.yaml"
-    ts = TestingUtils(yaml_path="../configs.yaml")
-    trained_gnn = ts.load("pickled_2000_model.pickle")
+    ts = TestingUtils()
+    trained_gnn = ts.load_model("pickled_2000_model.pickle")
     single_graph_implementation_test_helper(trained_gnn)

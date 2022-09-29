@@ -15,13 +15,17 @@ Details:
     The final code should use the same DataLoader that pyg_gnn uses.
      
 """
+import networkx as nx
+from scipy import spatial
+import numpy as np
+import tensorflow as tf
+import tensorflow_gnn as tfgnn
+import itertools
+import collections
 
 
 class TfGNNUtils:
     def __init__(self) -> None:
-        pass
-
-    def _set_initial_node_state(self):
         pass
 
     def _convert_to_graph_tensor(self, graph_nx):
@@ -173,6 +177,50 @@ class TfGNNUtils:
 
         return node_labels, edge_labels
 
+    def predict_from_final_hidden_state(self, task_graph, output_graph):
+        """Transforms output logits into "is_in_path" prediction."""
+
+        city_features = task_graph.node_sets["cities"].get_features_dict()
+        node_logits = output_graph.node_sets["cities"][tfgnn.HIDDEN_STATE]
+        city_features["is_in_path"] = tf.cast(tf.argmax(node_logits, axis=-1), tf.bool)
+
+        road_features = task_graph.edge_sets["roads"].get_features_dict()
+        edge_logits = output_graph.edge_sets["roads"][tfgnn.HIDDEN_STATE]
+        road_features["is_in_path"] = tf.cast(tf.argmax(edge_logits, axis=-1), tf.bool)
+
+        return task_graph.replace_features(
+            node_sets={"cities": city_features}, edge_sets={"roads": road_features}
+        )
+
+    def _set_initial_node_state(self, cities_set, *, node_set_name):
+        assert node_set_name == "cities"
+        return tf.concat(
+            [
+                tf.cast(cities_set["weight"], tf.float32)[..., None],
+                tf.cast(cities_set["is_start"], tf.float32)[..., None],
+                tf.cast(cities_set["is_end"], tf.float32)[..., None],
+                # Don't provide the position for better generalization.
+                # tf.cast(city_features["pos"], tf.float32),
+                # Do not give the answer, unless debugging!
+                # tf.cast(city_features["is_in_path"], tf.float32)[..., None],
+            ],
+            axis=-1,
+        )
+
+    def _set_initial_edge_state(self, road_set, *, edge_set_name):
+        assert edge_set_name == "roads"
+        return tf.concat(
+            [
+                tf.cast(road_set["weight"], tf.float32)[..., None],
+                # Do not give the answer, unless debugging!
+                # tf.cast(road_features["is_in_path"], tf.float32)[..., None],
+            ],
+            axis=-1,
+        )
+
+    def _set_initial_context_state(self, context):
+        return tfgnn.keras.layers.MakeEmptyFeature()(context)
+
     """ 
         The following functions are added to aid the integration of the visualization.
         The visualization was initially build for tf_gnn.  
@@ -257,48 +305,14 @@ class TfGNNUtils:
         # Add the "start", "end", and "solution" attributes to the nodes and edges.
         digraph.add_node(start, is_start=True)
         digraph.add_node(end, is_end=True)
-        digraph.add_nodes_from(_set_diff(digraph.nodes(), [start]), is_start=False)
-        digraph.add_nodes_from(_set_diff(digraph.nodes(), [end]), is_end=False)
-        digraph.add_nodes_from(_set_diff(digraph.nodes(), path), is_in_path=False)
+        digraph.add_nodes_from(self._set_diff(digraph.nodes(), [start]), is_start=False)
+        digraph.add_nodes_from(self._set_diff(digraph.nodes(), [end]), is_end=False)
+        digraph.add_nodes_from(self._set_diff(digraph.nodes(), path), is_in_path=False)
         digraph.add_nodes_from(path, is_in_path=True)
-        path_edges = list(_pairwise(path))
-        digraph.add_edges_from(_set_diff(digraph.edges(), path_edges), is_in_path=False)
+        path_edges = list(self._pairwise(path))
+        digraph.add_edges_from(
+            self._set_diff(digraph.edges(), path_edges), is_in_path=False
+        )
         digraph.add_edges_from(path_edges, is_in_path=True)
 
         return digraph
-
-    def _convert_to_graph_tensor(self, graph_nx):
-        """Converts the graph to a GraphTensor."""
-        number_of_nodes = graph_nx.number_of_nodes()
-        nodes_data = [data for _, data in graph_nx.nodes(data=True)]
-        node_features = tf.nest.map_structure(
-            lambda *n: np.stack(n, axis=0), *nodes_data
-        )
-
-        number_of_edges = graph_nx.number_of_edges()
-        source_indices, target_indices, edges_data = zip(*graph_nx.edges(data=True))
-        source_indices = np.array(source_indices, dtype=np.int32)
-        target_indices = np.array(target_indices, dtype=np.int32)
-        edge_features = tf.nest.map_structure(
-            lambda *e: np.stack(e, axis=0), *edges_data
-        )
-        context_features = dict(graph_nx.graph)
-        return tfgnn.GraphTensor.from_pieces(
-            node_sets={
-                "cities": tfgnn.NodeSet.from_fields(
-                    sizes=[number_of_nodes],
-                    features=node_features,
-                )
-            },
-            edge_sets={
-                "roads": tfgnn.EdgeSet.from_fields(
-                    sizes=[number_of_edges],
-                    features=edge_features,
-                    adjacency=tfgnn.Adjacency.from_indices(
-                        source=("cities", source_indices),
-                        target=("cities", target_indices),
-                    ),
-                )
-            },
-            context=tfgnn.Context.from_fields(features=context_features),
-        )
