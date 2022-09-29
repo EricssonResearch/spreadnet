@@ -136,9 +136,9 @@ def dijkstra_path(G, source, target, weight="weight"):
 
     The function :func:`single_source_dijkstra` computes both
     path and length-of-path if you need both, use that.
-
+    """
     (length, path) = single_source_dijkstra(G, source, target=target, weight=weight)
-    return path """
+    return path
 
 
 def dijkstra_path_length(G, source, target, weight="weight"):
