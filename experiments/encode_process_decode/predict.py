@@ -13,7 +13,7 @@ import torch
 import webdataset as wds
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
-from spreadnet.utils import data_to_input_label, yaml_parser
+from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
@@ -58,11 +58,7 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    input_data, labels = data_to_input_label(graph_data)
-    nodes_data, edges_data = input_data
-    edge_index = graph_data.edge_index
-
-    nodes_output, edges_output = model(nodes_data, edge_index, edges_data)
+    nodes_output, edges_output = model(graph_data.x, graph_data.edge_index, graph_data.edge_attr)
 
     node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
@@ -100,7 +96,7 @@ if __name__ == "__main__":
         )
     )
     (graph,) = list(dataset)[randrange(data_configs["dataset_size"])]
-    node_label, edge_label = graph.label
+    node_label, edge_label = graph.y
     print("--- Ground_truth --- ")
     print("node: ", node_label)
     print("edge: ", edge_label)
