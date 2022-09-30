@@ -1,10 +1,10 @@
 from dijkstra_algorithm import *
 import networkx as nx
 
-#holds all SP from all source node runs.
+#Holds all SP from all source node runs.
 memoTable = {}
 
-#i took out the check before adding as the table itself only holds unique values so it wasn't needed
+#Took out the check before adding as the table itself only holds unique values so it wasn't needed
 def addItemToMemoTable( startNode, item ):
     keyList = item.keys()
     for itemKey in keyList:
@@ -40,60 +40,7 @@ def main():
     #check memoization table
     #print(memoTable)
 
-####
-"""
-    if searchMemoTable(0, 4):
-        print(memoTable[(0, 4)])
-    # call dijkstra function
-    mydict = single_source_dijkstra_path(G, 0, 4)
-    print(mydict)
-    addItemToMemoTable(0, mydict)
 
-    print("search of memotable:")
-    if searchMemoTable(0, 3):
-        print(memoTable[(0, 3)])
-
-    print("mydict (return from networkx djikstra):")
-    print(mydict)
-    print("memoTable:")
-    print(memoTable)
-    print("Edges in Graph:")
-    print(G.edges)
-    #print("dijkstra_path:"),
-    #print(dijkstra_path(G, 0, 4))
-    #print("dijkstra_path_length:"),
-    #print(dijkstra_path_length(G, 0, 4))
-    #print("bidirectional_dijkstra:"),
-    #print(bidirectional_dijkstra(G, 0, 4))
-    #print("single_source_dijkstra:"),
-    #print(single_source_dijkstra(G, 0, 4))
-    #print("single_source_dijkstra_path:"),
-    #print(single_source_dijkstra_path(G, 0, 4)
-   # mydict = single_source_dijkstra_path(G, 0, 4)
-    #addItemToMemoTable(0, mydict)
-    #print(mydict)
-    #print(memoTable)
-    #print("single_source_dijkstra_path_length:"),
-    #print(single_source_dijkstra_path_length(G, 0, 4))
-    #print("multi_source_dijkstra:"),
-   # print(multi_source_dijkstra(G, 0))
-    #print("multi_source_dijkstra_path:"),
-   # print(multi_source_dijkstra_path(G, 0))
-    #print("multi_source_dijkstra_path_length:"),
-   # print(multi_source_dijkstra_path_length(G, 0))
-    #print("all_pairs_dijkstra:"),
-    #(x,y) = all_pairs_dijkstra(G)
-    #print(x)
-    #print(y)
-    #print("all_pairs_dijkstra_path:"),
-    #print(all_pairs_dijkstra_path(G))
-    #print("all_pairs_dijkstra_path_length:"),
-    #length = dict(nx.all_pairs_dijkstra_path_length(G))
-        #for node in [0, 1, 2, 3, 4]:
-         #   print(f"1 - {node}: {length[1][node]}")
-    #print("dijkstra_predecessor_and_distance:")
-  #  print(dijkstra_predecessor_and_distance(G))
-"""
 #TODO: experiments Is it faster to fun all_pairs first to fill memoization table and then just search for results?
 #TODO: check other algorithms for possible faster run though I think they all start at the same algorithm..
 #TODO: change save strategies for table: Use deduction to save more SPs per run, Subtables/smaller search areas (George
@@ -101,6 +48,7 @@ def main():
 #TODO: save a smaller set of graphs, try to link them together for the search, use a non-key strategy for the table
 #TODO: set weights
 #TODO: sinlglesource dijkstra just save previous node, not node lists.
+#TODO: cite networkx djikstra algorithm
 
 
 if __name__ == "__main__":
