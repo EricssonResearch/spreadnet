@@ -721,6 +721,7 @@ def multi_source_dijkstra(G, sources, target=None, cutoff=None, weight="weight")
     dist = _dijkstra_multisource(
         G, sources, weight, paths=paths, cutoff=cutoff, target=target
     )
+    #TODO: Change this. just return entire dictionary of paths
     if target is None:
         return (dist, paths)
     try:
@@ -842,6 +843,7 @@ def _dijkstra_multisource(
 
     # The optional predecessor and path dictionaries can be accessed
     # by the caller via the pred and paths objects passed as arguments.
+    #TODO add dist to memoization
     return dist
 
 
