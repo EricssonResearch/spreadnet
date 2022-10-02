@@ -22,7 +22,7 @@ Development Workflow
 
          # Create a virtualenv named ``spreadnet-dev`` that lives in the directory of
          # the same name
-         # It is recommended that Python>=3.9
+         # It is recommended that Python>=3.7
          python -m venv spreadnet-dev
          # Activate it
          source spreadnet-dev/bin/activate
@@ -47,7 +47,7 @@ Development Workflow
        ::
 
          # Create a conda environment named ``spreadnet-dev``
-         conda create --name spreadnet-dev python=3.9
+         conda create --name spreadnet-dev python=3.7
          # Activate it
          conda activate spreadnet-dev
          
