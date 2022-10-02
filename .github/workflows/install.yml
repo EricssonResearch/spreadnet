@@ -1,10 +1,11 @@
 name: Testing Minimal Installation
 
 on:  # yamllint disable-line rule:truthy
-  push:
-    branches:
-      - master
-  pull_request:
+    push
+#   push:
+#     branches:
+#       - master
+#   pull_request:
 
 jobs:
 
@@ -29,22 +30,32 @@ jobs:
           pip install numpy typing-extensions dataclasses
           pip install torch==${{ matrix.torch-version}}+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
-      - name: Install internal dependencies
-        run: |
-          pip install pyg-lib -f https://data.pyg.org/whl/nightly/torch-${{ matrix.torch-version }}+cpu.html
-          pip install torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-${{ matrix.torch-version }}+cpu.html
+#       - name: Install internal dependencies
+#         run: |
+#           pip install pyg-lib -f https://data.pyg.org/whl/nightly/torch-${{ matrix.torch-version }}+cpu.html
+#           pip install torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-${{ matrix.torch-version }}+cpu.html
 
-      - name: Install main package
+      - name: Install PyG
         run: |
-          pip install -e .[test]
+          pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-${{ matrix.torch-version }}+cpu.html
 
-      - name: Test imports
+      - name: Test PyG imports
         run: |
           python -c "import torch_geometric"
           python -c "import torch_geometric.datasets"
           python -c "import torch_geometric.nn"
           python -c "import torch_geometric.graphgym"
-
+      
+      - name: Install Spreadnet
+        run: |
+          pip install -e .
+      
+      - name: Test imports
+        run: |
+          python -c "import spreadnet"
+      
       - name: Run tests
         run: |
+          pip install pytest
           pytest
+      
