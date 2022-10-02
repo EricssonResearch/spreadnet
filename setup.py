@@ -1,10 +1,10 @@
 from setuptools import find_packages, setup
 
 requirements = [
-    "networkx>=2.8.4",
-    "numpy>=1.22.3",
+    "networkx~=2.6",
+    "numpy~=1.21.0",
     "pyyaml>=6.0",
-    "scipy>=1.8.0",
+    "scipy>=1.7.0",
     "torch>=1.11.0",
 ]
 setup(
@@ -19,7 +19,7 @@ setup(
     # author_email='shenghui.li@it.uu.se',
     # url='https://bladesteam.github.io/',
     # py_modules=['blades'],
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     license="Apache License 2.0",
     zip_safe=False,
     # entry_points={
