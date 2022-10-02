@@ -1,4 +1,4 @@
-name: Testing Minimal Installation
+name: Testing Installation
 
 on:  # yamllint disable-line rule:truthy
   push:
