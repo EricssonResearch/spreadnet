@@ -1,6 +1,6 @@
-networkx>=2.8.4
-numpy>=1.22.3
+networkx~=2.6
+numpy>=1.21.0
 pre-commit
 pyyaml>=6.0
-scipy>=1.8.0
+scipy~=1.7.0
 webdataset>=0.2.26
