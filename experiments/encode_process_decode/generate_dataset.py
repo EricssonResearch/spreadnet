@@ -14,6 +14,7 @@ data_configs = configs.data
 
 random_seed = data_configs["random_seed"]
 num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
+theta = data_configs["theta"]
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
@@ -24,15 +25,21 @@ if not os.path.exists(raw_path):
 # ------------------------------------------
 if __name__ == "__main__":
     graph_generator = GraphGenerator(
-        random_seed=random_seed, num_nodes_min_max=num_nodes_min_max, theta=20
+        random_seed=random_seed,
+        num_nodes_min_max=num_nodes_min_max,
+        theta=theta,
     ).task_graph_generator()
 
     all_graphs = list()
 
     for idx in range(dataset_size):
         all_graphs.append(nx.node_link_data(next(graph_generator)))
+        print(str(idx + 1) + "/" + str(dataset_size) + " Done")
 
-    with open(raw_path + "/random.json", "w") as outfile:
+    output_file_name = (
+        f"/random_{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{theta}.json"
+    )
+    with open(raw_path + output_file_name, "w") as outfile:
         json.dump(all_graphs, outfile, cls=NpEncoder)
 
     print("Graph Generation Done...\nProcessing...")
