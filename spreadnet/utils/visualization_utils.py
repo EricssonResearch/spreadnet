@@ -3,6 +3,8 @@
     The code was initially designed for tf_gnn. 
 
     TODO: Add utilities for pyg_gnn if needed. 
+    TODO: Combine ground truth and prediction graphs into a single plot./
+            Add a title to the plot and a decription of what the numbers mean.  
 
 """
 
@@ -28,6 +30,11 @@ class VisualUtils:
 
         Raises:
             Exception: tf_gnn output graph needs to be given if graph weights are not used as labels.
+
+
+        First plots the Ground Truth with weights followed by the graph with GNN predictions.
+
+
 
         TODO: Adjust to also use pyg_gnn probabilities.
         """

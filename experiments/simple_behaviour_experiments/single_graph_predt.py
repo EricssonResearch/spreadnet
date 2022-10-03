@@ -22,6 +22,8 @@ from spreadnet.utils.testing_utils import TestingUtils
 from spreadnet.utils.visualization_utils import VisualUtils
 from spreadnet.utils.tf_utils import TfGNNUtils
 from spreadnet.tf_gnn.model import gnn
+import matplotlib.pyplot as plt
+from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
 sys.modules["gnn"] = gnn
 
@@ -32,7 +34,9 @@ import numpy as np
 import pickle
 
 
-def single_graph_implementation_test_helper(trained_gnn):
+def single_graph_implementation_test_helper(
+    trained_gnn, model_used: str = True, graph_nx=None
+):
     """
 
     Temporary test to make sure that the visualization integration works.
@@ -46,62 +50,66 @@ def single_graph_implementation_test_helper(trained_gnn):
 
     vis = VisualUtils()
     tf_utils = TfGNNUtils()
+    if model_used == "tf_gnn":
+        build_initial_hidden_state = tfgnn.keras.layers.MapFeatures(
+            node_sets_fn=tf_utils._set_initial_node_state,
+            edge_sets_fn=tf_utils._set_initial_edge_state,
+            context_fn=tf_utils._set_initial_context_state,
+        )
 
-    build_initial_hidden_state = tfgnn.keras.layers.MapFeatures(
-        node_sets_fn=tf_utils._set_initial_node_state,
-        edge_sets_fn=tf_utils._set_initial_edge_state,
-        context_fn=tf_utils._set_initial_context_state,
-    )
+        if graph_nx == None:
+            # TODO: Remove this graph generating part after the dataset handling is done.
+            num_nodes_min_max = (30, 40)
+            random_seed = 34567
+            random_state = np.random.RandomState(random_seed)
 
-    num_nodes_min_max = (10, 15)
-    random_seed = 12
-    random_state = np.random.RandomState(random_seed)
+            dimensions = 2
+            theta = 25
+            rate = 0.5
+            min_length = 6
 
-    dimensions = 2
-    theta = 25
-    rate = 1.0
-    min_length = 3
+            graph = tf_utils._generate_base_graph(
+                random_state,
+                num_nodes_min_max=num_nodes_min_max,
+                dimensions=dimensions,
+                theta=theta,
+                rate=rate,
+            )
 
-    graph = tf_utils._generate_base_graph(
-        random_state,
-        num_nodes_min_max=num_nodes_min_max,
-        dimensions=dimensions,
-        theta=theta,
-        rate=rate,
-    )
-    # Randomly adds a shortest path as they do in the normal code. This is not really nedded unless we want to modify a graph that has been u
-    # used for training
-    graph_sp = tf_utils._add_shortest_path(random_state, graph, min_length=min_length)
+            graph_sp = tf_utils._add_shortest_path(
+                random_state, graph, min_length=min_length
+            )
+        else:
+            graph_sp = graph_nx
 
-    tensor_graph_sp = tf_utils._convert_to_graph_tensor(graph_sp)
+        tensor_graph_sp = tf_utils._convert_to_graph_tensor(graph_sp)
+        input_graph = build_initial_hidden_state(tensor_graph_sp)
+        output_graph = trained_gnn(input_graph)
 
-    input_graph = build_initial_hidden_state(tensor_graph_sp)
-    output_graph = trained_gnn(input_graph)
+        predicted_task_graph = tf_utils.predict_from_final_hidden_state(
+            tensor_graph_sp, output_graph
+        )
 
-    node_logits = output_graph.node_sets["cities"][tfgnn.HIDDEN_STATE]
-    edge_logits = output_graph.edge_sets["roads"][tfgnn.HIDDEN_STATE]
+        predicted_graph_nx = tf_utils.tf_pred_tensor_graph_to_nx_graph(
+            predicted_task_graph
+        )
 
-    # print(output_graph.edge_sets["roads"].get_features_dict())
+    elif model_used == "pyg_gnn":
+        """
+        Data Format changed need to pull from main before I can use the new data format.
+        """
+        pass
 
-    """
-    Extract Confindence from the output Graph. 
-    
-    """
-    # print("Edge outputs: ", output_graph.edge_sets["roads"][tfgnn.HIDDEN_STATE])
-    # print("Node outputs: ", output_graph.node_sets["cities"][tfgnn.HIDDEN_STATE])
+    plt.figure(1)
 
-    predicted_task_graph = tf_utils.predict_from_final_hidden_state(
-        tensor_graph_sp, output_graph
-    )
-
-    # # 	print(predicted_task_graph.node_sets["cities"]["is_in_path"])
-
-    predicted_graph_nx = tf_utils.tf_pred_tensor_graph_to_nx_graph(predicted_task_graph)
-    # otuput_graph_nx = pred_tensor_graph_to_nx_graph(output_graph)
-
-    # 	print(predicted_graph_nx)
     vis.nx_draw(graph_sp, label_w_weights=True)
+    plt.figure(2)
+
     vis.nx_draw(predicted_graph_nx, output_graph=output_graph)
+
+
+def single_graph_vis_pyg_test0(trained_gnn):
+    pass
 
 
 def single_graph_vis_test1():
@@ -133,5 +141,5 @@ def single_graph_vis_test3():
 
 if __name__ == "__main__":
     ts = TestingUtils()
-    trained_gnn = ts.load_model("pickled_2000_model.pickle")
-    single_graph_implementation_test_helper(trained_gnn)
+    trained_gnn = ts.load_model("pickled_2000_model.pickle", "tf_gnn")
+    single_graph_implementation_test_helper(trained_gnn, model_used="tf_gnn")

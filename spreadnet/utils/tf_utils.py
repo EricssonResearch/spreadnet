@@ -65,13 +65,14 @@ class TfGNNUtils:
         )
 
     def tf_pred_tensor_graph_to_nx_graph(self, graph_tensor):
-        """Predicted tensor graph to nx graph.
+        """Predicted tensor graph to nx graph for tf_gnn.
+
 
         Args:
-            graph_tensor (_type_): _description_
+            graph_tensor (_type_): Graph in tensor  format as used by the
 
         Returns:
-            _type_: _description_
+            nx_graph: Returns an nx Graph in the same format used by the convert_to_graph tenosr function.
         """
 
         tfgnn.check_scalar_graph_tensor(graph_tensor)
@@ -231,7 +232,11 @@ class TfGNNUtils:
     """
 
     def _generate_base_graph(self, rand, num_nodes_min_max, dimensions, theta, rate):
-        """Generates the base graph for the task."""
+        """Generates the base graph for the task.
+
+        TODO pass nx graph instead of constructing it here.
+
+        """
         # Sample num_nodes.
         num_nodes = rand.randint(*num_nodes_min_max)
 
