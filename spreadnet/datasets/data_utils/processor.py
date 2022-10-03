@@ -22,6 +22,7 @@ def process(dataset_path):
         os.path.abspath(processed_path + "/all_%06d.tar"),
         maxsize=2e9,
         encoder=pt_encoder,
+        compress=True,
     )  # 2GB per shard
     raw_file_paths = list(map(os.path.basename, glob(raw_path + "/*.json")))
 
@@ -63,8 +64,13 @@ def process(dataset_path):
             edge_index_t = torch.tensor(edge_index_data, dtype=torch.long)
             edge_index = edge_index_t.t().contiguous()
 
-            data = Data(edge_index=edge_index, pos=nodes_pos, x=x, edge_attr=edges_weight,
-                        y=(node_labels, edge_labels))
+            data = Data(
+                edge_index=edge_index,
+                pos=nodes_pos,
+                x=x,
+                edge_attr=edges_weight,
+                y=(node_labels, edge_labels),
+            )
 
             sink.write(
                 {
