@@ -1,11 +1,12 @@
 from setuptools import find_packages, setup
 
 requirements = [
-    "networkx~=2.6",
-    "numpy~=1.21.0",
-    "pyyaml>=6.0",
-    "scipy>=1.7.0",
-    "torch>=1.11.0",
+    "networkx",
+    "numpy",
+    "pyyaml",
+    "scipy",
+    "torch",
+    "webdataset",
 ]
 setup(
     name="spreadnet",
