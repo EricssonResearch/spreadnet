@@ -11,6 +11,14 @@ from glob import glob
 
 
 def process(dataset_path):
+    """Convert json to networkx graph and write as tar file.
+
+    Args:
+        dataset_path: path to json graph folder
+
+    Returns:
+        None
+    """
     raw_path = dataset_path + "/raw"
     processed_path = dataset_path + "/processed"
 
