@@ -1,28 +1,44 @@
 """Train the model.
 
+Usage:
+    python train.py [--config config_file_path]
+
 @Time    : 9/16/2022 1:31 PM
 @Author  : Haodong Zhao
 """
 import copy
 import os
-from typing import Optional
-
+import argparse
 import torch
+import webdataset as wds
 from torch_geometric.loader import DataLoader
+from typing import Optional
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
-from spreadnet.utils import data_to_input_label, SPGraphDataset, yaml_parser
+from spreadnet.utils import yaml_parser
+from spreadnet.datasets.data_utils.decoder import pt_decoder
+
+default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
+
+parser = argparse.ArgumentParser(description="Train the model.")
+parser.add_argument(
+    "--config", default=default_yaml_path, help="Specify the path of the config file. "
+)
+
+args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # yaml_path = str(get_project_root()) + "/configs.yaml"
-yaml_path = "configs.yaml"
+yaml_path = args.config
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model
 data_configs = configs.data
-dataset_path = data_configs["dataset_path"]
+dataset_path = os.path.join(
+    os.path.dirname(__file__), data_configs["dataset_path"]
+).replace("\\", "/")
 
 
 def train(
@@ -33,8 +49,7 @@ def train(
     optimizer,
     save_path: Optional[str] = None,
 ):
-    dataset_size = len(dataloader.dataset)  # for accuracy
-
+    dataset_size = len(list(dataloader.dataset))  # for accuracy
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0  # record the best accuracies
 
@@ -43,12 +58,12 @@ def train(
         nodes_corrects, edges_corrects = 0, 0
         dataset_nodes_size, dataset_edges_size = 0, 0  # for accuracy
 
-        for batch, data in enumerate(dataloader):
+        for batch, (data,) in enumerate(dataloader):
             data = data.to(device)
 
-            (nodes_data, edges_data), (node_true, edge_true) = data_to_input_label(data)
+            (node_true, edge_true) = data.y
             edge_index = data.edge_index
-            node_pred, edge_pred = trainable_model(nodes_data, edge_index, edges_data)
+            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
             # losses, corrects = loss_func(data, trainable_model)
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
@@ -86,12 +101,11 @@ def train(
         if save_path is not None:
             if epoch % train_configs["weight_save_freq"] == 0:
                 weight_name = "model_weights_ep_{ep}.pth".format(ep=epoch)
-                torch.save(model.state_dict(), save_path + weight_name)
+                torch.save(model.state_dict(), os.path.join(save_path, weight_name))
 
     if save_path is not None:
         weight_name = train_configs["best_weight_name"]
-        model.load_state_dict(best_model_wts)
-        torch.save(model, save_path + weight_name)
+        torch.save(best_model_wts, os.path.join(save_path, weight_name))
 
 
 if __name__ == "__main__":
@@ -99,12 +113,18 @@ if __name__ == "__main__":
 
     epochs = train_configs["epochs"]
 
-    dataset = SPGraphDataset(root=dataset_path)
-    loader = DataLoader(
-        dataset,
-        batch_size=train_configs["batch_size"],
-        shuffle=train_configs["shuffle"],
+    dataset = (
+        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        .decode(pt_decoder)
+        .to_tuple(
+            "pt",
+        )
     )
+
+    if bool(train_configs["shuffle"]):
+        dataset.shuffle(len(list(dataset)) * 10)
+
+    loader = DataLoader(dataset, batch_size=train_configs["batch_size"])
 
     model = EncodeProcessDecode(
         node_in=model_configs["node_in"],
@@ -123,10 +143,13 @@ if __name__ == "__main__":
         weight_decay=train_configs["adam_weight_decay"],
     )
     # print(model)
+    weight_base_path = os.path.join(
+        os.path.dirname(__file__), train_configs["weight_base_path"]
+    )
 
-    weight_base_path = train_configs["weight_base_path"]
     if not os.path.exists(weight_base_path):
         os.makedirs(weight_base_path)
+
     train(
         epoch_num=epochs,
         dataloader=loader,

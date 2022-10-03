@@ -1,26 +1,44 @@
 """Use the trained model to do the prediction.
 
+Usage:
+    python predict.py [--config config_file_path] [--model weight_file_path]
+
 @Time    : 9/20/2022 8:28 PM
 @Author  : Haodong Zhao
 """
+import argparse
 from random import randrange
-
+from os import path as osp
 import torch
+import webdataset as wds
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
-from spreadnet.utils import (
-    SPGraphDataset,
-    data_to_input_label,
-    yaml_parser,
+from spreadnet.utils import yaml_parser
+from spreadnet.datasets.data_utils.decoder import pt_decoder
+
+default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
+parser = argparse.ArgumentParser(description="Do predictions.")
+parser.add_argument(
+    "--config", default=default_yaml_path, help="Specify the path of the config file. "
 )
+parser.add_argument(
+    "--model",
+    default="model_weights_best.pth",
+    help="Specify the model we want to use.",
+)
+args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-yaml_path = "configs.yaml"
+
+yaml_path = args.config
+which_model = args.model
 configs = yaml_parser(yaml_path)
 train_configs = configs.train
 model_configs = configs.model
 data_configs = configs.data
-dataset_path = data_configs["dataset_path"]
+dataset_path = osp.join(osp.dirname(__file__), data_configs["dataset_path"]).replace(
+    "\\", "/"
+)
 
 
 def load_model(model_path):
@@ -40,11 +58,7 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    input_data, labels = data_to_input_label(graph_data)
-    nodes_data, edges_data = input_data
-    edge_index = graph_data.edge_index
-
-    nodes_output, edges_output = model(nodes_data, edge_index, edges_data)
+    nodes_output, edges_output = model(graph_data.x, graph_data.edge_index, graph_data.edge_attr)
 
     node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
@@ -53,7 +67,6 @@ def infer(model, graph_data):
 
 
 if __name__ == "__main__":
-    which_model = "model_weights_ep_0.pth"
 
     # load model
     model = EncodeProcessDecode(
@@ -67,15 +80,23 @@ if __name__ == "__main__":
         mlp_hidden_size=model_configs["mlp_hidden_size"],
     ).to(device)
 
-    weight_base_path = train_configs["weight_base_path"]
+    weight_base_path = osp.join(
+        osp.dirname(__file__), train_configs["weight_base_path"]
+    )
     # model_path = weight_base_path + "model_weights_best.pth"
-    model_path = weight_base_path + which_model
+    model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
     # test data
-    dataset = SPGraphDataset(dataset_path)
-    graph = dataset.get(randrange(data_configs["dataset_size"]))
-    node_label, edge_label = graph.label
+    dataset = (
+        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        .decode(pt_decoder)
+        .to_tuple(
+            "pt",
+        )
+    )
+    (graph,) = list(dataset)[randrange(data_configs["dataset_size"])]
+    node_label, edge_label = graph.y
     print("--- Ground_truth --- ")
     print("node: ", node_label)
     print("edge: ", edge_label)
