@@ -5,25 +5,54 @@ import networkx as nx
 memoTable = {}
 
 
-# Took out the check before adding as the table itself only holds unique
-# values so it wasn't needed
 def add_item_to_memo_table(start_node, item):
+    """ Took out the check before adding as the table itself only holds unique
+    values so it wasn't needed
+    Args:
+        start_node:
+        item:
+    
+    Returns:
+    
+    """
     key_list = item.keys()
     for item_key in key_list:
         memoTable[(start_node, item_key)] = item[item_key]
 
 
-# memoization table search function
 def search_memo_table(start_node, end_node):
+    """ Search function for memoization table.
+    
+    Args:
+        start_node:
+        end_node:
+    
+    Returns:
+    
+    """
+    
     if memoTable.get((start_node, end_node)):
         print("shortest path:")
         print(memoTable[(start_node, end_node)])
 
 
-# runs the shortest path dijkstra algorithm, brings back lengths
-# for all (unused at this point)
-# and all paths which is printed and then added to the memoization table.
+
 def shortest_path(G, start_node, end_node, weight="weight"):
+    """ Runs the shortest path dijkstra algorithm, brings back lengths
+    for all (unused at this point)
+    and all paths which is printed and then added to the memoization table.
+    
+    Args:
+        G
+        start_node
+        end_node
+        weight
+    
+    Returns:
+      
+    
+    """
+    
     if search_memo_table(start_node, end_node):
         print(memoTable[(start_node, end_node)])
     else:
