@@ -1,10 +1,5 @@
 data:
-  # graph generator
-  random_seed: 0
-  num_node_min: 8
-  num_node_max: 17
-
-  # dataset generator
+  # dataset configs
   dataset_path: "../dataset"
   dataset_size: 5120
 

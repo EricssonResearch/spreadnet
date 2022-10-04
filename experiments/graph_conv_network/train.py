@@ -52,9 +52,11 @@ def train(
     save_path: Optional[str] = None,
 ):
     dataset_size = len(list(dataloader.dataset))  # for accuracy
+    print("dataset_size = ", dataset_size)
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0  # record the best accuracies
 
+    print("\nStart training...\n")
     for epoch in range(epoch_num):
         nodes_loss, nodes_corrects = 0, 0
         dataset_nodes_size = 0  # for accuracy
@@ -86,8 +88,8 @@ def train(
 
         print(
             f"[Epoch: {epoch + 1:4}/{epoch_num}] "
-            f" Losses: {{'nodes': {nodes_loss} }} "
-            f" Accuracies: {{'nodes': {nodes_acc} }}"
+            f" Losses: {{'nodes': {nodes_loss:.20} }} "
+            f" Accuracies: {{'nodes': {nodes_acc:.20} }}"
         )
 
         if save_path is not None:
