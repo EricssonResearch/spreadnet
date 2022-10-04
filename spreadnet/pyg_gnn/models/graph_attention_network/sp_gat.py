@@ -47,7 +47,7 @@ class SPGATNet(torch.nn.Module):
         for i in range(len(sizes) - 1):
             self.conv.append(
                 GATConv(
-                    in_channels, hidden_channels, heads=heads, concat=concat, dropout=dropout
+                    in_channels=sizes[i], out_channels=sizes[i+1], heads=heads, concat=concat, dropout=dropout
                 ),
             )
 
