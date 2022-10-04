@@ -69,7 +69,7 @@ def shortest_path(G, start_node, end_node, weight="weight"):
         return a number.
 
     Returns:
-      The shortest path from the memoization table or from running Djikstra algorithm.
+      The shortest path from the memoization table or from running Dijkstra algorithm.
     """
 
     if search_memo_table(start_node, end_node) != -1:
