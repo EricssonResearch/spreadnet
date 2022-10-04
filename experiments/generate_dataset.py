@@ -1,10 +1,12 @@
-import os
 import json
+import os
+
 import networkx as nx
 
-from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.datasets.data_utils.processor import process
+from spreadnet.utils import GraphGenerator, yaml_parser
+from tqdm import tqdm
 
 # ------------------------------------------
 # Params
@@ -32,9 +34,10 @@ if __name__ == "__main__":
 
     all_graphs = list()
 
-    for idx in range(dataset_size):
+    print("Start Generating dataset. (dataset_size={})".format(dataset_size))
+    for idx in tqdm(range(dataset_size)):
         all_graphs.append(nx.node_link_data(next(graph_generator)))
-        print(str(idx + 1) + "/" + str(dataset_size) + " Done")
+        # print(str(idx + 1) + "/" + str(dataset_size) + " Done")
 
     output_file_name = (
         f"/random_{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{theta}.json"
