@@ -56,4 +56,4 @@ class SPGATNet(torch.nn.Module):
             x = F.dropout(x, p=0.6, training=self.training)
             x = gat_layer(x=x, edge_index=edge_index, edge_attr=edge_attr)
             x = F.elu(x)
-        return F.log_softmax(x, dim=1)
+        return x

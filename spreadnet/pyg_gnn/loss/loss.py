@@ -39,17 +39,17 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
 
     node_comps = (
         (node_true == predicted_node_labels)
-        .clone()
-        .detach()
-        .type(torch.int64)
-        .to(node_pred.device)
+            .clone()
+            .detach()
+            .type(torch.int64)
+            .to(node_pred.device)
     )
     edge_comps = (
         (edge_true == predicted_edge_labels)
-        .clone()
-        .detach()
-        .type(torch.float)
-        .to(node_pred.device)
+            .clone()
+            .detach()
+            .type(torch.float)
+            .to(node_pred.device)
     )
 
     corrects = {"nodes": torch.sum(node_comps), "edges": torch.sum(edge_comps)}
@@ -59,5 +59,16 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
     return losses, corrects
 
 
+def cross_entropy_loss(node_pred, node_true):
+    loss = torch.nn.functional.cross_entropy(node_pred, node_true, reduction="mean")
 
-
+    predicted_labels = torch.argmax(node_pred, dim=-1).type(torch.int64)
+    comp = (
+        (node_true == predicted_labels)
+            .clone()
+            .detach()
+            .type(torch.int64)
+            .to(node_pred.device)
+    )
+    correct = torch.sum(comp)
+    return loss, correct

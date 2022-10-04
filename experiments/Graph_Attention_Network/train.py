@@ -3,11 +3,11 @@ import os
 import argparse
 import torch
 import webdataset as wds
-from torch._C._nn import cross_entropy_loss
 from torch_geometric.loader import DataLoader
 from typing import Optional
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.loss.loss import cross_entropy_loss
 from spreadnet.pyg_gnn.models import SPGATNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
@@ -53,16 +53,17 @@ def train(
 
         for batch, (data,) in enumerate(dataloader):
             data = data.to(device)
-            node_true = data.y
+            node_true, _ = data.y
             edge_index = data.edge_index
             node_pred = trainable_model(data.x, edge_index, data.edge_attr)
             losses, correct = loss_func(node_pred, node_true)
             optimizer.zero_grad()
             losses.backward(retain_graph=True)
             optimizer.step()
+
             dataset_nodes_size += data.num_nodes
-            nodes_loss += losses["nodes"].item() * data.num_graphs
-            nodes_corrects += correct["nodes"]
+            nodes_loss += losses.item() * data.num_graphs
+            nodes_corrects += correct
 
         # get epoch losses and accuracies
         nodes_loss /= dataset_size
