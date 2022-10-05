@@ -165,6 +165,7 @@ cython_debug/
 
 # random generated dataset
 experiments/dataset/raw/*.json
+experiments/dataset/raw/*.jpg
 experiments/dataset/processed/*.tar
 
 # model weights
