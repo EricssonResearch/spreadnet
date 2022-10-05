@@ -16,9 +16,14 @@ train:
   adam_weight_decay: !!float 5e-4
 
 model:
-  in_channels: 3
-  num_hidden_layers: 8
-  hidden_channels: 16
-  out_channels: 2
-  use_normalization: True
-  use_bias: True
+  node_gcn_in_channels: 3
+  node_gcn_num_hidden_layers: 1
+  node_gcn_hidden_channels: 128
+  node_gcn_out_channels: 2
+  node_gcn_use_normalization: True
+  node_gcn_use_bias: True
+  edge_mlp_in_channels: 5
+  edge_mlp_bias: True
+  edge_mlp_hidden_channels: 128
+  edge_mlp_num_layers: 2
+  edge_mlp_out_channels: 2

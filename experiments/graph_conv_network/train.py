@@ -16,8 +16,8 @@ import webdataset as wds
 from torch_geometric.loader import DataLoader
 from typing import Optional
 
-from spreadnet.pyg_gnn.loss.loss import cross_entropy_loss
-from spreadnet.pyg_gnn.models import GCNet
+from spreadnet.pyg_gnn.loss.loss import hybrid_loss
+from spreadnet.pyg_gnn.models.graph_conv_network.sp_gcn import SPGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
@@ -52,33 +52,41 @@ def train(
     save_path: Optional[str] = None,
 ):
     dataset_size = len(list(dataloader.dataset))  # for accuracy
-    print("dataset_size = ", dataset_size)
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0  # record the best accuracies
 
-    print("\nStart training...\n")
     for epoch in range(epoch_num):
-        nodes_loss, nodes_corrects = 0, 0
-        dataset_nodes_size = 0  # for accuracy
+        nodes_loss, edges_loss = 0.0, 0.0
+        nodes_corrects, edges_corrects = 0, 0
+        dataset_nodes_size, dataset_edges_size = 0, 0  # for accuracy
 
         for batch, (data,) in enumerate(dataloader):
             data = data.to(device)
-            node_true, _ = data.y
-            edge_index = data.edge_index
-            node_pred = trainable_model(data.x, edge_index, data.edge_attr)
-            loss, correct = loss_func(node_pred, node_true)
-            optimizer.zero_grad()
-            loss.backward()
 
+            (node_true, edge_true) = data.y
+            edge_index = data.edge_index
+            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
+            # losses, corrects = loss_func(data, trainable_model)
+            losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
+            optimizer.zero_grad()
+            losses["nodes"].backward(retain_graph=True)
+            losses["edges"].backward()
             optimizer.step()
 
+            assert data.num_nodes >= corrects["nodes"]
+            assert data.num_edges >= corrects["edges"]
             dataset_nodes_size += data.num_nodes
-            nodes_loss += loss.item() * data.num_graphs
-            nodes_corrects += correct
+            dataset_edges_size += data.num_edges
+            nodes_loss += losses["nodes"].item() * data.num_graphs
+            edges_loss += losses["edges"].item() * data.num_graphs
+            nodes_corrects += corrects["nodes"]
+            edges_corrects += corrects["edges"]
 
         # get epoch losses and accuracies
         nodes_loss /= dataset_size
+        edges_loss /= dataset_size
         nodes_acc = nodes_corrects / dataset_nodes_size
+        edges_acc = edges_corrects / dataset_edges_size
 
         cur_acc = nodes_acc
 
@@ -88,8 +96,8 @@ def train(
 
         print(
             f"[Epoch: {epoch + 1:4}/{epoch_num}] "
-            f" Losses: {{'nodes': {nodes_loss:.20} }} "
-            f" Accuracies: {{'nodes': {nodes_acc:.20} }}"
+            f" Losses: {{'nodes': {nodes_loss}, 'edges': {edges_loss} }} "
+            f"\n\t\t    Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}"
         )
 
         if save_path is not None:
@@ -120,29 +128,45 @@ if __name__ == "__main__":
 
     loader = DataLoader(dataset, batch_size=train_configs["batch_size"])
 
-    model = GCNet(
-        in_channels=model_configs["in_channels"],
-        num_hidden_layers=model_configs["num_hidden_layers"],
-        hidden_channels=model_configs["hidden_channels"],
-        out_channels=model_configs["out_channels"],
-        use_normalization=model_configs["use_normalization"],
-        use_bias=model_configs["use_bias"],
+    model = SPGCNet(
+        node_gcn_in_channels=model_configs["node_gcn_in_channels"],
+        node_gcn_num_hidden_layers=model_configs["node_gcn_num_hidden_layers"],
+        node_gcn_hidden_channels=model_configs["node_gcn_hidden_channels"],
+        node_gcn_out_channels=model_configs["node_gcn_out_channels"],
+        node_gcn_use_normalization=model_configs["node_gcn_use_normalization"],
+        node_gcn_use_bias=model_configs["node_gcn_use_bias"],
+        edge_mlp_in_channels=model_configs["edge_mlp_in_channels"],
+        edge_mlp_bias=model_configs["edge_mlp_bias"],
+        edge_mlp_hidden_channels=model_configs["edge_mlp_hidden_channels"],
+        edge_mlp_num_layers=model_configs["edge_mlp_num_layers"],
+        edge_mlp_out_channels=model_configs["edge_mlp_out_channels"],
     ).to(device)
+
     print(model)
 
     opt_lst = list()
-    for i in range(len(model.gcn_stack)):
-        if i == len(model.gcn_stack) - 1:
+    for i in range(len(model.node_classifier.gcn_stack)):
+        if i == len(model.node_classifier.gcn_stack) - 1:
             opt_lst.append(
                 dict(
-                    params=model.gcn_stack[i].parameters(),
+                    params=model.node_classifier.gcn_stack[i].parameters(),
                     weight_decay=train_configs["adam_weight_decay"],
                 )
             )
         else:
             opt_lst.append(
-                dict(params=model.gcn_stack[i].parameters(), weight_decay=0),
+                dict(
+                    params=model.node_classifier.gcn_stack[i].parameters(),
+                    weight_decay=0,
+                ),
             )  # don't perform weight-decay on the last convolution.
+
+    opt_lst.append(
+        dict(
+            params=model.edge_classifier.parameters(),
+            weight_decay=train_configs["adam_weight_decay"],
+        )
+    )
 
     opt = torch.optim.Adam(
         opt_lst,
@@ -160,7 +184,7 @@ if __name__ == "__main__":
         epoch_num=epochs,
         dataloader=loader,
         trainable_model=model,
-        loss_func=cross_entropy_loss,
+        loss_func=hybrid_loss,
         optimizer=opt,
         save_path=weight_base_path,
     )

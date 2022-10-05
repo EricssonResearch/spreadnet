@@ -7,10 +7,57 @@
 import torch
 import torch.nn.functional as F
 
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, MLP
 
 
-class GCNet(torch.nn.Module):
+class SPGCNet(torch.nn.Module):
+    def __init__(
+        self,
+        node_gcn_in_channels: int,
+        node_gcn_num_hidden_layers: int,
+        node_gcn_hidden_channels: int,
+        node_gcn_out_channels: int,
+        node_gcn_use_normalization: bool,
+        node_gcn_use_bias: bool,
+        edge_mlp_in_channels: int,
+        edge_mlp_bias: bool,
+        edge_mlp_hidden_channels: int,
+        edge_mlp_num_layers: int,
+        edge_mlp_out_channels: int,
+    ):
+        super(SPGCNet, self).__init__()
+
+        self.node_classifier = GCNStack(
+            in_channels=node_gcn_in_channels,
+            num_hidden_layers=node_gcn_num_hidden_layers,
+            hidden_channels=node_gcn_hidden_channels,
+            out_channels=node_gcn_out_channels,
+            use_normalization=node_gcn_use_normalization,
+            use_bias=node_gcn_use_bias,
+        )
+
+        self.edge_classifier = MLP(
+            in_channels=edge_mlp_in_channels,  # node + node + edge_attr
+            out_channels=edge_mlp_out_channels,
+            bias=edge_mlp_bias,
+            hidden_channels=edge_mlp_hidden_channels,
+            num_layers=edge_mlp_num_layers,
+        )
+
+    def forward(self, x, edge_index, edge_weight):
+        x = self.node_classifier(x, edge_index, edge_weight)
+        node_embeds = x
+        node_embeds_src, node_embeds_dst = (
+            node_embeds[edge_index[0]],
+            node_embeds[edge_index[1]],
+        )
+        edge_feat = torch.cat([node_embeds_src, edge_weight, node_embeds_dst], dim=-1)
+        out = self.edge_classifier(edge_feat)
+
+        return x, out
+
+
+class GCNStack(torch.nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -20,7 +67,9 @@ class GCNet(torch.nn.Module):
         use_normalization: bool = True,
         use_bias: bool = True,
     ):
-        super(GCNet, self).__init__()
+        super(GCNStack, self).__init__()
+
+        # node classification
         self.num_hidden_layers = num_hidden_layers
         self.gcn_stack = torch.nn.Sequential()
         sizes = [in_channels] + [hidden_channels] * num_hidden_layers + [out_channels]

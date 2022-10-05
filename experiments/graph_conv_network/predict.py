@@ -13,7 +13,7 @@ from os import path as osp
 import torch
 import webdataset as wds
 
-from spreadnet.pyg_gnn.models import GCNet
+from spreadnet.pyg_gnn.models import SPGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
@@ -59,23 +59,31 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    nodes_output = model(graph_data.x, graph_data.edge_index, graph_data.edge_attr)
+    nodes_output, edges_output = model(
+        graph_data.x, graph_data.edge_index, graph_data.edge_attr
+    )
 
     node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
+    edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
 
-    return node_infer
+    return node_infer, edge_infer
 
 
 if __name__ == "__main__":
 
     # load model
-    model = GCNet(
-        in_channels=model_configs["in_channels"],
-        num_hidden_layers=model_configs["num_hidden_layers"],
-        hidden_channels=model_configs["hidden_channels"],
-        out_channels=model_configs["out_channels"],
-        use_normalization=model_configs["use_normalization"],
-        use_bias=model_configs["use_bias"],
+    model = SPGCNet(
+        node_gcn_in_channels=model_configs["node_gcn_in_channels"],
+        node_gcn_num_hidden_layers=model_configs["node_gcn_num_hidden_layers"],
+        node_gcn_hidden_channels=model_configs["node_gcn_hidden_channels"],
+        node_gcn_out_channels=model_configs["node_gcn_out_channels"],
+        node_gcn_use_normalization=model_configs["node_gcn_use_normalization"],
+        node_gcn_use_bias=model_configs["node_gcn_use_bias"],
+        edge_mlp_in_channels=model_configs["edge_mlp_in_channels"],
+        edge_mlp_bias=model_configs["edge_mlp_bias"],
+        edge_mlp_hidden_channels=model_configs["edge_mlp_hidden_channels"],
+        edge_mlp_num_layers=model_configs["edge_mlp_num_layers"],
+        edge_mlp_out_channels=model_configs["edge_mlp_out_channels"],
     ).to(device)
 
     weight_base_path = osp.join(
@@ -95,11 +103,13 @@ if __name__ == "__main__":
         )
     )
     (graph,) = list(dataset)[randrange(data_configs["dataset_size"])]
-    node_label, _ = graph.y
+    node_label, edge_label = graph.y
     print("--- Ground_truth --- ")
     print("node: ", node_label)
+    print("edge: ", edge_label)
 
     # predict
-    node_infer = infer(model, graph.to(device))
+    node_infer, edge_infer = infer(model, graph.to(device))
     print("--- Predicted ---")
     print("node: ", node_infer)
+    print("edge: ", edge_infer)
