@@ -64,6 +64,22 @@ class TfGNNUtils:
             context=tfgnn.Context.from_fields(features=context_features),
         )
 
+    def nx_standard_format_from_tensor(self, ground_truth_graph, output_graph_tensor):
+        """Combines the ground truth with the logit predictions.
+
+        Args:
+            graph_tensor (_type_): Tensor graph forma
+
+        Returns: Nx graph in the documentation defined format.
+                TODO: Write the documentation. :)
+        """
+
+        tfgnn.check_scalar_graph_tensor(output_graph_tensor)
+        assert output_graph_tensor.num_components == 1
+
+        # Append the logits of the outputs as a feature to the original ground truth graph.
+        # Assumes that the order of the nodes and the edges remains the same.
+
     def tf_pred_tensor_graph_to_nx_graph(self, graph_tensor):
         """Predicted tensor graph to nx graph for tf_gnn.
 

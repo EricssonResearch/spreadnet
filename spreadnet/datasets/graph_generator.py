@@ -21,6 +21,12 @@ to ensure all nodes are connected.
 
 This Graph generator is modified from the graph generation part of tensorflow/gnn
     https://github.com/tensorflow/gnn/blob/main/examples/notebooks/graph_network_shortest_path.ipynb
+
+TODO: Code duplicated in the tf_gnn utils also. One copy has to be removed. 
+      Do all models require this type of data generation?
+TODO: For the final spreadnet(aka non epxerimental).
+      Get rid of all code that is not written by us so that
+      we do not have to bother with their license. 
 """
 
 import collections
@@ -48,13 +54,13 @@ class GraphGenerator:
     """A graph generator that creates a connected graph."""
 
     def __init__(
-            self,
-            random_seed: int,
-            num_nodes_min_max: Tuple[int, int],
-            dimensions: int = 2,
-            theta: float = 1000.0,
-            min_length: int = 1,
-            rate: float = 1.0,
+        self,
+        random_seed: int,
+        num_nodes_min_max: Tuple[int, int],
+        dimensions: int = 2,
+        theta: float = 1000.0,
+        min_length: int = 1,
+        rate: float = 1.0,
     ):
         """
 

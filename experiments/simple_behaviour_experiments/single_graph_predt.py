@@ -18,7 +18,7 @@ Reminder:
 """
 
 import sys
-from spreadnet.utils.testing_utils import TestingUtils
+from spreadnet.utils.experiment_utils import ExperimentUtils
 from spreadnet.utils.visualization_utils import VisualUtils
 from spreadnet.utils.tf_utils import TfGNNUtils
 from spreadnet.tf_gnn.model import gnn
@@ -32,6 +32,8 @@ import tensorflow_gnn as tfgnn
 import tensorflow as tf
 import numpy as np
 import pickle
+import json
+import os
 
 
 def single_graph_implementation_test_helper(
@@ -57,30 +59,7 @@ def single_graph_implementation_test_helper(
             context_fn=tf_utils._set_initial_context_state,
         )
 
-        if graph_nx == None:
-            # TODO: Remove this graph generating part after the dataset handling is done.
-            num_nodes_min_max = (30, 40)
-            random_seed = 34567
-            random_state = np.random.RandomState(random_seed)
-
-            dimensions = 2
-            theta = 25
-            rate = 0.5
-            min_length = 6
-
-            graph = tf_utils._generate_base_graph(
-                random_state,
-                num_nodes_min_max=num_nodes_min_max,
-                dimensions=dimensions,
-                theta=theta,
-                rate=rate,
-            )
-
-            graph_sp = tf_utils._add_shortest_path(
-                random_state, graph, min_length=min_length
-            )
-        else:
-            graph_sp = graph_nx
+        graph_sp = graph_nx
 
         tensor_graph_sp = tf_utils._convert_to_graph_tensor(graph_sp)
         input_graph = build_initial_hidden_state(tensor_graph_sp)
@@ -139,7 +118,50 @@ def single_graph_vis_test3():
     pass
 
 
+def gen_local_graph():
+    # TODO: Remove this graph generating part after the dataset handling is done.
+    tf_utils = TfGNNUtils()
+
+    num_nodes_min_max = (30, 40)
+    random_seed = 34567
+    random_state = np.random.RandomState(random_seed)
+
+    dimensions = 2
+    theta = 25
+    rate = 0.5
+    min_length = 6
+
+    graph = tf_utils._generate_base_graph(
+        random_state,
+        num_nodes_min_max=num_nodes_min_max,
+        dimensions=dimensions,
+        theta=theta,
+        rate=rate,
+    )
+
+    graph_sp = tf_utils._add_shortest_path(random_state, graph, min_length=min_length)
+
+    return graph_sp
+
+
 if __name__ == "__main__":
-    ts = TestingUtils()
+    models_trained = [ExperimentUtils("tf_gnn"), ExperimentUtils("pyg_gnn")]
+
     trained_gnn = ts.load_model("pickled_2000_model.pickle", "tf_gnn")
-    single_graph_implementation_test_helper(trained_gnn, model_used="tf_gnn")
+
+    yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
+    configs = yaml_parser(yaml_path)
+    data_configs = configs.data
+
+    random_seed = data_configs["random_seed"]
+    num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
+    dataset_size = data_configs["dataset_size"]
+    dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
+    raw_path = dataset_path + "/raw"
+
+    graphs_data = json.load(raw_path + "random.json")
+    print(graphs_data)
+
+    # Locally generated graph, get the graphs from the
+
+    # single_graph_implementation_test_helper(trained_gnn, model_used="tf_gnn", graph_nx=graph_w_sp)
