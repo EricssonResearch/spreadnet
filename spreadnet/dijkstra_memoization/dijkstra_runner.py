@@ -1,5 +1,6 @@
-from dijkstra_algorithm import single_source_dijkstra
+# from dijkstra_algorithm import single_source_dijkstra
 
+from spreadnet.dijkstra_memoization import dijkstra_algorithm
 
 """
 # Holds all SP from all source node runs.
@@ -75,9 +76,10 @@ def shortest_path(G, start_node, end_node, weight="weight"):
     if search_memo_table(start_node, end_node) != -1:
         return memoTable[(start_node, end_node)]
     else:
-        all_lengths_from_source, all_paths_from_source = single_source_dijkstra(
-            G, start_node, None, None, weight
-        )
+        (
+            all_lengths_from_source,
+            all_paths_from_source,
+        ) = dijkstra_algorithm.single_source_dijkstra(G, start_node, None, None, weight)
         add_item_to_memo_table(start_node, all_paths_from_source)
         return all_paths_from_source[end_node]
 
