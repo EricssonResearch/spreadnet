@@ -11,10 +11,21 @@ from random import randrange
 from os import path as osp
 import torch
 import webdataset as wds
+from spreadnet.pyg_gnn.models import *
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
+
+from spreadnet.pyg_gnn.models.encode_process_decode.models import (
+    Encoder,
+    Decoder,
+    EncodeProcessDecode,
+    Processor,
+    SPGNN,
+    SPMLP,
+)
+
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 parser = argparse.ArgumentParser(description="Do predictions.")

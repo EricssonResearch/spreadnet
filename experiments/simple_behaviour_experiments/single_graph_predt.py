@@ -25,6 +25,16 @@ from spreadnet.tf_gnn.model import gnn
 import matplotlib.pyplot as plt
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
+from spreadnet.pyg_gnn.models import *
+
+from spreadnet.pyg_gnn.models.encode_process_decode.models import (
+    Encoder,
+    Decoder,
+    EncodeProcessDecode,
+    Processor,
+    SPGNN,
+    SPMLP,
+)
 
 sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
 

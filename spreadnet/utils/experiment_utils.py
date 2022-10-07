@@ -17,7 +17,14 @@ TODO: The testing util should decide on the model type at the start instead of
 """
 # from spreadnet.tf_gnn.gnn import *
 from spreadnet.utils.config_parser import yaml_parser
-from spreadnet.pyg_gnn.models import EncodeProcessDecode
+from spreadnet.pyg_gnn.models import *
+
+# from spreadnet.pyg_gnn.models.encode_process_decode.models import (
+#     Encoder,
+#     Decoder,
+#     EncodeProcessDecode,
+#     Processor,
+# )
 
 # from spreadnet.pyg_gnn.models.encode_process_decode.models import EncodeProcessDecode
 from spreadnet.utils.tf_utils import TfGNNUtils
