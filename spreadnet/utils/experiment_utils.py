@@ -17,15 +17,16 @@ TODO: The testing util should decide on the model type at the start instead of
 """
 # from spreadnet.tf_gnn.gnn import *
 from spreadnet.utils.config_parser import yaml_parser
+from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
-from spreadnet.pyg_gnn.models.encode_process_decode.models import EncodeProcessDecode
+# from spreadnet.pyg_gnn.models.encode_process_decode.models import EncodeProcessDecode
 from spreadnet.utils.tf_utils import TfGNNUtils
 import pickle
 import os
+from os import path as osp
 import torch
 import sys
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+import argparse
 
 
 class ExperimentUtils:
@@ -39,9 +40,8 @@ class ExperimentUtils:
         self.implemented_models = ["tf_gnn", "pyg_gnn"]
         self.model_type = model_type
         self.model_weights = weights_model
-        self._goto_weights()  # TODO Can replace the directory traversal with the weights base path making.
+
         self._load_model()
-        self._return_from_weights()
 
         """
         TODO: add in configs the trained models for each model type
@@ -57,8 +57,6 @@ class ExperimentUtils:
         if model_type not in self.implemented_models:
             sys.exit("The model type given is not part of the implemented models.")
 
-        self.load_model()
-
     def _goto_weights(self):
         """
         Changes the current directory to the weights directory.
@@ -72,10 +70,10 @@ class ExperimentUtils:
 
     def _return_from_weights(self):
         """Goes back to the initial directory."""
-        path_initial_dir = "../" + self.current_folder
-        os.chdir(path_initial_dir)
 
-    def show_available_models(self, ret=False) -> list[str]:
+        os.chdir(self.current_folder)
+
+    def show_available_models(self, ret=False):
         """
             Prints or returns a list of the available models.
         Args:
@@ -92,7 +90,7 @@ class ExperimentUtils:
             print("Models Implemented: ", self.implemented_models)
             return []
 
-    def show_model_used(self, ret=False) -> list(str):
+    def show_model_used(self, ret=False):
         """Print or/and return the name of the model the class instance is using.
 
         Args:
@@ -118,30 +116,52 @@ class ExperimentUtils:
             name (str): dataset name
             pickled(bool): Is pickled
         """
-        if self.model_type == "tf_gnn":
+        self._goto_weights()  # TODO Can replace the directory traversal with the weights base path making.
 
+        if self.model_type == "tf_gnn":
+            print(self.model_weights)
             with (open(self.model_weights, "rb")) as openfile:
                 trained_model = pickle.load(openfile)
 
         else:
             # self.model_type == "pyg_gnn":
-            trained_model = EncodeProcessDecode(
-                node_in=self.model_configs["node_in"],
-                edge_in=self.model_configs["edge_in"],
-                node_out=self.model_configs["node_out"],
-                edge_out=self.model_configs["edge_out"],
-                latent_size=self.model_configs["latent_size"],
-                num_message_passing_steps=self.model_configs[
-                    "num_message_passing_steps"
-                ],
-                num_mlp_hidden_layers=self.model_configs["num_mlp_hidden_layers"],
-                mlp_hidden_size=self.model_configs["mlp_hidden_size"],
-            ).to(self.device)
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+            default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
+
+            parser = argparse.ArgumentParser(description="Do predictions.")
+            parser.add_argument(
+                "--config",
+                default=default_yaml_path,
+                help="Specify the path of the config file. ",
+            )
+            parser.add_argument(
+                "--model",
+                default="model_weights_best.pth",
+                help="Specify the model we want to use.",
+            )
+            args = parser.parse_args()
+            yaml_path = args.config
+            configs = yaml_parser(yaml_path)
+
+            train_configs = configs.train
+            model_configs = configs.model
+            trained_model = EncodeProcessDecode(
+                node_in=model_configs["node_in"],
+                edge_in=model_configs["edge_in"],
+                node_out=model_configs["node_out"],
+                edge_out=model_configs["edge_out"],
+                latent_size=model_configs["latent_size"],
+                num_message_passing_steps=model_configs["num_message_passing_steps"],
+                num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
+                mlp_hidden_size=model_configs["mlp_hidden_size"],
+            ).to(device)
+            print("\n\n\n", os.getcwd(), "\n\n\n\n")
             trained_model.load_state_dict(
                 torch.load(self.model_weights, map_location=torch.device(device))
             )
 
+        self._return_from_weights()
         self.trained_model = trained_model
 
     def inferer_single_data(self, input_graph):
@@ -172,9 +192,9 @@ class ExperimentUtils:
             graph_tensor = tf_ut._convert_to_graph_tensor(input_graph)
             input_graph = tf_ut.build_initial_hidden_state(graph_tensor)
             output_graph = self.trained_model(input_graph)
-            
-        else:
 
+        else:
+            pass
 
         return
 

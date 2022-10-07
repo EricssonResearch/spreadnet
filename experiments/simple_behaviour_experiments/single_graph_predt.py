@@ -24,21 +24,44 @@ from spreadnet.utils.tf_utils import TfGNNUtils
 from spreadnet.tf_gnn.model import gnn
 import matplotlib.pyplot as plt
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
+from spreadnet.utils import yaml_parser
+
+sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
+
 
 sys.modules["gnn"] = gnn
 
-
+import webdataset as wds
+import argparse
 import tensorflow_gnn as tfgnn
 import tensorflow as tf
 import numpy as np
 import pickle
 import json
-import os
+from os import path as osp
 
 
-def single_graph_implementation_test_helper(
-    trained_gnn, model_used: str = True, graph_nx=None
-):
+"""
+    The following is boilerplate code and should be dealt with.
+    It is ugly and keeps beeing reproduced in different formats
+    all over the placed.
+
+"""
+# parser = argparse.ArgumentParser(description="Do predictions.")
+# args = parser.parse_args()
+# yaml_path = args.config
+# which_model = args.model
+# configs = yaml_parser(yaml_path)
+# train_configs = configs.train
+# model_configs = configs.model
+# data_configs = configs.data
+# dataset_path = osp.join(osp.dirname(__file__), data_configs["dataset_path"]).replace(
+#     "\\", "/"
+# )
+# raw_path = dataset_path + "/raw"
+
+
+def single_graph_implementation_test_helper():
     """
 
     Temporary test to make sure that the visualization integration works.
@@ -49,42 +72,29 @@ def single_graph_implementation_test_helper(
           new data should not be generated during the experiments.
 
     """
+    models_trained = [
+        ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
+        ExperimentUtils(model_type="pyg_gnn", weights_model="model_weights_best.pth"),
+    ]
 
-    vis = VisualUtils()
-    tf_utils = TfGNNUtils()
-    if model_used == "tf_gnn":
-        build_initial_hidden_state = tfgnn.keras.layers.MapFeatures(
-            node_sets_fn=tf_utils._set_initial_node_state,
-            edge_sets_fn=tf_utils._set_initial_edge_state,
-            context_fn=tf_utils._set_initial_context_state,
-        )
+    # TODO fix this path thing with the configs
+    # graphs = json.load(raw_path + "random.json")
+    # Broken window priciple applies tho
+    graphs = json.load("../datasets/raw/random.json")
 
-        graph_sp = graph_nx
+    single_graph = graphs[0]
+    print(single_graph)
 
-        tensor_graph_sp = tf_utils._convert_to_graph_tensor(graph_sp)
-        input_graph = build_initial_hidden_state(tensor_graph_sp)
-        output_graph = trained_gnn(input_graph)
+    # vis = VisualUtils()
+    # tf_utils = TfGNNUtils()
+    # for tr_md in models_trained:
 
-        predicted_task_graph = tf_utils.predict_from_final_hidden_state(
-            tensor_graph_sp, output_graph
-        )
+    # plt.figure(1)
 
-        predicted_graph_nx = tf_utils.tf_pred_tensor_graph_to_nx_graph(
-            predicted_task_graph
-        )
+    # vis.nx_draw(graph_sp, label_w_weights=True)
+    # plt.figure(2)
 
-    elif model_used == "pyg_gnn":
-        """
-        Data Format changed need to pull from main before I can use the new data format.
-        """
-        pass
-
-    plt.figure(1)
-
-    vis.nx_draw(graph_sp, label_w_weights=True)
-    plt.figure(2)
-
-    vis.nx_draw(predicted_graph_nx, output_graph=output_graph)
+    # vis.nx_draw(predicted_graph_nx, output_graph=output_graph)
 
 
 def single_graph_vis_pyg_test0(trained_gnn):
@@ -118,50 +128,6 @@ def single_graph_vis_test3():
     pass
 
 
-def gen_local_graph():
-    # TODO: Remove this graph generating part after the dataset handling is done.
-    tf_utils = TfGNNUtils()
-
-    num_nodes_min_max = (30, 40)
-    random_seed = 34567
-    random_state = np.random.RandomState(random_seed)
-
-    dimensions = 2
-    theta = 25
-    rate = 0.5
-    min_length = 6
-
-    graph = tf_utils._generate_base_graph(
-        random_state,
-        num_nodes_min_max=num_nodes_min_max,
-        dimensions=dimensions,
-        theta=theta,
-        rate=rate,
-    )
-
-    graph_sp = tf_utils._add_shortest_path(random_state, graph, min_length=min_length)
-
-    return graph_sp
-
-
 if __name__ == "__main__":
-    models_trained = [ExperimentUtils("tf_gnn"), ExperimentUtils("pyg_gnn")]
 
-    trained_gnn = ts.load_model("pickled_2000_model.pickle", "tf_gnn")
-
-    yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
-    configs = yaml_parser(yaml_path)
-    data_configs = configs.data
-
-    random_seed = data_configs["random_seed"]
-    num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
-    dataset_size = data_configs["dataset_size"]
-    dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
-    raw_path = dataset_path + "/raw"
-
-    graphs_data = json.load(raw_path + "random.json")
-    print(graphs_data)
-
-    # Locally generated graph, get the graphs from the
-
-    # single_graph_implementation_test_helper(trained_gnn, model_used="tf_gnn", graph_nx=graph_w_sp)
+    single_graph_implementation_test_helper()
