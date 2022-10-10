@@ -17,7 +17,10 @@ Reminder:
     in the utils not here. 
 """
 
+from statistics import mode
 import sys
+
+from black import out
 from spreadnet.utils.experiment_utils import ExperimentUtils
 from spreadnet.utils.visualization_utils import VisualUtils
 from spreadnet.utils.tf_utils import TfGNNUtils
@@ -49,6 +52,7 @@ import numpy as np
 import pickle
 import json
 from os import path as osp
+import networkx as nx
 
 
 """
@@ -78,9 +82,6 @@ def single_graph_implementation_test_helper():
     It uses a trained pickled tf_gnn model and it generates a graph using
     the utils from the tf_gnn repository that came with the paper.
 
-    TODO: remove after integration with the data loader and PyG
-          new data should not be generated during the experiments.
-
     """
     models_trained = [
         ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
@@ -90,18 +91,33 @@ def single_graph_implementation_test_helper():
     # TODO fix this path thing with the configs
     # graphs = json.load(raw_path + "random.json")
     # Broken window priciple applies tho
-    graphs = json.load("../datasets/raw/random.json")
+    raw_data_path = "../dataset/raw/random.json"
+    file_raw = open(raw_data_path)
 
-    single_graph = graphs[0]
-    print(single_graph)
+    graphs = json.load(file_raw)
+
+    single_graph = graphs[0]  # std format
+
+    output_graph_tf = models_trained[0].inferer_single_data(single_graph)
+    output_graph_pyg = models_trained[1].inferer_single_data(single_graph)
+
+    print("\n\n\nOutput TFF", output_graph_tf)
+    print("\n\n\n output pygg", output_graph_pyg)
+
+    nx.draw(output_graph_pyg)
+
+    # output_graph = models_trained[0].inferer_single_data(single_graph)
+
+    # output_graph is in std output format usable by netowrkx
 
     # vis = VisualUtils()
     # tf_utils = TfGNNUtils()
     # for tr_md in models_trained:
 
-    # plt.figure(1)
-
-    # vis.nx_draw(graph_sp, label_w_weights=True)
+    plt.figure(1)
+    plt.show()
+    plt.savefig("pyg_first_plot.png")
+    # vis.nx_draw(single_graph, label_w_weights=True)
     # plt.figure(2)
 
     # vis.nx_draw(predicted_graph_nx, output_graph=output_graph)

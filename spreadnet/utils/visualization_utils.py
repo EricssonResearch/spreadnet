@@ -36,7 +36,7 @@ class VisualUtils:
 
 
 
-        TODO: Adjust to also use pyg_gnn probabilities.
+        TODO: Adjust use the standard network format.
         """
         if label_w_weights == False and output_graph == None:
             # Make sure we can get use the output values for each node as

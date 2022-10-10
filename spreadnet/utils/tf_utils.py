@@ -26,10 +26,16 @@ import collections
 
 class TfGNNUtils:
     def __init__(self) -> None:
-        pass
 
-    def _convert_to_graph_tensor(self, graph_nx):
+        self.build_initial_hidden_state = tfgnn.keras.layers.MapFeatures(
+            node_sets_fn=self._set_initial_node_state,
+            edge_sets_fn=self._set_initial_edge_state,
+            context_fn=self._set_initial_context_state,
+        )
+
+    def convert_to_graph_tensor(self, graph_nx):
         """Converts the graph to a GraphTensor."""
+
         number_of_nodes = graph_nx.number_of_nodes()
         nodes_data = [data for _, data in graph_nx.nodes(data=True)]
         node_features = tf.nest.map_structure(
@@ -64,7 +70,9 @@ class TfGNNUtils:
             context=tfgnn.Context.from_fields(features=context_features),
         )
 
-    def nx_standard_format_from_tensor(self, ground_truth_graph, output_graph_tensor):
+    def nx_standard_format_from_tensor(
+        self, ground_truth_graph=None, output_graph_tensor=None
+    ):
         """Combines the ground truth with the logit predictions.
 
         Args:
@@ -76,6 +84,37 @@ class TfGNNUtils:
 
         tfgnn.check_scalar_graph_tensor(output_graph_tensor)
         assert output_graph_tensor.num_components == 1
+
+        graph_updated = (
+            ground_truth_graph  # Start from the grond truth and add the values
+        )
+
+        node_logits = output_graph_tensor.node_sets["cities"][tfgnn.HIDDEN_STATE]
+        edge_logits = output_graph_tensor.edge_sets["roads"][tfgnn.HIDDEN_STATE]
+        # print(edge_logits)
+        # print(node_logits)
+        nx.set_node_attributes(graph_updated, node_logits, "logits")
+
+        edge_links = np.stack(
+            [
+                output_graph_tensor.edge_sets["roads"].adjacency.source.numpy(),
+                output_graph_tensor.edge_sets["roads"].adjacency.target.numpy(),
+            ],
+            axis=0,
+        )
+
+        edge_labels = {}
+        for i in range(0, len(edge_links[0])):
+            edge_labels[(edge_links[0][i], edge_links[1][i])] = {
+                "logits": edge_logits[i].numpy()
+            }
+
+        nx.set_edge_attributes(graph_updated, edge_labels)
+        # loop through the output edges
+
+        # print(graph_updated)
+
+        return graph_updated
 
         # Append the logits of the outputs as a feature to the original ground truth graph.
         # Assumes that the order of the nodes and the edges remains the same.

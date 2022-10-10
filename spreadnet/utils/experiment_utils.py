@@ -11,13 +11,14 @@ This testing utils needs to know where the weights are.
 TODO: Add the weights path 
 TODO: make the class not change the working dirrectory
       durring ussage. 
-TODO: The testing util should decide on the model type at the start instead of
-      needing to specify it at every function call.
+
 
 """
 # from spreadnet.tf_gnn.gnn import *
+from black import out
 from spreadnet.utils.config_parser import yaml_parser
 from spreadnet.pyg_gnn.models import *
+import tensorflow_gnn as tfgnn
 
 # from spreadnet.pyg_gnn.models.encode_process_decode.models import (
 #     Encoder,
@@ -34,6 +35,10 @@ from os import path as osp
 import torch
 import sys
 import argparse
+import networkx as nx
+import tensorflow as tf
+from spreadnet.datasets.data_utils.convertor import graphnx_to_dict_spec
+from torch_geometric.data import Data
 
 
 class ExperimentUtils:
@@ -46,7 +51,7 @@ class ExperimentUtils:
         self.trained_model = None
         self.implemented_models = ["tf_gnn", "pyg_gnn"]
         self.model_type = model_type
-        self.model_weights = weights_model
+        self.model_weights = weights_model  # name of the weights file
 
         self._load_model()
 
@@ -193,18 +198,101 @@ class ExperimentUtils:
         Convert the data to the format specific for the model.
 
         """
-
+        input_graph = nx.node_link_graph(input_graph, directed=True, multigraph=False)
         if self.model_type == "tf_gnn":
+
+            # Predict
             tf_ut = TfGNNUtils()
-            graph_tensor = tf_ut._convert_to_graph_tensor(input_graph)
-            input_graph = tf_ut.build_initial_hidden_state(graph_tensor)
-            output_graph = self.trained_model(input_graph)
+            graph_tensor = tf_ut.convert_to_graph_tensor(input_graph)
+            tensor_input_graph = tf_ut.build_initial_hidden_state(graph_tensor)
+            output_graph = self.trained_model(tensor_input_graph)
 
-        else:
-            pass
+            std_output_graph = tf_ut.nx_standard_format_from_tensor(
+                input_graph, output_graph
+            )
+            # print("What: ", std_output_graph.edges(data=True))
+        elif self.model_type == "pyg_gnn":
+            # Convert networkx graph to pyg_gnn input Graph
+            processed_graph = self.process(input_graph)
+            # make prediction
 
-        return
+            # print("\n\nProcessed Graph", processed_graph, "\n\n")
 
-    def _convert_to_standard_nx_format(self):
-        """Takes the output from an inference and returns the internal nx standard data format."""
-        pass
+            nodes_output, edges_output = self.trained_model(
+                processed_graph.x, processed_graph.edge_index, processed_graph.edge_attr
+            )
+            # convert to common format
+            # print(nodes_output, edges_output)
+
+            std_output_graph = self._std_from_pyg_gnn(
+                input_graph=input_graph,
+                prediction_edges=edges_output,
+                prediction_nodes=nodes_output,
+            )
+
+            # Append prediction to pyg_gnn
+
+        return std_output_graph
+
+    def _std_from_pyg_gnn(self, input_graph, prediction_edges, prediction_nodes):
+        graph_updated = input_graph
+        nx.set_node_attributes(graph_updated, prediction_nodes, "logits")
+
+        edge_index_data = [list(tpl) for tpl in input_graph.edges]
+        edge_index_t = torch.tensor(edge_index_data, dtype=torch.long)
+        edge_index = edge_index_t.t().contiguous()
+
+        edge_labels = {}
+        for i in range(0, len(edge_index[0])):
+            edge_labels[(edge_index[0][i], edge_index[1][i])] = {
+                "logits": prediction_edges[i]
+            }
+
+        nx.set_edge_attributes(graph_updated, edge_labels)
+
+        return graph_updated
+
+    def process(self, graph_nx):
+
+        graph_dict = graphnx_to_dict_spec(graph_nx)
+        # Get ground truth labels.
+        node_tensor = torch.tensor(graph_dict["nodes_feature"]["is_in_path"])
+        node_labels = node_tensor.type(torch.int64)
+
+        edge_tensor = torch.tensor(graph_dict["edges_feature"]["is_in_path"])
+        edge_labels = edge_tensor.type(torch.int64)
+
+        nodes_data = [data for _, data in graph_nx.nodes(data=True)]
+        nodes_weight = torch.tensor(
+            [data["weight"] for data in nodes_data], dtype=torch.float
+        ).view(-1, 1)
+        nodes_is_start = torch.tensor(
+            [data["is_start"] for data in nodes_data], dtype=torch.int
+        ).view(-1, 1)
+        nodes_is_end = torch.tensor(
+            [data["is_end"] for data in nodes_data], dtype=torch.int
+        ).view(-1, 1)
+        nodes_pos = torch.tensor(
+            [data["pos"] for data in nodes_data], dtype=torch.float
+        )
+        x = torch.cat((nodes_weight, nodes_is_start, nodes_is_end), 1)
+
+        _, _, edges_data = zip(*graph_nx.edges(data=True))
+        edges_weight = torch.tensor(
+            [data["weight"] for data in edges_data], dtype=torch.float
+        ).view(-1, 1)
+
+        # get edge_index from graph_nx
+        edge_index_data = [list(tpl) for tpl in graph_nx.edges]
+        edge_index_t = torch.tensor(edge_index_data, dtype=torch.long)
+        edge_index = edge_index_t.t().contiguous()
+
+        data = Data(
+            edge_index=edge_index,
+            pos=nodes_pos,
+            x=x,
+            edge_attr=edges_weight,
+            y=(node_labels, edge_labels),
+        )
+
+        return data
