@@ -5,6 +5,7 @@ import networkx as nx
 from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.datasets.data_utils.processor import process
+from spreadnet.datasets import run_statistics
 
 # ------------------------------------------
 # Params
@@ -18,6 +19,9 @@ theta = data_configs["theta"]
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
+
+run_stat = run_statistics.RunStatistics()
+run_stat.add_data("raw_path", raw_path)
 
 if not os.path.exists(raw_path):
     os.makedirs(raw_path)
