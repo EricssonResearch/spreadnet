@@ -236,7 +236,13 @@ class ExperimentUtils:
 
     def _std_from_pyg_gnn(self, input_graph, prediction_edges, prediction_nodes):
         graph_updated = input_graph
-        nx.set_node_attributes(graph_updated, prediction_nodes, "logits")
+        prediction_nodes = prediction_nodes.detach().numpy()
+        prediction_edges = prediction_edges.detach().numpy()
+        print("\n\n\nPrediction Nodes", prediction_nodes, "\n\n")
+        node_labels = {}
+        for i in range(len(prediction_nodes)):
+            node_labels[i] = prediction_nodes[i]
+        nx.set_node_attributes(graph_updated, node_labels, "logits")
 
         edge_index_data = [list(tpl) for tpl in input_graph.edges]
         edge_index_t = torch.tensor(edge_index_data, dtype=torch.long)
@@ -244,7 +250,7 @@ class ExperimentUtils:
 
         edge_labels = {}
         for i in range(0, len(edge_index[0])):
-            edge_labels[(edge_index[0][i], edge_index[1][i])] = {
+            edge_labels[(edge_index.numpy()[0][i], edge_index.numpy()[1][i])] = {
                 "logits": prediction_edges[i]
             }
 

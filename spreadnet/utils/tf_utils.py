@@ -89,11 +89,15 @@ class TfGNNUtils:
             ground_truth_graph  # Start from the grond truth and add the values
         )
 
-        node_logits = output_graph_tensor.node_sets["cities"][tfgnn.HIDDEN_STATE]
-        edge_logits = output_graph_tensor.edge_sets["roads"][tfgnn.HIDDEN_STATE]
+        node_logits = output_graph_tensor.node_sets["cities"][
+            tfgnn.HIDDEN_STATE
+        ].numpy()
+        edge_logits = output_graph_tensor.edge_sets["roads"][tfgnn.HIDDEN_STATE].numpy()
         # print(edge_logits)
-        # print(node_logits)
-        nx.set_node_attributes(graph_updated, node_logits, "logits")
+        node_labels = {}
+        for i in range(len(node_logits)):
+            node_labels[i] = node_logits[i]
+        nx.set_node_attributes(graph_updated, node_labels, "logits")
 
         edge_links = np.stack(
             [
@@ -106,7 +110,7 @@ class TfGNNUtils:
         edge_labels = {}
         for i in range(0, len(edge_links[0])):
             edge_labels[(edge_links[0][i], edge_links[1][i])] = {
-                "logits": edge_logits[i].numpy()
+                "logits": edge_logits[i]
             }
 
         nx.set_edge_attributes(graph_updated, edge_labels)
