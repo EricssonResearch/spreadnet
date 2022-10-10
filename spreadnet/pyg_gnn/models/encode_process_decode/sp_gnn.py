@@ -167,9 +167,10 @@ class SPGNN(MessagePassing):
         """
 
         _x = x
-        _edge_feature = edge_features
+        _edge_features = edge_features
         # propagate: message => aggregate => update
         x, edge_features = self.propagate(
             edge_index=edge_index, x=x, edge_features=edge_features
         )
-        return x + _x, edge_features + _edge_feature
+
+        return x + _x, edge_features + _edge_features
