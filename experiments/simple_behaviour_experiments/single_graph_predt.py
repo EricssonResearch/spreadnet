@@ -83,6 +83,8 @@ def single_graph_implementation_test_helper():
     the utils from the tf_gnn repository that came with the paper.
 
     """
+
+    vis = VisualUtils()
     models_trained = [
         ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
         ExperimentUtils(model_type="pyg_gnn", weights_model="model_weights_best.pth"),
@@ -99,28 +101,18 @@ def single_graph_implementation_test_helper():
     single_graph = graphs[0]  # std format
 
     output_graph_tf = models_trained[0].inferer_single_data(single_graph)
-    output_graph_pyg = models_trained[1].inferer_single_data(single_graph)
+    output_graph_pyg = models_trained[0].inferer_single_data(single_graph)
 
-    print("\n\n\nOutput TFF", output_graph_tf)
-    print("\n\n\n output pygg", output_graph_pyg)
+    # print("\n\n\nOutput TFF_edges", output_graph_tf.edges.data())
+    # print("\n\n\nOutput TFF_nodes", output_graph_tf.nodes.data())
 
-    nx.draw(output_graph_pyg)
+    # print("\n\n\n output pygg_edges", output_graph_pyg.edges.data())
+    # print("\n\n\n output pygg_nodes", output_graph_pyg.nodes.data())
 
-    # output_graph = models_trained[0].inferer_single_data(single_graph)
+    vis = VisualUtils()
 
-    # output_graph is in std output format usable by netowrkx
-
-    # vis = VisualUtils()
-    # tf_utils = TfGNNUtils()
-    # for tr_md in models_trained:
-
-    plt.figure(1)
-    plt.show()
-    plt.savefig("pyg_first_plot.png")
-    # vis.nx_draw(single_graph, label_w_weights=True)
-    # plt.figure(2)
-
-    # vis.nx_draw(predicted_graph_nx, output_graph=output_graph)
+    vis.new_nx_draw(output_graph_tf, ground_truth=False)
+    vis.new_nx_draw(output_graph_pyg, ground_truth=False)
 
 
 def single_graph_vis_pyg_test0(trained_gnn):
