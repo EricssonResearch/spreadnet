@@ -1,6 +1,7 @@
+matplotlib>=3.5.1
 networkx~=2.6
-numpy>=1.21.0
+numpy>=1.23.0
 pre-commit
 pyyaml>=6.0
-scipy~=1.7.0
+scipy~=1.8.0
 webdataset>=0.2.26

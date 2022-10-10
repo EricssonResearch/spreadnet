@@ -175,7 +175,7 @@ class Decoder(nn.Module):
             num_hidden_layers=num_mlp_hidden_layers,
             hidden_size=mlp_hidden_size,
             output_size=node_out,
-            use_layer_norm=True,
+            use_layer_norm=False,
         )
 
         self.edge_fn = SPMLP(
@@ -183,7 +183,7 @@ class Decoder(nn.Module):
             num_hidden_layers=num_mlp_hidden_layers,
             hidden_size=mlp_hidden_size,
             output_size=edge_out,
-            use_layer_norm=True,
+            use_layer_norm=False,
         )
 
     def forward(self, x, edge_features):
