@@ -19,6 +19,105 @@ class VisualUtils:
     def __init__(self) -> None:
         pass
 
+    def new_nx_draw(self, G, ground_truth=False):
+        """Draws plot with prediction path. Or with max probability path.
+
+        Args:
+            G (_type_): Networkx graph as per documentation specifications. (Documentation not written ask George)
+            ground_truth (bool, optional): _description_. Plot the Ground Truth or the logit class prediction.
+        """
+
+        is_start_index = 0
+        is_end_index = 0
+
+        sp_path = []
+        sp_path_edges = []
+
+        pos = {}
+
+        for i in range(0, G.number_of_nodes()):
+            # Construct node positions and find the source and target
+            # of the querry.
+            if G.nodes[i]["is_start"] == True:
+                is_start_index = i
+            if G.nodes[i]["is_end"] == False:
+                is_end_index = i
+            pos[i] = G.nodes[i]["pos"]
+
+        if ground_truth:
+            for i in range(0, len(G.nodes)):
+                # Get shortest path nodes ground truth.
+                if G.nodes[i]["is_in_path"] == True:
+                    sp_path.append(i)
+
+            edges_list = list(G.edges(data=True))
+
+            for e in edges_list:
+                if e[2]["is_in_path"] == True:
+                    sp_path_edges.append([e[0], e[1]])
+
+            labels_edge = nx.get_edge_attributes(G, "weight")
+            node_labels = {}
+
+            for i in range(0, len(G.nodes)):
+                node_labels[i] = round(G.nodes[i]["weight"], 2)
+
+            for key in labels_edge:
+                labels_edge[key] = np.round(labels_edge[key], 2)
+
+        if not ground_truth:
+            sp_path, sp_path_edges = self._nodes_edges_in_path(G)
+
+            node_labels, labels_edge = self.new_prob_labels()
+
+        nx.draw_networkx(G, pos=pos, labels=node_labels)
+
+        nx.draw_networkx(
+            G,
+            pos=pos,
+            nodelist=sp_path,
+            edgelist=sp_path_edges,
+            node_color="r",
+            width=2,
+            edge_color="r",
+            # with_labels=True,
+            labels=node_labels,
+        )
+
+        nx.draw_networkx_edge_labels(self, G, pos, edge_labels=labels_edge)
+
+        plt.show()
+
+    def new_prob_labels(self, G):
+        edge_labels = {}
+        node_labels = {}
+
+        for i in range(0, G.number_of_nodes()):
+            node_labels[i] = tf.softmax(G.nodes[i]["logits"])
+
+        """
+        
+            ADD THE EDGE PROBABILITIES FOR GRAPHING
+
+        """
+        edges_list = list(G.edges(data=True))
+
+    def _nodes_edges_in_path(self, G):
+        sp_path = []
+        sp_path_edges = []
+        for i in range(0, len(G.nodes)):
+            # Get shortest path nodes ground truth.
+            if tf.argmax(G.nodes[i]["logits"], axis=-1) == 1:
+                sp_path.append(i)
+
+        edges_list = list(G.edges(data=True))
+
+        for e in edges_list:
+            if tf.argmax(e["logits"], axis=-1) == 1:
+                sp_path_edges.append([e[0], e[1]])
+
+        return sp_path, sp_path_edges
+
     def nx_draw(self, G, label_w_weights=False, output_graph=None) -> None:
         """Draws an nx graph with weights for the ground truth and probabilities for predicted graph.
 
