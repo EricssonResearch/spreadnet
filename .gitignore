@@ -170,3 +170,6 @@ experiments/dataset/processed/*.tar
 
 # model weights
 weights/*.pth
+
+# training plots
+experiments/encode_process_decode/trainings/*.jpg
