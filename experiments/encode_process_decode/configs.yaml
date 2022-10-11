@@ -1,7 +1,3 @@
-data:
-  # dataset generator
-  dataset_path: "../dataset"
-
 train:
   weight_base_path: "./weights"
   weight_save_freq: 50
