@@ -118,9 +118,9 @@ class SPGNN(MessagePassing):
         """
         update edge features
         Args:
-            x_i: the nodes which aggregate information.
+            x_i: data of the nodes which aggregate information.
                 (message passing flow is source_to_target)
-            x_j: the nodes which send information along the edges.
+            x_j: data of the nodes which send information along the edges.
                 (message passing flow is source_to_target)
             edge_features: the edge features.
 
@@ -144,7 +144,7 @@ class SPGNN(MessagePassing):
         """
         return edge_features
 
-    def update(self, aggregated, x, edge_features):
+    def update(self, aggregated, x):
         """Update nodes.
 
             Takes in the output of aggregation as first argument and any argument
@@ -161,7 +161,7 @@ class SPGNN(MessagePassing):
 
         x_updated = torch.concat([aggregated, x], dim=-1)
         x_updated = self.node_fn(x_updated)
-        return x_updated, edge_features
+        return x_updated
 
     def forward(self, x, edge_index, edge_features):
         """Define the GNN computation. It utilizes `propagate`(message =>
@@ -184,11 +184,9 @@ class SPGNN(MessagePassing):
         edge_features = self.edge_updater(edge_index, x=x, edge_features=edge_features)
 
         # 2. propagate: message => aggregate => update
-        x, edge_features = self.propagate(
-            edge_index=edge_index, x=x, edge_features=edge_features
-        )
+        x = self.propagate(edge_index=edge_index, x=x, edge_features=edge_features)
 
-        # assert not torch.equal(edge_features, _edge_features)
-        # assert not torch.equal(x, _x)
+        assert not torch.equal(edge_features, _edge_features)
+        assert not torch.equal(x, _x)
 
         return x + _x, edge_features + _edge_features
