@@ -46,25 +46,25 @@ class VisualUtils:
 
         if ground_truth:
             pass
-            # for i in range(0, len(G.nodes)):
-            #     # Get shortest path nodes ground truth.
-            #     if G.nodes[i]["is_in_path"] == True:
-            #         sp_path.append(i)
+            for i in range(0, len(G.nodes)):
+                # Get shortest path nodes ground truth.
+                if G.nodes[i]["is_in_path"] == True:
+                    sp_path.append(i)
+            title = title + "_ground_truth"
+            edges_list = list(G.edges(data=True))
 
-            # edges_list = list(G.edges(data=True))
+            for e in edges_list:
+                if e[2]["is_in_path"] == True:
+                    sp_path_edges.append([e[0], e[1]])
 
-            # for e in edges_list:
-            #     if e[2]["is_in_path"] == True:
-            #         sp_path_edges.append([e[0], e[1]])
+            labels_edges = nx.get_edge_attributes(G, "weight")
+            node_labels = {}
 
-            # labels_edges = nx.get_edge_attributes(G, "weight")
-            # node_labels = {}
+            for i in range(0, len(G.nodes)):
+                node_labels[i] = round(G.nodes[i]["weight"], 2)
 
-            # for i in range(0, len(G.nodes)):
-            #     node_labels[i] = round(G.nodes[i]["weight"], 2)
-
-            # for key in labels_edges:
-            #     labels_edges[key] = np.round(labels_edges[key], 2)
+            for key in labels_edges:
+                labels_edges[key] = np.round(labels_edges[key], 2)
 
         else:
             if max_prob_path:
@@ -75,6 +75,7 @@ class VisualUtils:
                 node_labels, labels_edges = self.new_prob_labels(G)
         nx.draw_networkx(G, pos=pos, labels=node_labels)
         ax = plt.gca()
+
         ax.set_title(title)
 
         nx.draw_networkx(

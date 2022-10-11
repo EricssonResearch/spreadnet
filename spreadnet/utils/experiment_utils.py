@@ -238,7 +238,7 @@ class ExperimentUtils:
         graph_updated = input_graph
         prediction_nodes = prediction_nodes.detach().numpy()
         prediction_edges = prediction_edges.detach().numpy()
-        print("\n\n\nPrediction Nodes", prediction_nodes, "\n\n")
+
         node_labels = {}
         for i in range(len(prediction_nodes)):
             node_labels[i] = prediction_nodes[i]
