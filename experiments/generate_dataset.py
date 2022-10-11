@@ -3,7 +3,6 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import math
-
 from tqdm import tqdm
 
 from spreadnet.utils import GraphGenerator, yaml_parser
