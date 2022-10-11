@@ -46,7 +46,7 @@ class SPGCNet(torch.nn.Module):
 
     def forward(self, x, edge_index, edge_weight):
         x = self.node_classifier(x, edge_index, edge_weight)
-        node_embeds = x
+        node_embeds = x.relu()
         node_embeds_src, node_embeds_dst = (
             node_embeds[edge_index[0]],
             node_embeds[edge_index[1]],

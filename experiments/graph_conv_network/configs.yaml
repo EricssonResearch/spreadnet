@@ -1,18 +1,13 @@
-data:
-  # dataset configs
-  dataset_path: "../dataset"
-  dataset_size: 5120
-
 train:
   weight_base_path: "./weights"
   weight_save_freq: 50
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 2000
-  batch_size: 32
+  epochs: 200
+  batch_size: 64
   shuffle: True
 
-  adam_lr: !!float 1e-4
+  adam_lr: !!float 1e-2
   adam_weight_decay: !!float 5e-4
 
 model:
@@ -25,5 +20,5 @@ model:
   edge_mlp_in_channels: 5
   edge_mlp_bias: True
   edge_mlp_hidden_channels: 128
-  edge_mlp_num_layers: 2
+  edge_mlp_num_layers: 1
   edge_mlp_out_channels: 2
