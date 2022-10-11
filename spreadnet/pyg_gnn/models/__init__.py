@@ -1,4 +1,3 @@
-from .encode_process_decode.models import EncodeProcessDecode
-from .graph_conv_network.sp_gcn import GCNStack, SPGCNet
+from .encode_process_decode.sp_encode_process_decode import EncodeProcessDecode
 
-__all__ = ["EncodeProcessDecode", "GCNStack", "SPGCNet"]
+__all__ = ["EncodeProcessDecode"]

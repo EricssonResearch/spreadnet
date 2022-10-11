@@ -4,6 +4,7 @@ data:
   num_node_min: 8
   num_node_max: 17
   theta: 20
+  visualize_graph: 5
 
   # dataset generator
   dataset_path: "dataset"
