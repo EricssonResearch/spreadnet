@@ -17,7 +17,7 @@ train:
   batch_size: 32
   shuffle: True
 
-  adam_lr: !!float 1e-2
+  adam_lr: !!float 1e-4
   adam_weight_decay: !!float 5e-5
 
 model:
@@ -26,6 +26,8 @@ model:
   out_channels: 2
   num_hidden_layers: 2
   heads: 1
-  dropout: 0.1
+  dropout: 0.5
   concat: False
+  add_self_loops: True
+  bias: True
 

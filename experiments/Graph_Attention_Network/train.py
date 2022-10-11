@@ -47,27 +47,35 @@ def train(
     best_acc = 0.0  # record the best accuracies
 
     for epoch in range(epoch_num):
-        nodes_loss = 0.0
-        nodes_corrects = 0
-        dataset_nodes_size = 0  # for accuracy
+        nodes_loss, edges_loss = 0.0, 0.0
+        nodes_corrects, edges_corrects = 0, 0
+        dataset_nodes_size, dataset_edges_size = 0, 0  # for accuracy
 
         for batch, (data,) in enumerate(dataloader):
             data = data.to(device)
-            node_true, _ = data.y
+            node_true, edge_true = data.y
             edge_index = data.edge_index
-            node_pred = trainable_model(data.x, edge_index, data.edge_attr)
-            losses, correct = loss_func(node_pred, node_true)
+            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
+            losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
-            losses.backward(retain_graph=True)
+            losses["nodes"].backward(retain_graph=True)
+            losses["edges"].backward(retain_graph=True)
             optimizer.step()
 
+            assert data.num_nodes >= corrects["nodes"]
+            assert data.num_edges >= corrects["edges"]
             dataset_nodes_size += data.num_nodes
-            nodes_loss += losses.item() * data.num_graphs
-            nodes_corrects += correct
+            dataset_edges_size += data.num_edges
+            nodes_loss += losses["nodes"].item() * data.num_graphs
+            edges_loss += losses["edges"].item() * data.num_graphs
+            nodes_corrects += corrects["nodes"]
+            edges_corrects += corrects["edges"]
 
         # get epoch losses and accuracies
         nodes_loss /= dataset_size
+        edges_loss /= dataset_size
         nodes_acc = nodes_corrects / dataset_nodes_size
+        edges_acc = edges_corrects / dataset_edges_size
 
         cur_acc = nodes_acc
 
@@ -78,7 +86,9 @@ def train(
         print(
             f"[Epoch: {epoch + 1:4}/{epoch_num}] "
             f" Losses: {{'nodes': {nodes_loss} }} "
-            f"\n\t\t    Accuracies: {{'nodes': {nodes_acc} }}"
+            f" Accuracies: {{'nodes': {nodes_acc} }}"
+            f"\n\t\t  Losses: {{'edge': {edges_loss} }} "
+            f" Accuracies: {{'edge': {edges_acc} }}"
         )
 
         if save_path is not None:
@@ -117,6 +127,8 @@ if __name__ == "__main__":
         heads=model_configs["heads"],
         dropout=model_configs["dropout"],
         concat=model_configs["concat"],
+        add_self_loops=model_configs["add_self_loops"],
+        bias=model_configs["bias"]
     ).to(device)
 
     opt = torch.optim.Adam(
@@ -136,7 +148,7 @@ if __name__ == "__main__":
         epoch_num=epochs,
         dataloader=loader,
         trainable_model=model,
-        loss_func=cross_entropy_loss,
+        loss_func=hybrid_loss,
         optimizer=opt,
         save_path=weight_base_path,
     )
