@@ -86,7 +86,7 @@ def train(
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
             losses["nodes"].backward(retain_graph=True)
-            losses["edges"].backward(retain_graph=True)
+            losses["edges"].backward()
             optimizer.step()
 
             # assert data.num_nodes >= corrects["nodes"]
@@ -117,7 +117,7 @@ def train(
         )
 
         steps_curve.append(epoch + 1)
-        losses_curve.append(losses)
+        losses_curve.append({"nodes": nodes_loss, "edges": edges_loss})
         accuracies_curve.append({"nodes": nodes_acc, "edges": edges_acc})
 
         if save_path is not None:
