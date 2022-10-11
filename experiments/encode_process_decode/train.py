@@ -89,8 +89,8 @@ def train(
             losses["edges"].backward(retain_graph=True)
             optimizer.step()
 
-            assert data.num_nodes >= corrects["nodes"]
-            assert data.num_edges >= corrects["edges"]
+            # assert data.num_nodes >= corrects["nodes"]
+            # assert data.num_edges >= corrects["edges"]
             dataset_nodes_size += data.num_nodes
             dataset_edges_size += data.num_edges
             nodes_loss += losses["nodes"].item() * data.num_graphs
