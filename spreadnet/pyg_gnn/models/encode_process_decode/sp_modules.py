@@ -114,13 +114,23 @@ class SPGNN(MessagePassing):
             ]
         )
 
-    def message(self, edge_index, x_i, x_j, edge_features):
+    def message(self, edge_features):
         """Construct Message. This function overrides `message()` in class
         MassagePassing, which can take any argument as input which was
         initially passed to `propagate`
 
         Args:
-            edge_index: the source, target information of the edges.
+            edge_features: the updated edge features.
+
+        Returns:
+            edge_features
+        """
+        return edge_features
+
+    def edge_update(self, x_i, x_j, edge_features):
+        """
+        update edge features
+        Args:
             x_i: the nodes which aggregate information.
                 (message passing flow is source_to_target)
             x_j: the nodes which send information along the edges.
@@ -128,7 +138,7 @@ class SPGNN(MessagePassing):
             edge_features: the edge features.
 
         Returns:
-            the constructed edge message
+
         """
         edge_features = torch.concat([x_i, x_j, edge_features], dim=-1)
         edge_features = self.edge_fn(edge_features)
@@ -166,11 +176,19 @@ class SPGNN(MessagePassing):
             the output of the model
         """
 
+        # residual
         _x = x
         _edge_features = edge_features
-        # propagate: message => aggregate => update
+
+        # 1. update edge
+        edge_features = self.edge_updater(edge_index, x=x, edge_features=edge_features)
+
+        # 2. propagate: message => aggregate => update
         x, edge_features = self.propagate(
             edge_index=edge_index, x=x, edge_features=edge_features
         )
+
+        assert not torch.equal(edge_features, _edge_features)
+        assert not torch.equal(x, _x)
 
         return x + _x, edge_features + _edge_features

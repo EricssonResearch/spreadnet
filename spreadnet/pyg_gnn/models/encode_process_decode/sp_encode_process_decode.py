@@ -11,7 +11,7 @@ from typing import Optional
 from torch import nn
 from torch_geometric.nn import MessagePassing
 
-from .sp_gnn import SPMLP, SPGNN
+from .sp_modules import SPMLP, SPGNN
 
 
 class EncodeProcessDecode(nn.Module):
