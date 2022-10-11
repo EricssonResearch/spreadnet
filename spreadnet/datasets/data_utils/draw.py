@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib
 import math
+from scipy import signal
 
 matplotlib.use("Agg")
 
@@ -76,3 +77,45 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
         ]
     )
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
+
+
+def plot_training_graph(
+    steps_curve, losses_curve, accuracies_curve, save_path, smoooth_window_half_width=3
+):
+    """Plot training losses and accuracies.
+
+    Args:
+        steps_curve: epoch iteration
+        losses_curve: nodes and edges losses
+        accuracies_curve: nodes and edges accuracies
+        save_path: folder and file name
+        smoooth_window_half_width: smoothen plot lines, the higher the smoother
+
+    Returns:
+        None
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(10, 2.5))
+    for ax, metric, data_list in zip(
+        axes, ["Loss", "Accuracy"], [losses_curve, accuracies_curve]
+    ):
+        for k in ["edges", "nodes"]:
+            x = steps_curve
+            y = [d[k] for d in data_list]
+
+            window = signal.triang(1 + 2 * smoooth_window_half_width)
+            window /= window.sum()
+            y = list(map(lambda p: p.detach().cpu().numpy(), y))
+
+            y = signal.convolve(y, window, mode="valid")
+            x = signal.convolve(x, window, mode="valid")
+
+            ax.plot(x, y, label=k)
+
+        ax.set_ylabel(metric)
+        ax.set_xlabel("Training Iteration")
+
+        axes[0].set_yscale("log")
+        # axes[0].set_ylim(0.00801, 4.5)
+        # axes[1].set_ylim(0.79, 1.01)
+        axes[0].legend()
+        plt.savefig(save_path)
