@@ -104,7 +104,7 @@ def plot_training_graph(
 
             window = signal.triang(1 + 2 * smoooth_window_half_width)
             window /= window.sum()
-            y = list(map(lambda p: p.detach().cpu().numpy(), y))
+            # y = list(map(lambda p: p.detach().cpu().numpy(), y))
 
             y = signal.convolve(y, window, mode="valid")
             x = signal.convolve(x, window, mode="valid")
