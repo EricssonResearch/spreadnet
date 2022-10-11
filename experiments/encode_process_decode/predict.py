@@ -58,7 +58,9 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    nodes_output, edges_output = model(graph_data.x, graph_data.edge_index, graph_data.edge_attr)
+    nodes_output, edges_output = model(
+        graph_data.x, graph_data.edge_index, graph_data.edge_attr
+    )
 
     node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
@@ -67,7 +69,6 @@ def infer(model, graph_data):
 
 
 if __name__ == "__main__":
-
     # load model
     model = EncodeProcessDecode(
         node_in=model_configs["node_in"],
@@ -95,7 +96,7 @@ if __name__ == "__main__":
             "pt",
         )
     )
-    (graph,) = list(dataset)[randrange(data_configs["dataset_size"])]
+    (graph,) = list(dataset)[randrange(len(list(dataset)))]
     node_label, edge_label = graph.y
     print("--- Ground_truth --- ")
     print("node: ", node_label)

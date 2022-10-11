@@ -12,7 +12,7 @@ from spreadnet.datasets.data_utils.draw import draw_networkx
 
 # ------------------------------------------
 # Params
-yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
+yaml_path = os.path.join(os.path.dirname(__file__), "dataset_configs.yaml")
 configs = yaml_parser(yaml_path)
 data_configs = configs.data
 

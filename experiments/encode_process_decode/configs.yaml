@@ -1,14 +1,6 @@
 data:
-  # graph generator
-  random_seed: 0
-  num_node_min: 3
-  num_node_max: 20
-  theta: 20
-  visualize_graph: 25
-
   # dataset generator
   dataset_path: "../dataset"
-  dataset_size: 2000
 
 train:
   weight_base_path: "./weights"
