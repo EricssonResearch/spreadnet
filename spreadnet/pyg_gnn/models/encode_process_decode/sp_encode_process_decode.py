@@ -11,7 +11,7 @@ from typing import Optional
 from torch import nn
 from torch_geometric.nn import MessagePassing
 
-from .sp_gnn import SPMLP, SPGNN
+from .sp_modules import SPMLP, SPGNN
 
 
 class EncodeProcessDecode(nn.Module):
@@ -73,7 +73,7 @@ class EncodeProcessDecode(nn.Module):
         )
 
     def forward(self, x, edge_index, edge_features):
-        x, edge_features = self._encoder(x, edge_index, edge_features)
+        x, edge_features = self._encoder(x, edge_features)
         x, edge_features = self._processor(x, edge_index, edge_features)
         output_node, output_edge = self._decoder(x, edge_features)
         return output_node, output_edge
@@ -116,7 +116,7 @@ class Encoder(nn.Module):
             ]
         )
 
-    def forward(self, x, edge_index, edge_features):
+    def forward(self, x, edge_features):
         return self.node_fn(x), self.edge_fn(edge_features)
 
 
