@@ -17,9 +17,15 @@ from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
+default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
 parser = argparse.ArgumentParser(description="Do predictions.")
 parser.add_argument(
     "--config", default=default_yaml_path, help="Specify the path of the config file. "
+)
+parser.add_argument(
+    "--dataset-config",
+    default=default_dataset_yaml_path,
+    help="Specify the path of the dataset config file. ",
 )
 parser.add_argument(
     "--model",
@@ -31,14 +37,16 @@ args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 yaml_path = args.config
+dataset_yaml_path = args.dataset_config
 which_model = args.model
 configs = yaml_parser(yaml_path)
+dataset_configs = yaml_parser(dataset_yaml_path)
 train_configs = configs.train
 model_configs = configs.model
-data_configs = configs.data
-dataset_path = osp.join(osp.dirname(__file__), data_configs["dataset_path"]).replace(
-    "\\", "/"
-)
+data_configs = dataset_configs.data
+dataset_path = osp.join(
+    osp.dirname(__file__), "..", data_configs["dataset_path"]
+).replace("\\", "/")
 
 
 def load_model(model_path):

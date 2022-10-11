@@ -34,7 +34,7 @@ parser.add_argument(
 parser.add_argument(
     "--dataset-config",
     default=default_dataset_yaml_path,
-    help="Specify the path of the config file. ",
+    help="Specify the path of the dataset config file. ",
 )
 
 args = parser.parse_args()
