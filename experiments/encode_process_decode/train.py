@@ -13,17 +13,28 @@ import torch
 import webdataset as wds
 from torch_geometric.loader import DataLoader
 from typing import Optional
+from datetime import datetime
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
+from spreadnet.datasets.data_utils.draw import plot_training_graph
+
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
+default_dataset_yaml_path = os.path.join(
+    os.path.dirname(__file__), "../dataset_configs.yaml"
+)
 
 parser = argparse.ArgumentParser(description="Train the model.")
 parser.add_argument(
     "--config", default=default_yaml_path, help="Specify the path of the config file. "
+)
+parser.add_argument(
+    "--dataset-config",
+    default=default_dataset_yaml_path,
+    help="Specify the path of the dataset config file. ",
 )
 
 args = parser.parse_args()
@@ -32,13 +43,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # yaml_path = str(get_project_root()) + "/configs.yaml"
 yaml_path = args.config
+dataset_yaml_path = args.dataset_config
 configs = yaml_parser(yaml_path)
+dataset_configs = yaml_parser(dataset_yaml_path)
 train_configs = configs.train
 model_configs = configs.model
-data_configs = configs.data
+data_configs = dataset_configs.data
 dataset_path = os.path.join(
-    os.path.dirname(__file__), data_configs["dataset_path"]
+    os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
+
+# For plotting learning curves.
+steps_curve = []
+losses_curve = []
+accuracies_curve = []
 
 
 def train(
@@ -98,6 +116,10 @@ def train(
             f"\n\t\t    Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}"
         )
 
+        steps_curve.append(epoch + 1)
+        losses_curve.append(losses)
+        accuracies_curve.append({"nodes": nodes_acc, "edges": edges_acc})
+
         if save_path is not None:
             if epoch % train_configs["weight_save_freq"] == 0:
                 weight_name = "model_weights_ep_{ep}.pth".format(ep=epoch)
@@ -106,6 +128,15 @@ def train(
     if save_path is not None:
         weight_name = train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(save_path, weight_name))
+
+    date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
+    plot_training_graph(
+        steps_curve,
+        losses_curve,
+        accuracies_curve,
+        os.path.dirname(__file__) + f"/trainings/{plot_name}",
+    )
 
 
 if __name__ == "__main__":
@@ -147,8 +178,13 @@ if __name__ == "__main__":
         os.path.dirname(__file__), train_configs["weight_base_path"]
     )
 
+    trainings_plots_path = os.path.join(os.path.dirname(__file__), "trainings")
+
     if not os.path.exists(weight_base_path):
         os.makedirs(weight_base_path)
+
+    if not os.path.exists(trainings_plots_path):
+        os.makedirs(trainings_plots_path)
 
     train(
         epoch_num=epochs,

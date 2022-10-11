@@ -1,6 +1,12 @@
+matplotlib>=3.5.1
 networkx~=2.6
-numpy>=1.21.0
+numpy>=1.23.0
 pre-commit
 pyyaml>=6.0
-scipy~=1.7.0
+scipy~=1.9.1
+setuptools~=63.4.1
+
+spreadnet~=0.0.1
+tqdm~=4.64.1
 webdataset>=0.2.26
+yaml~=0.2.5

@@ -1,8 +1,3 @@
-from .encode_process_decode.models import (
-    EncodeProcessDecode,
-    Encoder,
-    Decoder,
-    Processor,
-)
+from .encode_process_decode.sp_encode_process_decode import EncodeProcessDecode
 
 __all__ = ["EncodeProcessDecode"]  # , "Encoder", "Decoder", "Processor"]

@@ -1,13 +1,3 @@
-data:
-  # graph generator
-  random_seed: 0
-  num_node_min: 8
-  num_node_max: 17
-
-  # dataset generator
-  dataset_path: "../dataset"
-  dataset_size: 1000
-
 train:
   weight_base_path: "./weights"
   weight_save_freq: 50

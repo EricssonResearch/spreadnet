@@ -7,6 +7,7 @@ requirements = [
     "scipy",
     "torch",
     "webdataset",
+    "matplotlib",
 ]
 setup(
     name="spreadnet",
