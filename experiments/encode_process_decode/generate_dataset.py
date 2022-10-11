@@ -25,9 +25,6 @@ dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
 
-run_stat = run_statistics.RunStatistics()
-run_stat.add_data("raw_path", raw_path)
-
 if not os.path.exists(raw_path):
     os.makedirs(raw_path)
 
@@ -73,3 +70,6 @@ if __name__ == "__main__":
 
     print("Graph Generation Done...\nProcessing...")
     process(dataset_path)
+
+    run_stat = run_statistics.RunStatistics()
+    run_stat.add_data("raw_path", raw_path)
