@@ -186,7 +186,7 @@ class SPGNN(MessagePassing):
         # 2. propagate: message => aggregate => update
         x = self.propagate(edge_index=edge_index, x=x, edge_features=edge_features)
 
-        assert not torch.equal(edge_features, _edge_features)
-        assert not torch.equal(x, _x)
+        # assert not torch.equal(edge_features, _edge_features)
+        # assert not torch.equal(x, _x)
 
         return x + _x, edge_features + _edge_features
