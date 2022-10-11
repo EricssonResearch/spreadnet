@@ -14,10 +14,10 @@ class RunStatistics:
     def __init__(self):
         """Initializes and checks for the file for statistics and headers."""
         open("statistics.csv", "a")
-        # self.add_headers()
-        # self.add_time()
-        # self.parse_yaml()
-        # self.check_nodes_and_edges()
+        self.add_headers()
+        self.add_time()
+        self.parse_yaml()
+        self.check_nodes_and_edges()
 
     def add_headers(self):
         """Adds and checks for headers in the statistics file."""
@@ -135,10 +135,10 @@ class RunStatistics:
         statistics.to_csv("statistics.csv", encoding="utf-8", index=False)
 
 
-if __name__ == "__main__":
-    # For Debugging
-    run_statistics = RunStatistics()
-    run_statistics.add_headers()
-    run_statistics.add_time()
-    run_statistics.parse_yaml()
-    run_statistics.check_nodes_and_edges()
+# if __name__ == "__main__":
+#     # For Debugging
+#     run_statistics = RunStatistics()
+#     run_statistics.add_headers()
+#     run_statistics.add_time()
+#     run_statistics.parse_yaml()
+#     run_statistics.check_nodes_and_edges()
