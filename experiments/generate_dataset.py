@@ -3,6 +3,7 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import math
+from tqdm import tqdm
 
 from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
@@ -13,7 +14,7 @@ from spreadnet.datasets import run_statistics
 
 # ------------------------------------------
 # Params
-yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
+yaml_path = os.path.join(os.path.dirname(__file__), "dataset_configs.yaml")
 configs = yaml_parser(yaml_path)
 data_configs = configs.data
 
@@ -47,7 +48,7 @@ if __name__ == "__main__":
             )
         )
 
-    for idx in range(dataset_size):
+    for idx in tqdm(range(dataset_size)):
         g = next(graph_generator)
         all_graphs.append(nx.node_link_data(g))
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
             draw_networkx(fig, g, idx + 1, visualize_graph)
             graphs_to_be_drawn -= 1
 
-        print(str(idx + 1) + "/" + str(dataset_size) + " Done")
+        # print(str(idx + 1) + "/" + str(dataset_size) + " Done")
 
     file_name = f"random_{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{theta}"
 

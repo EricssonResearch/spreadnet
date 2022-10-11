@@ -23,10 +23,18 @@ from spreadnet.datasets.data_utils.draw import plot_training_graph
 
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
+default_dataset_yaml_path = os.path.join(
+    os.path.dirname(__file__), "../dataset_configs.yaml"
+)
 
 parser = argparse.ArgumentParser(description="Train the model.")
 parser.add_argument(
     "--config", default=default_yaml_path, help="Specify the path of the config file. "
+)
+parser.add_argument(
+    "--dataset-config",
+    default=default_dataset_yaml_path,
+    help="Specify the path of the dataset config file. ",
 )
 
 args = parser.parse_args()
@@ -35,12 +43,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # yaml_path = str(get_project_root()) + "/configs.yaml"
 yaml_path = args.config
+dataset_yaml_path = args.dataset_config
 configs = yaml_parser(yaml_path)
+dataset_configs = yaml_parser(dataset_yaml_path)
 train_configs = configs.train
 model_configs = configs.model
-data_configs = configs.data
+data_configs = dataset_configs.data
 dataset_path = os.path.join(
-    os.path.dirname(__file__), data_configs["dataset_path"]
+    os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
 
 # For plotting learning curves.
