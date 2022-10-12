@@ -59,18 +59,19 @@ weight_base_path = os.path.join(
 trainings_plots_path = os.path.join(os.path.dirname(__file__), "trainings")
 train_ratio = train_configs["train_ratio"]
 
+if not os.path.exists(weight_base_path):
+    os.makedirs(weight_base_path)
+
+if not os.path.exists(trainings_plots_path):
+    os.makedirs(trainings_plots_path)
+
+
 # For plotting learning curves.
 steps_curve = []
 losses_curve = []
 test_losses_curve = []
 accuracies_curve = []
 test_accuracies_curve = []
-
-if not os.path.exists(weight_base_path):
-    os.makedirs(weight_base_path)
-
-if not os.path.exists(trainings_plots_path):
-    os.makedirs(trainings_plots_path)
 
 
 def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None):
