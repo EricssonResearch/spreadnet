@@ -16,7 +16,8 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
         edge_true: the ground-truth edge label
 
     Returns:
-        losses: (node_loss, edge_loss)
+        losses: { nodes: loss, edges: loss }
+        corrects: { nodes: correct, edges: correct }
     """
 
     losses = {
@@ -30,19 +31,21 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
 
     node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
-    nodes_correct = torch.sum(
-        (node_true == node_infer)
-        .clone()
-        .detach()
-        .type(torch.int64)
-        .to(node_pred.device)
-    )
-    edges_correct = torch.sum(
-        (edge_true == edge_infer)
-        .clone()
-        .detach()
-        .type(torch.float)
-        .to(node_pred.device)
-    )
+    corrects = {
+        "nodes": torch.sum(
+            (node_true == node_infer)
+            .clone()
+            .detach()
+            .type(torch.int64)
+            .to(node_pred.device)
+        ),
+        "edges": torch.sum(
+            (edge_true == edge_infer)
+            .clone()
+            .detach()
+            .type(torch.float)
+            .to(node_pred.device)
+        ),
+    }
 
-    return losses, (nodes_correct, edges_correct)
+    return losses, corrects

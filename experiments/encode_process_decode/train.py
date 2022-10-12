@@ -9,6 +9,7 @@ Usage:
 import copy
 import os
 import argparse
+from typing import Optional
 import torch
 import webdataset as wds
 from torch_geometric.loader import DataLoader
@@ -72,95 +73,71 @@ if not os.path.exists(trainings_plots_path):
     os.makedirs(trainings_plots_path)
 
 
-def train(dataloader, model, loss_func, optimizer):
-    model.train()
+def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None):
+    """Execute training or testing.
+
+    :param mode: train | test
+    :param dataloader: dataloader
+    :param model: model
+    :param loss_func: loss function
+    :param optimizer: optional optimizer for test mode
+    :return: accuracy
+    """
+    is_training = mode == "train"
+
+    if is_training:
+        model.train()
+    else:
+        model.eval()
 
     nodes_loss, edges_loss = 0.0, 0.0
-
     nodes_corrects, edges_corrects = 0, 0
     dataset_nodes_size, dataset_edges_size = 0, 0
 
-    for batch, (data,) in enumerate(dataloader):
-        data = data.to(device)
-        optimizer.zero_grad()
-
-        (node_true, edge_true) = data.y
-        (node_pred, edge_pred) = model(data.x, data.edge_index, data.edge_attr)
-
-        # Losses
-        losses, (nodes_correct, edges_correct) = loss_func(
-            node_pred, edge_pred, node_true, edge_true
-        )
-        nodes_loss += losses["nodes"].item() * data.num_graphs
-        edges_loss += losses["edges"].item() * data.num_graphs
-
-        losses["nodes"].backward(retain_graph=True)
-        losses["edges"].backward()
-        optimizer.step()
-
-        # Accuracies
-        nodes_corrects += nodes_correct
-        edges_corrects += edges_correct
-        dataset_nodes_size += data.num_nodes
-        dataset_edges_size += data.num_edges
-
-    # get epoch losses and accuracies
-    nodes_loss /= len(dataloader)
-    edges_loss /= len(dataloader)
-    losses_curve.append({"nodes": nodes_loss, "edges": edges_loss})
-    print(f"Train Losses: {{'nodes': {nodes_loss}, 'edges': {edges_loss} }}")
-
-    nodes_acc = nodes_corrects / dataset_nodes_size
-    edges_acc = edges_corrects / dataset_edges_size
-    accuracies_curve.append(
-        {"nodes": nodes_acc.cpu().numpy(), "edges": edges_acc.cpu().numpy()}
-    )
-    print(f"{pad}Train Accuracies:   {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}")
-
-    return (nodes_acc + edges_acc) / 2
-
-
-def test(dataloader, model, loss_func):
-    model.eval()
-
-    nodes_loss, edges_loss = 0.0, 0.0
-
-    nodes_corrects, edges_corrects = 0, 0
-    dataset_nodes_size, dataset_edges_size = 0, 0
-
-    with torch.no_grad():
+    with torch.enable_grad() if is_training else torch.no_grad():
         for batch, (data,) in enumerate(dataloader):
             data = data.to(device)
+
+            if is_training:
+                optimizer.zero_grad()
 
             (node_true, edge_true) = data.y
             (node_pred, edge_pred) = model(data.x, data.edge_index, data.edge_attr)
 
             # Losses
-            losses, (nodes_correct, edges_correct) = loss_func(
-                node_pred, edge_pred, node_true, edge_true
-            )
+            (losses, corrects) = loss_func(node_pred, edge_pred, node_true, edge_true)
             nodes_loss += losses["nodes"].item() * data.num_graphs
             edges_loss += losses["edges"].item() * data.num_graphs
 
+            if is_training:
+                losses["nodes"].backward(retain_graph=True)
+                losses["edges"].backward()
+                optimizer.step()
+
             # Accuracies
-            nodes_corrects += nodes_correct
-            edges_corrects += edges_correct
+            nodes_corrects += corrects["nodes"]
+            edges_corrects += corrects["edges"]
             dataset_nodes_size += data.num_nodes
             dataset_edges_size += data.num_edges
 
-    # Losses
+    mode = mode.capitalize().ljust(5)
+
     nodes_loss /= len(dataloader)
     edges_loss /= len(dataloader)
-    test_losses_curve.append({"nodes": nodes_loss, "edges": edges_loss})
-    print(f"{pad}Test Losses:  {{'nodes': {nodes_loss}, 'edges': {edges_loss}}}")
+    (losses_curve if is_training else test_losses_curve).append(
+        {"nodes": nodes_loss, "edges": edges_loss}
+    )
+    print(
+        f"{'' if is_training else pad}{mode} "
+        + f"Losses:     {{'nodes': {nodes_loss}, 'edges': {edges_loss} }}"
+    )
 
-    # Accuracies
     nodes_acc = nodes_corrects / dataset_nodes_size
     edges_acc = edges_corrects / dataset_edges_size
-    test_accuracies_curve.append(
+    (accuracies_curve if is_training else test_accuracies_curve).append(
         {"nodes": nodes_acc.cpu().numpy(), "edges": edges_acc.cpu().numpy()}
     )
-    print(f"{pad}Test Accuracies:   {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}\n")
+    print(f"{pad}{mode} Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}")
 
     return (nodes_acc + edges_acc) / 2
 
@@ -205,14 +182,14 @@ if __name__ == "__main__":
     )
 
     best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0  # record the best accuracies
+    best_acc = 0.0
 
     for epoch in range(epochs):
         print(f"[Epoch: {epoch + 1:4}/{epochs}]".ljust(20), end="")
         steps_curve.append(epoch + 1)
-        train_acc = train(train_loader, model, hybrid_loss, opt)
+        train_acc = execute("train", train_loader, model, hybrid_loss, opt)
 
-        test_acc = test(test_loader, model, hybrid_loss)
+        test_acc = execute("test", test_loader, model, hybrid_loss)
 
         cur_acc = (train_acc + test_acc) / 2
 
@@ -222,7 +199,7 @@ if __name__ == "__main__":
 
         if weight_base_path is not None:
             if epoch % train_configs["weight_save_freq"] == 0:
-                weight_name = "model_weights_ep_{ep}.pth".format(ep=epoch)
+                weight_name = f"model_weights_ep_{epoch}.pth"
                 torch.save(
                     model.state_dict(), os.path.join(weight_base_path, weight_name)
                 )

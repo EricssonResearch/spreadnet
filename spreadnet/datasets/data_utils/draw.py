@@ -120,10 +120,13 @@ def plot_training_graph(
 
             ax.plot(x, y, label=k)
 
+        ax.set_title(metric)
         ax.set_ylabel(metric)
         ax.set_xlabel("Training Iteration")
         ax.legend()
 
         axes[0][0].set_yscale("log")
         axes[1][0].set_yscale("log")
+
+        plt.subplots_adjust(hspace=0.4)
         plt.savefig(save_path)
