@@ -2,13 +2,16 @@
 
 from spreadnet.dijkstra_memoization import dijkstra_algorithm
 
+
+from networkx import weisfeiler_lehman_graph_hash
+
 """
 # Holds all SP from all source node runs.
 """
 memoTable = {}
 
 
-def add_item_to_memo_table(start_node, item):
+def add_item_to_memo_table(graph_hash, start_node, item):
     """Fills in the memoization table (dictionary type) with the shortest paths
     The dictionary does not include duplicates so no need to do duplicate
     check.
@@ -24,10 +27,10 @@ def add_item_to_memo_table(start_node, item):
     """
     key_list = item.keys()
     for item_key in key_list:
-        memoTable[(start_node, item_key)] = item[item_key]
+        memoTable[(graph_hash, start_node, item_key)] = item[item_key]
 
 
-def search_memo_table(start_node, end_node):
+def search_memo_table(graph_hash, start_node, end_node):
     """Search function for memoization table.
 
     Args:
@@ -39,8 +42,10 @@ def search_memo_table(start_node, end_node):
     Returns:
         return shortest path or -1 implying none known
     """
-    if memoTable.get((start_node, end_node)):
-        return memoTable[(start_node, end_node)]
+    # TODO: add a check for if search has been done and not in memo table
+    #  (no path) so no second search
+    if memoTable.get((graph_hash, start_node, end_node)):
+        return memoTable[(graph_hash, start_node, end_node)]
     else:
         return -1
 
@@ -72,22 +77,25 @@ def shortest_path(G, start_node, end_node, weight="weight"):
     Returns:
       The shortest path from the memoization table or from running Dijkstra algorithm.
     """
+    hashed_graph = weisfeiler_lehman_graph_hash(G)  # + f"{start_node}"
+    # TODO make sure to implement that it is with unique hash
+    #  (add edge features to graph function call)
 
-    if search_memo_table(start_node, end_node) != -1:
-        return memoTable[(start_node, end_node)]
+    if search_memo_table(hashed_graph, start_node, end_node) != -1:
+        return memoTable[(hashed_graph, start_node, end_node)]
     else:
         (
             all_lengths_from_source,
             all_paths_from_source,
         ) = dijkstra_algorithm.single_source_dijkstra(G, start_node, None, None, weight)
-        add_item_to_memo_table(start_node, all_paths_from_source)
+        add_item_to_memo_table(hashed_graph, start_node, all_paths_from_source)
         return all_paths_from_source[end_node]
 
 
 # TODO: need to add in a comparison to the unchanged SP
 #  run as well as some analysis.
 
-# TODO: experiments Is it faster to fun all_pairs first to fill
+# TODO: experiments Is it faster to find all_pairs first to fill
 #  memoization table and then just search for results?
 # TODO: check other algorithms for possible faster run though
 #  I think they all start at the same algorithm..
@@ -99,4 +107,5 @@ def shortest_path(G, start_node, end_node, weight="weight"):
 # TODO: set weights
 # TODO: single source dijkstra just save previous node,
 #  not node lists.
-# TODO: cite networkx dijkstra algorithm
+# TODO: test size of graph with hash functions to see if at some point
+#  eisfeiler_lehman_subgraph_hashes will be needed
