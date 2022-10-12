@@ -30,14 +30,7 @@ from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.pyg_gnn.models import *
 
-from spreadnet.pyg_gnn.models.encode_process_decode.models import (
-    Encoder,
-    Decoder,
-    EncodeProcessDecode,
-    Processor,
-    SPGNN,
-    SPMLP,
-)
+from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
 sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
 
@@ -93,12 +86,12 @@ def single_graph_implementation_test_helper():
     # TODO fix this path thing with the configs
     # graphs = json.load(raw_path + "random.json")
     # Broken window priciple applies tho
-    raw_data_path = "../dataset/raw/random.json"
+    raw_data_path = "../dataset/raw/random_250-251.100.json"
     file_raw = open(raw_data_path)
 
     graphs = json.load(file_raw)
 
-    single_graph = graphs[457]  # std format
+    single_graph = graphs[1]  # std format
 
     output_graph_tf = models_trained[0].inferer_single_data(single_graph)
     output_graph_pyg = models_trained[1].inferer_single_data(single_graph)
@@ -111,7 +104,8 @@ def single_graph_implementation_test_helper():
 
     vis = VisualUtils()
 
-    vis.new_nx_draw(output_graph_tf, ground_truth=False, title="Tensorflow")
+    # vis.new_nx_draw(output_graph_pyg, ground_truth=True, title="Tensorflow", save=True)
+    # vis.new_nx_draw(output_graph_tf, ground_truth=False, title="Tensorflow", save=True)
     vis.new_nx_draw(output_graph_pyg, ground_truth=False, title="Pyg GNN")
 
 
