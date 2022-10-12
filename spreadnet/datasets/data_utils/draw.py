@@ -94,7 +94,7 @@ def plot_training_graph(
     Returns:
         None
     """
-    fig, axes = plt.subplots(1, 2, figsize=(10, 3.5))
+    fig, axes = plt.subplots(1, 2, figsize=(13, 7))
     for ax, metric, data_list in zip(
         axes, ["Loss", "Accuracy"], [losses_curve, accuracies_curve]
     ):
