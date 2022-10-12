@@ -86,11 +86,11 @@ def train(
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
             losses["nodes"].backward(retain_graph=True)
-            losses["edges"].backward(retain_graph=True)
+            losses["edges"].backward()
             optimizer.step()
 
-            assert data.num_nodes >= corrects["nodes"]
-            assert data.num_edges >= corrects["edges"]
+            # assert data.num_nodes >= corrects["nodes"]
+            # assert data.num_edges >= corrects["edges"]
             dataset_nodes_size += data.num_nodes
             dataset_edges_size += data.num_edges
             nodes_loss += losses["nodes"].item() * data.num_graphs
@@ -117,8 +117,10 @@ def train(
         )
 
         steps_curve.append(epoch + 1)
-        losses_curve.append(losses)
-        accuracies_curve.append({"nodes": nodes_acc, "edges": edges_acc})
+        losses_curve.append({"nodes": nodes_loss, "edges": edges_loss})
+        accuracies_curve.append(
+            {"nodes": nodes_acc.cpu().numpy(), "edges": edges_acc.cpu().numpy()}
+        )
 
         if save_path is not None:
             if epoch % train_configs["weight_save_freq"] == 0:
@@ -129,14 +131,14 @@ def train(
         weight_name = train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(save_path, weight_name))
 
-    date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-    plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
-    plot_training_graph(
-        steps_curve,
-        losses_curve,
-        accuracies_curve,
-        os.path.dirname(__file__) + f"/trainings/{plot_name}",
-    )
+        date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+        plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
+        plot_training_graph(
+            steps_curve,
+            losses_curve,
+            accuracies_curve,
+            os.path.dirname(__file__) + f"/trainings/{plot_name}",
+        )
 
 
 if __name__ == "__main__":

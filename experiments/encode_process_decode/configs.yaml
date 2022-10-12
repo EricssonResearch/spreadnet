@@ -1,13 +1,13 @@
 train:
   weight_base_path: "./weights"
-  weight_save_freq: 50
+  weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 2000
-  batch_size: 32
+  epochs: 300
+  batch_size: 64
   shuffle: True
 
-  adam_lr: !!float 1e-3
+  adam_lr: !!float 1e-4
   adam_weight_decay: !!float 5e-4
 
 model:
