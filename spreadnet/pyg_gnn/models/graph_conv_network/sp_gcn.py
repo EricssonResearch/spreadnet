@@ -5,7 +5,6 @@
 """
 
 import torch
-import torch.nn.functional as F
 
 from torch_geometric.nn import GCNConv, MLP
 
@@ -13,12 +12,17 @@ from torch_geometric.nn import GCNConv, MLP
 class SPGCNet(torch.nn.Module):
     def __init__(
         self,
-        node_gcn_in_channels: int,
-        node_gcn_num_hidden_layers: int,
-        node_gcn_hidden_channels: int,
-        node_gcn_out_channels: int,
-        node_gcn_use_normalization: bool,
-        node_gcn_use_bias: bool,
+        gcn_in_channels: int,
+        gcn_num_hidden_layers: int,
+        gcn_hidden_channels: int,
+        gcn_out_channels: int,
+        gcn_use_normalization: bool,
+        gcn_use_bias: bool,
+        node_mlp_in_channels: int,
+        node_mlp_bias: bool,
+        node_mlp_hidden_channels: int,
+        node_mlp_num_layers: int,
+        node_mlp_out_channels: int,
         edge_mlp_in_channels: int,
         edge_mlp_bias: bool,
         edge_mlp_hidden_channels: int,
@@ -27,13 +31,21 @@ class SPGCNet(torch.nn.Module):
     ):
         super(SPGCNet, self).__init__()
 
-        self.node_classifier = GCNStack(
-            in_channels=node_gcn_in_channels,
-            num_hidden_layers=node_gcn_num_hidden_layers,
-            hidden_channels=node_gcn_hidden_channels,
-            out_channels=node_gcn_out_channels,
-            use_normalization=node_gcn_use_normalization,
-            use_bias=node_gcn_use_bias,
+        self.gcn_layers = GCNStack(
+            in_channels=gcn_in_channels,
+            num_hidden_layers=gcn_num_hidden_layers,
+            hidden_channels=gcn_hidden_channels,
+            out_channels=gcn_out_channels,
+            use_normalization=gcn_use_normalization,
+            use_bias=gcn_use_bias,
+        )
+
+        self.node_classifier = MLP(
+            in_channels=node_mlp_in_channels,
+            out_channels=node_mlp_out_channels,
+            bias=node_mlp_bias,
+            hidden_channels=node_mlp_hidden_channels,
+            num_layers=node_mlp_num_layers,
         )
 
         self.edge_classifier = MLP(
@@ -45,13 +57,17 @@ class SPGCNet(torch.nn.Module):
         )
 
     def forward(self, x, edge_index, edge_weight):
-        x = self.node_classifier(x, edge_index, edge_weight)
-        node_embeds = x.relu()
+        x = self.gcn_layers(x, edge_index, edge_weight)
+        node_embeds = x
+
+        x = self.node_classifier(node_embeds)
+
         node_embeds_src, node_embeds_dst = (
             node_embeds[edge_index[0]],
             node_embeds[edge_index[1]],
         )
-        edge_feat = torch.cat([node_embeds_src, edge_weight, node_embeds_dst], dim=-1)
+        edge_feat = torch.cat([node_embeds_src, node_embeds_dst, edge_weight], dim=-1)
+        # edge_feat = torch.cat([node_embeds_src, node_embeds_dst], dim=-1)
         out = self.edge_classifier(edge_feat)
 
         return x, out
@@ -87,12 +103,14 @@ class GCNStack(torch.nn.Module):
 
     def forward(self, x, edge_index, edge_weight):
         for i, gcn_layer in enumerate(self.gcn_stack):
-            x = F.dropout(x, p=0.5, training=self.training)
-            if i == len(self.gcn_stack) - 1:
-                x = gcn_layer(x=x, edge_index=edge_index, edge_weight=edge_weight)
-            else:
-                x = gcn_layer(
-                    x=x, edge_index=edge_index, edge_weight=edge_weight
-                ).relu()
+            # x = F.dropout(x, p=0.9, training=self.training)
+            # if i == len(self.gcn_stack) - 1:
+            #     x = gcn_layer(x=x, edge_index=edge_index, edge_weight=edge_weight)
+            # else:
+            #     x = gcn_layer(
+            #         x=x, edge_index=edge_index, edge_weight=edge_weight
+            #     ).relu()
+
+            x = gcn_layer(x=x, edge_index=edge_index, edge_weight=edge_weight).relu()
 
         return x

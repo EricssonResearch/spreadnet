@@ -3,22 +3,27 @@ train:
   weight_save_freq: 50
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 200
-  batch_size: 64
+  epochs: 500
+  batch_size: 128
   shuffle: True
 
   adam_lr: !!float 1e-2
   adam_weight_decay: !!float 5e-4
 
 model:
-  node_gcn_in_channels: 3
-  node_gcn_num_hidden_layers: 1
-  node_gcn_hidden_channels: 128
-  node_gcn_out_channels: 2
-  node_gcn_use_normalization: True
-  node_gcn_use_bias: True
-  edge_mlp_in_channels: 5
+  gcn_in_channels: 3
+  gcn_num_hidden_layers: 1
+  gcn_hidden_channels: 64
+  gcn_out_channels: 64
+  gcn_use_normalization: True
+  gcn_use_bias: True
+#  node_mlp_in_channels:
+  node_mlp_bias: True
+  node_mlp_hidden_channels: 32
+  node_mlp_num_layers: 1
+  node_mlp_out_channels: 2
+#  edge_mlp_in_channels:
   edge_mlp_bias: True
-  edge_mlp_hidden_channels: 128
+  edge_mlp_hidden_channels: 32
   edge_mlp_num_layers: 1
   edge_mlp_out_channels: 2

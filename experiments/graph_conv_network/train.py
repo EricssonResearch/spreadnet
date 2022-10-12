@@ -9,6 +9,7 @@ Usage:
 import copy
 import os
 import argparse
+from datetime import datetime
 
 import torch
 
@@ -16,6 +17,7 @@ import webdataset as wds
 from torch_geometric.loader import DataLoader
 from typing import Optional
 
+from spreadnet.datasets.data_utils.draw import plot_training_graph
 from spreadnet.pyg_gnn.loss.loss import hybrid_loss
 from spreadnet.pyg_gnn.models.graph_conv_network.sp_gcn import SPGCNet
 from spreadnet.utils import yaml_parser
@@ -54,6 +56,11 @@ dataset_path = os.path.join(
     os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
 
+# For plotting learning curves.
+steps_curve = []
+losses_curve = []
+accuracies_curve = []
+
 
 def train(
     epoch_num,
@@ -81,11 +88,11 @@ def train(
             # losses, corrects = loss_func(data, trainable_model)
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
-            # losses["nodes"].backward(retain_graph=True)
-            # losses["edges"].backward()
+            losses["nodes"].backward(retain_graph=True)
+            losses["edges"].backward()
 
-            losses["nodes"].backward()
-            # losses["edges"].backward()
+            # losses["nodes"].backward()
+            # # losses["edges"].backward()
 
             optimizer.step()
 
@@ -116,6 +123,12 @@ def train(
             f"\n\t\t    Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}"
         )
 
+        steps_curve.append(epoch + 1)
+        losses_curve.append({"nodes": nodes_loss, "edges": edges_loss})
+        accuracies_curve.append(
+            {"nodes": nodes_acc.cpu().numpy(), "edges": edges_acc.cpu().numpy()}
+        )
+
         if save_path is not None:
             if epoch % train_configs["weight_save_freq"] == 0:
                 weight_name = "model_weights_ep_{ep}.pth".format(ep=epoch)
@@ -124,6 +137,15 @@ def train(
     if save_path is not None:
         weight_name = train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(save_path, weight_name))
+
+        date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+        plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
+        plot_training_graph(
+            steps_curve,
+            losses_curve,
+            accuracies_curve,
+            os.path.dirname(__file__) + f"/trainings/{plot_name}",
+        )
 
 
 if __name__ == "__main__":
@@ -145,13 +167,18 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, batch_size=train_configs["batch_size"])
 
     model = SPGCNet(
-        node_gcn_in_channels=model_configs["node_gcn_in_channels"],
-        node_gcn_num_hidden_layers=model_configs["node_gcn_num_hidden_layers"],
-        node_gcn_hidden_channels=model_configs["node_gcn_hidden_channels"],
-        node_gcn_out_channels=model_configs["node_gcn_out_channels"],
-        node_gcn_use_normalization=model_configs["node_gcn_use_normalization"],
-        node_gcn_use_bias=model_configs["node_gcn_use_bias"],
-        edge_mlp_in_channels=model_configs["edge_mlp_in_channels"],
+        gcn_in_channels=model_configs["gcn_in_channels"],
+        gcn_num_hidden_layers=model_configs["gcn_num_hidden_layers"],
+        gcn_hidden_channels=model_configs["gcn_hidden_channels"],
+        gcn_out_channels=model_configs["gcn_out_channels"],
+        gcn_use_normalization=model_configs["gcn_use_normalization"],
+        gcn_use_bias=model_configs["gcn_use_bias"],
+        node_mlp_in_channels=model_configs["gcn_out_channels"],
+        node_mlp_bias=model_configs["node_mlp_bias"],
+        node_mlp_hidden_channels=model_configs["node_mlp_hidden_channels"],
+        node_mlp_num_layers=model_configs["node_mlp_num_layers"],
+        node_mlp_out_channels=model_configs["node_mlp_out_channels"],
+        edge_mlp_in_channels=model_configs["gcn_out_channels"] * 2 + 1,
         edge_mlp_bias=model_configs["edge_mlp_bias"],
         edge_mlp_hidden_channels=model_configs["edge_mlp_hidden_channels"],
         edge_mlp_num_layers=model_configs["edge_mlp_num_layers"],
@@ -161,21 +188,28 @@ if __name__ == "__main__":
     print(model)
 
     opt_lst = list()
-    for i in range(len(model.node_classifier.gcn_stack)):
-        if i == len(model.node_classifier.gcn_stack) - 1:
+    for i in range(len(model.gcn_layers.gcn_stack)):
+        if i == len(model.gcn_layers.gcn_stack) - 1:
             opt_lst.append(
                 dict(
-                    params=model.node_classifier.gcn_stack[i].parameters(),
+                    params=model.gcn_layers.gcn_stack[i].parameters(),
                     weight_decay=train_configs["adam_weight_decay"],
                 )
             )
         else:
             opt_lst.append(
                 dict(
-                    params=model.node_classifier.gcn_stack[i].parameters(),
+                    params=model.gcn_layers.gcn_stack[i].parameters(),
                     weight_decay=0,
                 ),
             )  # don't perform weight-decay on the last convolution.
+
+    opt_lst.append(
+        dict(
+            params=model.node_classifier.parameters(),
+            weight_decay=train_configs["adam_weight_decay"],
+        )
+    )
 
     opt_lst.append(
         dict(
@@ -184,8 +218,8 @@ if __name__ == "__main__":
         )
     )
 
-    for param in model.edge_classifier.parameters():
-        param.requires_grad = False
+    # for param in model.edge_classifier.parameters():
+    #     param.requires_grad = False
 
     opt = torch.optim.Adam(
         opt_lst,
@@ -198,6 +232,11 @@ if __name__ == "__main__":
 
     if not os.path.exists(weight_base_path):
         os.makedirs(weight_base_path)
+
+    trainings_plots_path = os.path.join(os.path.dirname(__file__), "trainings")
+
+    if not os.path.exists(trainings_plots_path):
+        os.makedirs(trainings_plots_path)
 
     train(
         epoch_num=epochs,
