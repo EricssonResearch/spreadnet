@@ -188,10 +188,9 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         print(f"[Epoch: {epoch + 1:4}/{epochs}]".ljust(20), end="")
         steps_curve.append(epoch + 1)
+
         train_acc = execute("train", train_loader, model, hybrid_loss, opt)
-
         test_acc = execute("test", test_loader, model, hybrid_loss)
-
         cur_acc = (train_acc + test_acc) / 2
 
         if cur_acc > best_acc:
