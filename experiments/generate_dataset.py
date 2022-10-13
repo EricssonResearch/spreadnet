@@ -15,8 +15,7 @@ from spreadnet.datasets import run_statistics
 # ------------------------------------------
 # Params
 yaml_path = os.path.join(os.path.dirname(__file__), "dataset_configs.yaml")
-configs = yaml_parser(yaml_path)
-data_configs = configs.data
+data_configs = yaml_parser(yaml_path).data
 
 visualize_graph = int(data_configs["visualize_graph"])
 random_seed = data_configs["random_seed"]
