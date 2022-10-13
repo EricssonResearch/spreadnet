@@ -102,7 +102,6 @@ class RunStatistics:
         row_length = len(statistics.index)
         statistics.loc[row_length - 1, column_name] = data
         statistics.to_csv("statistics.csv", encoding="utf-8", index=False)
-        print(data, " added to ", column_name)
 
     def parse_yaml(self):
         """Parse the configs.yaml file."""
