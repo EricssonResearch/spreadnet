@@ -8,6 +8,7 @@ requirements = [
     "torch",
     "webdataset",
     "matplotlib",
+    "tqdm",
 ]
 setup(
     name="spreadnet",
