@@ -123,8 +123,9 @@ def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None)
 
     mode = mode.capitalize().ljust(5)
 
-    nodes_loss /= len(dataloader)
-    edges_loss /= len(dataloader)
+    nodes_loss /= len(dataloader.dataset)
+    edges_loss /= len(dataloader.dataset)
+
     (losses_curve if is_training else test_losses_curve).append(
         {"nodes": nodes_loss, "edges": edges_loss}
     )
