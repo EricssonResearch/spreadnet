@@ -77,12 +77,12 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    nodes_output, edges_output = model(
+    node_pred, edge_pred = model(
         graph_data.x, graph_data.edge_index, graph_data.edge_attr
     )
 
-    node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
-    edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
+    node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
+    edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
 
     return node_infer, edge_infer
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     print("edge: ", edge_label)
 
     # predict
-    node_infer, edge_infer = infer(model, graph.to(device))
+    (node_infer, edge_infer) = infer(model, graph.to(device))
     print("--- Predicted ---")
     print("node: ", node_infer)
     print("edge: ", edge_infer)

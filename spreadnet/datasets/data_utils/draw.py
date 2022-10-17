@@ -41,7 +41,7 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
         elif (e, s) not in highlight_edges:
             normal_edges.append((s, e))
 
-    pos = nx.spring_layout(graph)
+    pos = nx.get_node_attributes(graph, "pos")
 
     figure.add_subplot(
         math.ceil(num_graphs_to_draw / 5),
@@ -53,7 +53,6 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
     nx.draw_networkx_nodes(
         graph, pos, cmap=plt.get_cmap("jet"), node_color=values, node_size=500
     )
-    nx.draw_networkx_labels(graph, pos)
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
     nx.draw_networkx_edges(
         graph,
@@ -77,26 +76,38 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
         ]
     )
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
+    nx.draw_networkx_labels(graph, pos)
+    # nx.draw_networkx_labels(graph, pos, labels=pos, font_color="r")
 
 
 def plot_training_graph(
-    steps_curve, losses_curve, accuracies_curve, save_path, smoooth_window_half_width=3
+    steps_curve,
+    losses_curve,
+    test_losses_curve,
+    accuracies_curve,
+    test_accuracies_curve,
+    save_path,
+    smoooth_window_half_width=3,
 ):
     """Plot training losses and accuracies.
 
     Args:
         steps_curve: epoch iteration
-        losses_curve: nodes and edges losses
-        accuracies_curve: nodes and edges accuracies
+        losses_curve: nodes and edges losses on training set
+        test_losses_curve: nodes and edges losses on test set
+        accuracies_curve: nodes and edges accuracies on training set
+        test_accuracies_curve: nodes and edges accuracies on test set
         save_path: folder and file name
         smoooth_window_half_width: smoothen plot lines, the higher the smoother
 
     Returns:
         None
     """
-    fig, axes = plt.subplots(1, 2, figsize=(10, 2.5))
+    fig, axes = plt.subplots(2, 2, figsize=(10, 10))
     for ax, metric, data_list in zip(
-        axes, ["Loss", "Accuracy"], [losses_curve, accuracies_curve]
+        [axes[0][0], axes[0][1], axes[1][0], axes[1][1]],
+        ["Train Loss", "Train Accuracy", "Test Loss", "Test Accuracy"],
+        [losses_curve, accuracies_curve, test_losses_curve, test_accuracies_curve],
     ):
         for k in ["edges", "nodes"]:
             x = steps_curve
@@ -104,18 +115,19 @@ def plot_training_graph(
 
             window = signal.triang(1 + 2 * smoooth_window_half_width)
             window /= window.sum()
-            y = list(map(lambda p: p.detach().cpu().numpy(), y))
 
             y = signal.convolve(y, window, mode="valid")
             x = signal.convolve(x, window, mode="valid")
 
             ax.plot(x, y, label=k)
 
+        ax.set_title(metric)
         ax.set_ylabel(metric)
         ax.set_xlabel("Training Iteration")
+        ax.legend()
 
-        axes[0].set_yscale("log")
-        # axes[0].set_ylim(0.00801, 4.5)
-        # axes[1].set_ylim(0.79, 1.01)
-        axes[0].legend()
+        axes[0][0].set_yscale("log")
+        axes[1][0].set_yscale("log")
+
+        plt.subplots_adjust(hspace=0.4)
         plt.savefig(save_path)
