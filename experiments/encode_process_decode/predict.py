@@ -108,14 +108,17 @@ if __name__ == "__main__":
     dataset_size = len(list(dataset))
     train_size = int(train_ratio * dataset_size)
 
-    (graph,) = list(dataset)[randrange(train_size, dataset_size)]
+    graph_idx = randrange(train_size, dataset_size)
+    (graph,) = list(dataset)[graph_idx]
     node_label, edge_label = graph.y
-    print("--- Ground_truth --- ")
-    print("node: ", node_label)
-    print("edge: ", edge_label)
-
     # predict
     (node_infer, edge_infer) = infer(model, graph.to(device))
-    print("--- Predicted ---")
-    print("node: ", node_infer)
-    print("edge: ", edge_infer)
+
+    print("Graph idx: ", graph_idx)
+    print("--- Node --- ")
+    print("Truth:     ", node_label.tolist())
+    print("Predicted: ", node_infer.cpu().tolist())
+
+    print("--- Edge ---\n")
+    print("Truth:     ", edge_label.tolist())
+    print("Predicted: ", edge_infer.cpu().tolist())
