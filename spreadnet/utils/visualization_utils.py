@@ -120,16 +120,29 @@ class VisualUtils:
                 style="dotted",
                 edge_color="g",
             )
+            nx.draw_networkx_edge_labels(G, pos, edge_labels=labels_edges)
 
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels_edges)
-        nx.draw_networkx_labels(G, pos, labels=node_labels)
+            nx.draw_networkx_labels(G, pos, labels=node_labels)
         if save:
 
             plt.savefig(title + ".png")
 
-        plt.show()
-
     def new_prob_labels(self, G):
+        """Takes nx Graph in standard format.
+
+        A
+        Args:
+            G (_type_): nx Graph in standard format.
+
+
+
+        Returns:
+            node_labels: probability rounded to 2 decimals
+            sorted_edges: sorted edges with probability rounded to 2 decimals.
+
+        Note: Sorted edges as edges (A, B) and (B, A) have different probability but in drawing  the labels overlap.
+        TODO: Represent probabilities for both ways of an edge.
+        """
         edge_labels = {}
         node_labels = {}
 
@@ -156,6 +169,15 @@ class VisualUtils:
         return node_labels, sorted_edges
 
     def _nodes_edges_in_path(self, G):
+        """Returns the nodes and edges where probability if +50%
+
+        Args:
+            G (_type_): The Graph in the defined output format.
+
+        Returns:
+            sp_path: list of nodes in the shortest path.
+            sp_path_edges: list of edges(as tupples) in the shortest path.
+        """
         sp_path = []
         sp_path_edges = []
         for i in range(0, len(G.nodes)):
@@ -175,15 +197,18 @@ class VisualUtils:
         return sp_path, sp_path_edges
 
     def _max_probability_walk(self, G, start_node, end_node):
-        """_summary_
+        """Takes an ouput graph with a start and end node, outputs the nodes and edges if we take the maximum probability.
+        Either node or edge.
 
         Args:
-            G (_type_): _description_
-            start_node (_type_): _description_
-            end_node (_type_): _description_
+            G (_type_): Oruput Graph
+            start_node int: Start node.
+            end_node int: End node.
 
         Returns:
-            _type_: _description_
+            _type_: Max probability nodes and edges list.
+
+        Notes: The path can be incomplete.
         """
 
         max_prob_walk_nodes = []
@@ -195,7 +220,7 @@ class VisualUtils:
         while current_node != end_node:
             edges = G.out_edges(current_node, data=True)
 
-            max_probability_edge = 0.1
+            max_probability_edge = 0.01
             chosen_edge = None
             for e in edges:
 

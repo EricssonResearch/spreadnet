@@ -86,27 +86,38 @@ def single_graph_implementation_test_helper():
     # TODO fix this path thing with the configs
     # graphs = json.load(raw_path + "random.json")
     # Broken window priciple applies tho
-    raw_data_path = "../dataset/raw/random_250-251.100.json"
-    file_raw = open(raw_data_path)
+    datasets = [
+        "random.json",
+        "random_25-35.20.json",
+        "random_100-101.20.json",
+        "random_100-101.20.json",
+        "random_250-251.100.json",
+    ]
+    for d in datasets:
 
-    graphs = json.load(file_raw)
+        raw_data_path = "../dataset/raw/" + d
+        file_raw = open(raw_data_path)
 
-    single_graph = graphs[1]  # std format
+        graphs = json.load(file_raw)
 
-    output_graph_tf = models_trained[0].inferer_single_data(single_graph)
-    output_graph_pyg = models_trained[1].inferer_single_data(single_graph)
+        single_graph = graphs[1]  # std format
 
-    # print("\n\n\nOutput TFF_edges", output_graph_tf.edges.data())
-    # print("\n\n\nOutput TFF_nodes", output_graph_tf.nodes.data())
+        output_graph_tf = models_trained[0].inferer_single_data(single_graph)
+        output_graph_pyg = models_trained[1].inferer_single_data(single_graph)
 
-    # print("\n\n\n output pygg_edges", output_graph_pyg.edges.data())
-    # print("\n\n\n output pygg_nodes", output_graph_pyg.nodes.data())
+        # print("\n\n\nOutput TFF_edges", output_graph_tf.edges.data())
+        # print("\n\n\nOutput TFF_nodes", output_graph_tf.nodes.data())
 
-    vis = VisualUtils()
+        # print("\n\n\n output pygg_edges", output_graph_pyg.edges.data())
+        # print("\n\n\n output pygg_nodes", output_graph_pyg.nodes.data())
 
-    # vis.new_nx_draw(output_graph_pyg, ground_truth=True, title="Tensorflow", save=True)
-    # vis.new_nx_draw(output_graph_tf, ground_truth=False, title="Tensorflow", save=True)
-    vis.new_nx_draw(output_graph_pyg, ground_truth=False, title="Pyg GNN")
+        vis.new_nx_draw(output_graph_pyg, ground_truth=True, title=d, save=True)
+        vis.new_nx_draw(
+            output_graph_tf, ground_truth=False, title="Tensorflow" + d, save=True
+        )
+        vis.new_nx_draw(
+            output_graph_pyg, ground_truth=False, title="Pyg GNN" + d, save=True
+        )
 
 
 def single_graph_vis_pyg_test0(trained_gnn):
