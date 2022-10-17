@@ -22,8 +22,8 @@ class RunStatistics:
         self.add_time()
         self.parse_yaml(
             [
-                project_folder + "\\experiments\\dataset_configs.yaml",
-                project_folder + "\\experiments\\encode_process_decode\\configs.yaml",
+                project_folder + "/experiments/dataset_configs.yaml",
+                project_folder + "/experiments/encode_process_decode/configs.yaml",
             ]
         )
         self.check_nodes_and_edges()
@@ -76,7 +76,7 @@ class RunStatistics:
         project_folder = os.path.sep.join(
             os.path.abspath(os.path.realpath(__file__)).split(os.path.sep)[:-3]
         )
-        json_dataset_path = os.path.join(project_folder, "experiments\\dataset\\raw")
+        json_dataset_path = os.path.join(project_folder, "experiments/dataset/raw")
         json_file_path = list(
             map(os.path.basename, glob.glob(json_dataset_path + "/*.json"))
         )
@@ -124,29 +124,31 @@ class RunStatistics:
         statistics = pd.read_csv(self.statistics_file)
         row_length = len(statistics.index)
 
-        data_configs = yaml_parser(file_paths[0])
-        configs = yaml_parser(file_paths[1])
+        try:
+            data_configs = yaml_parser(file_paths[0])
+            configs = yaml_parser(file_paths[1])
 
-        data_configs = data_configs.data
-        train_configs = configs.train
-        model_configs = configs.model
+            data_configs = data_configs.data
+            train_configs = configs.train
+            model_configs = configs.model
 
-        for data in data_configs:
-            statistics.loc[row_length - 1, data] = data_configs[data]
+        except FileNotFoundError:
+            print(
+                """Configs file could not be read properly. Please
+                check the sections inside the configs.yaml file."""
+            )
 
-        for train in train_configs:
-            statistics.loc[row_length - 1, train] = train_configs[train]
+        try:
+            for data in data_configs:
+                statistics.loc[row_length - 1, data] = data_configs[data]
 
-        for model in model_configs:
-            statistics.loc[row_length - 1, model] = model_configs[model]
+            for train in train_configs:
+                statistics.loc[row_length - 1, train] = train_configs[train]
 
-        statistics.to_csv(self.statistics_file, encoding="utf-8", index=False)
+            for model in model_configs:
+                statistics.loc[row_length - 1, model] = model_configs[model]
 
+            statistics.to_csv(self.statistics_file, encoding="utf-8", index=False)
 
-# if __name__ == "__main__":
-#     # For Debugging
-#     run_statistics = RunStatistics()
-#     run_statistics.add_headers()
-#     run_statistics.add_time()
-#     run_statistics.parse_yaml()
-#     run_statistics.check_nodes_and_edges()
+        except TypeError:
+            print("Contents of the config file are not iterable.")
