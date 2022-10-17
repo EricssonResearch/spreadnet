@@ -47,6 +47,7 @@ data_configs = dataset_configs.data
 dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
+train_ratio = train_configs["train_ratio"]
 
 
 def load_model(model_path):
@@ -103,7 +104,11 @@ if __name__ == "__main__":
             "pt",
         )
     )
-    (graph,) = list(dataset)[randrange(len(list(dataset)))]
+
+    dataset_size = len(list(dataset))
+    train_size = int(train_ratio * dataset_size)
+
+    (graph,) = list(dataset)[randrange(train_size, dataset_size)]
     node_label, edge_label = graph.y
     print("--- Ground_truth --- ")
     print("node: ", node_label)
