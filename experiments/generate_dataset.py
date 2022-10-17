@@ -19,6 +19,7 @@ data_configs = yaml_parser(yaml_path).data
 
 visualize_graph = int(data_configs["visualize_graph"])
 random_seed = data_configs["random_seed"]
+min_path_length = int(data_configs["min_path_length"])
 num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
 theta = data_configs["theta"]
 dataset_size = data_configs["dataset_size"]
@@ -34,6 +35,7 @@ if __name__ == "__main__":
         random_seed=random_seed,
         num_nodes_min_max=num_nodes_min_max,
         theta=theta,
+        min_length=min_path_length,
     ).task_graph_generator()
 
     all_graphs = list()
