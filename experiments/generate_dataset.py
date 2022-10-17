@@ -57,7 +57,9 @@ if __name__ == "__main__":
 
         # print(str(idx + 1) + "/" + str(dataset_size) + " Done")
 
-    file_name = f"random_{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{theta}"
+    file_name = (
+        f"random_.{random_seed}.{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{theta}"
+    )
 
     if visualize_graph:
         print("Saving figure...")
