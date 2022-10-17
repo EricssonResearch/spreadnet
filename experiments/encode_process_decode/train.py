@@ -199,8 +199,8 @@ if __name__ == "__main__":
         if epoch % 10 == 0:
             print(
                 "\n  Epoch   "
-                + "Train Loss (Node/Edge)  Test Loss (Node/Edge)     "
-                + "Train Acc (Node/Edge)   Test Acc (Node/Edge)"
+                + "Train Loss (Node,Edge)  Test Loss (Node,Edge)     "
+                + "Train Acc (Node,Edge)   Test Acc (Node,Edge)"
             )
 
         print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
