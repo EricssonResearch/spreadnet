@@ -13,15 +13,24 @@ class RunStatistics:
 
     def __init__(self):
         """Initializes and checks for the file for statistics and headers."""
-        open("statistics.csv", "a")
+        self.statistics_file = "statistics.csv"
+        project_folder = os.path.sep.join(
+            os.path.abspath(os.path.realpath(__file__)).split(os.path.sep)[:-3]
+        )
+        open(self.statistics_file, "a")
         self.add_headers()
         self.add_time()
-        self.parse_yaml()
+        self.parse_yaml(
+            [
+                project_folder + "/experiments/dataset_configs.yaml",
+                project_folder + "/experiments/encode_process_decode/configs.yaml",
+            ]
+        )
         self.check_nodes_and_edges()
 
     def add_headers(self):
         """Adds and checks for headers in the statistics file."""
-        with open("statistics.csv", "r+") as csv_file:
+        with open(self.statistics_file, "r+") as csv_file:
             dict_reader = csv.DictReader(csv_file)
             writer = csv.writer(csv_file)
             header = dict_reader.fieldnames
@@ -57,7 +66,7 @@ class RunStatistics:
                     "num_of_message_passing_steps",
                     "num_of_mlp_hidden_layers",
                     "mlp_hidden_size",
-                    "adam_learning_rate",
+                    "adam_lr",
                     "adam_weight_decay",
                 ]
                 writer.writerow(header_list)
@@ -67,7 +76,7 @@ class RunStatistics:
         project_folder = os.path.sep.join(
             os.path.abspath(os.path.realpath(__file__)).split(os.path.sep)[:-3]
         )
-        json_dataset_path = os.path.join(project_folder, "experiments\\dataset\\raw")
+        json_dataset_path = os.path.join(project_folder, "experiments/dataset/raw")
         json_file_path = list(
             map(os.path.basename, glob.glob(json_dataset_path + "/*.json"))
         )
@@ -83,11 +92,11 @@ class RunStatistics:
 
     def add_time(self):
         """Creates a new row and initializes current time onto it."""
-        statistics = pd.read_csv("statistics.csv")
+        statistics = pd.read_csv(self.statistics_file)
         row_length = len(statistics.index)
         current_time = datetime.now().strftime(r"%d/%m/%Y %H:%M:%S")
         statistics.loc[row_length, "time"] = current_time
-        statistics.to_csv("statistics.csv", encoding="utf-8", index=False)
+        statistics.to_csv(self.statistics_file, encoding="utf-8", index=False)
 
     def add_data(self, column_name, data):
         """Add data into the statistics.csv file
@@ -98,46 +107,48 @@ class RunStatistics:
             data:
                 Data to be added to the 'column_name'
         """
-        statistics = pd.read_csv("statistics.csv")
+        statistics = pd.read_csv(self.statistics_file)
         row_length = len(statistics.index)
         statistics.loc[row_length - 1, column_name] = data
-        statistics.to_csv("statistics.csv", encoding="utf-8", index=False)
+        statistics.to_csv(self.statistics_file, encoding="utf-8", index=False)
 
-    def parse_yaml(self):
-        """Parse the configs.yaml file."""
-        statistics = pd.read_csv("statistics.csv")
+    def parse_yaml(self, file_paths):
+        """Parse the configs.yaml files.
+
+        Args:
+            file_paths:
+                list of file paths of the config files being analyzed
+                The path being passed should be from the project folder
+                to the config file and pass it in a list
+        """
+        statistics = pd.read_csv(self.statistics_file)
         row_length = len(statistics.index)
-        project_folder = os.path.sep.join(
-            os.path.abspath(os.path.realpath(__file__)).split(os.path.sep)[:-3]
-        )
-        yaml_file_path = os.path.join(
-            project_folder, "experiments\\encode_process_decode\\configs.yaml"
-        )
-        data_yaml_config_path = os.path.join(
-            project_folder, "experiments\\dataset_configs.yaml"
-        )
-        data_configs = yaml_parser(data_yaml_config_path)
-        data_configs = data_configs.data
-        configs = yaml_parser(yaml_file_path)
-        train_configs = configs.train
-        model_configs = configs.model
 
-        for data in data_configs:
-            statistics.loc[row_length - 1, data] = data_configs[data]
+        try:
+            data_configs = yaml_parser(file_paths[0])
+            configs = yaml_parser(file_paths[1])
 
-        for train in train_configs:
-            statistics.loc[row_length - 1, train] = train_configs[train]
+            data_configs = data_configs.data
+            train_configs = configs.train
+            model_configs = configs.model
 
-        for model in model_configs:
-            statistics.loc[row_length - 1, model] = model_configs[model]
+        except FileNotFoundError:
+            print(
+                """Configs file could not be read properly. Please
+                check the sections inside the configs.yaml file."""
+            )
 
-        statistics.to_csv("statistics.csv", encoding="utf-8", index=False)
+        try:
+            for data in data_configs:
+                statistics.loc[row_length - 1, data] = data_configs[data]
 
+            for train in train_configs:
+                statistics.loc[row_length - 1, train] = train_configs[train]
 
-# if __name__ == "__main__":
-#     # For Debugging
-#     run_statistics = RunStatistics()
-#     run_statistics.add_headers()
-#     run_statistics.add_time()
-#     run_statistics.parse_yaml()
-#     run_statistics.check_nodes_and_edges()
+            for model in model_configs:
+                statistics.loc[row_length - 1, model] = model_configs[model]
+
+            statistics.to_csv(self.statistics_file, encoding="utf-8", index=False)
+
+        except TypeError:
+            print("Contents of the config file are not iterable.")
