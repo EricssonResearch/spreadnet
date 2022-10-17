@@ -41,7 +41,7 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
         elif (e, s) not in highlight_edges:
             normal_edges.append((s, e))
 
-    pos = nx.spring_layout(graph)
+    pos = nx.get_node_attributes(graph, "pos")
 
     figure.add_subplot(
         math.ceil(num_graphs_to_draw / 5),
@@ -53,7 +53,6 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
     nx.draw_networkx_nodes(
         graph, pos, cmap=plt.get_cmap("jet"), node_color=values, node_size=500
     )
-    nx.draw_networkx_labels(graph, pos)
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
     nx.draw_networkx_edges(
         graph,
@@ -77,6 +76,8 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
         ]
     )
     nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
+    nx.draw_networkx_labels(graph, pos)
+    # nx.draw_networkx_labels(graph, pos, labels=pos, font_color="r")
 
 
 def plot_training_graph(
