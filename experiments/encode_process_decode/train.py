@@ -49,7 +49,6 @@ train_configs = configs.train
 epochs = train_configs["epochs"]
 model_configs = configs.model
 data_configs = dataset_configs.data
-pad = "".ljust(20)
 dataset_path = os.path.join(
     os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
@@ -121,25 +120,18 @@ def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None)
             dataset_nodes_size += data.num_nodes
             dataset_edges_size += data.num_edges
 
-    mode = mode.capitalize().ljust(5)
-
     nodes_loss /= len(dataloader.dataset)
     edges_loss /= len(dataloader.dataset)
 
     (losses_curve if is_training else test_losses_curve).append(
         {"nodes": nodes_loss, "edges": edges_loss}
     )
-    print(
-        f"{'' if is_training else pad}{mode} "
-        + f"Losses:     {{'nodes': {nodes_loss}, 'edges': {edges_loss} }}"
-    )
 
-    nodes_acc = nodes_corrects / dataset_nodes_size
-    edges_acc = edges_corrects / dataset_edges_size
+    nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy()
+    edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy()
     (accuracies_curve if is_training else test_accuracies_curve).append(
-        {"nodes": nodes_acc.cpu().numpy(), "edges": edges_acc.cpu().numpy()}
+        {"nodes": nodes_acc, "edges": edges_acc}
     )
-    print(f"{pad}{mode} Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}")
 
     return (nodes_acc + edges_acc) / 2
 
@@ -187,7 +179,6 @@ if __name__ == "__main__":
     best_acc = 0.0
 
     for epoch in range(epochs):
-        print(f"[Epoch: {epoch + 1:4}/{epochs}]".ljust(20), end="")
         steps_curve.append(epoch + 1)
 
         train_acc = execute("train", train_loader, model, hybrid_loss, opt)
@@ -204,6 +195,32 @@ if __name__ == "__main__":
                 torch.save(
                     model.state_dict(), os.path.join(weight_base_path, weight_name)
                 )
+
+        if epoch % 10 == 0:
+            print(
+                "\n  Epoch   "
+                + "Train Loss (Node,Edge)  Test Loss (Node,Edge)     "
+                + "Train Acc (Node,Edge)   Test Acc (Node,Edge)"
+            )
+
+        print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
+        print(
+            "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
+                losses_curve[-1]["nodes"],
+                losses_curve[-1]["edges"],
+                test_losses_curve[-1]["nodes"],
+                test_losses_curve[-1]["edges"],
+            ),
+            end="",
+        )
+        print(
+            "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
+                accuracies_curve[-1]["nodes"],
+                accuracies_curve[-1]["edges"],
+                test_accuracies_curve[-1]["nodes"],
+                test_accuracies_curve[-1]["edges"],
+            )
+        )
 
     if weight_base_path is not None:
         weight_name = train_configs["best_weight_name"]
