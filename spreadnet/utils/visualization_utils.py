@@ -8,11 +8,10 @@
 
 """
 
-from click import style
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow_gnn as tfgnn
+
 import tensorflow as tf
 
 

@@ -14,21 +14,14 @@ TODO: make the class not change the working dirrectory
 
 
 """
-# from spreadnet.tf_gnn.gnn import *
-from black import out
+
+
 from spreadnet.utils.config_parser import yaml_parser
+
 from spreadnet.pyg_gnn.models import *
-import tensorflow_gnn as tfgnn
 
-# from spreadnet.pyg_gnn.models.encode_process_decode.models import (
-#     Encoder,
-#     Decoder,
-#     EncodeProcessDecode,
-#     Processor,
-# )
 
-# from spreadnet.pyg_gnn.models.encode_process_decode.models import EncodeProcessDecode
-from spreadnet.utils.tf_utils import TfGNNUtils
+from spreadnet.tf_gnn.tf_utils.tf_utils import TfGNNUtils
 import pickle
 import os
 from os import path as osp
@@ -36,7 +29,7 @@ import torch
 import sys
 import argparse
 import networkx as nx
-import tensorflow as tf
+
 from spreadnet.datasets.data_utils.convertor import graphnx_to_dict_spec
 from torch_geometric.data import Data
 
@@ -100,7 +93,7 @@ class ExperimentUtils:
             return self.implemented_models
         else:
             print("Models Implemented: ", self.implemented_models)
-            return []
+            return self.implemented_models
 
     def show_model_used(self, ret=False):
         """Print or/and return the name of the model the class instance is using.
@@ -131,7 +124,7 @@ class ExperimentUtils:
         self._goto_weights()  # TODO Can replace the directory traversal with the weights base path making.
 
         if self.model_type == "tf_gnn":
-            print(self.model_weights)
+
             with (open(self.model_weights, "rb")) as openfile:
                 trained_model = pickle.load(openfile)
 
@@ -168,7 +161,6 @@ class ExperimentUtils:
                 num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
                 mlp_hidden_size=model_configs["mlp_hidden_size"],
             ).to(device)
-            print("\n\n\n", os.getcwd(), "\n\n\n\n")
             trained_model.load_state_dict(
                 torch.load(self.model_weights, map_location=torch.device(device))
             )
@@ -201,7 +193,6 @@ class ExperimentUtils:
         input_graph = nx.node_link_graph(input_graph, directed=True, multigraph=False)
         if self.model_type == "tf_gnn":
 
-            # Predict
             tf_ut = TfGNNUtils()
             graph_tensor = tf_ut.convert_to_graph_tensor(input_graph)
             tensor_input_graph = tf_ut.build_initial_hidden_state(graph_tensor)
@@ -210,27 +201,20 @@ class ExperimentUtils:
             std_output_graph = tf_ut.nx_standard_format_from_tensor(
                 input_graph, output_graph
             )
-            # print("What: ", std_output_graph.edges(data=True))
         elif self.model_type == "pyg_gnn":
             # Convert networkx graph to pyg_gnn input Graph
             processed_graph = self.process(input_graph)
             # make prediction
 
-            # print("\n\nProcessed Graph", processed_graph, "\n\n")
-
             nodes_output, edges_output = self.trained_model(
                 processed_graph.x, processed_graph.edge_index, processed_graph.edge_attr
             )
-            # convert to common format
-            # print(nodes_output, edges_output)
 
             std_output_graph = self._std_from_pyg_gnn(
                 input_graph=input_graph,
                 prediction_edges=edges_output,
                 prediction_nodes=nodes_output,
             )
-
-            # Append prediction to pyg_gnn
 
         return std_output_graph
 

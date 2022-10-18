@@ -23,7 +23,7 @@ import sys
 from black import out
 from spreadnet.utils.experiment_utils import ExperimentUtils
 from spreadnet.utils.visualization_utils import VisualUtils
-from spreadnet.utils.tf_utils import TfGNNUtils
+from spreadnet.tf_gnn.tf_utils.tf_utils import TfGNNUtils
 from spreadnet.tf_gnn.model import gnn
 import matplotlib.pyplot as plt
 from spreadnet.pyg_gnn.models import EncodeProcessDecode

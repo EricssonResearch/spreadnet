@@ -1,19 +1,14 @@
 import collections
 import functools
-import itertools
-from typing import Callable, Optional, Mapping, Tuple
-
+from typing import Callable, Optional
 import matplotlib.pyplot as plt
-import networkx as nx
-import numpy as np
-from scipy import signal
-
 import tensorflow as tf
 import tensorflow_gnn as tfgnn
 
-import spreadnet.utils.gnn_utils
-from spreadnet.utils.graph_utils import *
-from spreadnet.utils.build_utils_graph import *
+
+from spreadnet.tf_gnn.tf_utils.gnn_utils import *
+
+from spreadnet.tf_gnn.tf_utils.build_utils_graph import *
 
 
 def GraphNetworkGraphUpdate(
