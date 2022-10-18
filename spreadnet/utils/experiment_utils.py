@@ -18,7 +18,7 @@ TODO: make the class not change the working dirrectory
 from black import out
 from spreadnet.utils.config_parser import yaml_parser
 
-from spreadnet.pyg_gnn.models import *
+from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
 
 from spreadnet.tf_gnn.tf_utils.tf_utils import TfGNNUtils
@@ -149,7 +149,6 @@ class ExperimentUtils:
             yaml_path = args.config
             configs = yaml_parser(yaml_path)
 
-            train_configs = configs.train
             model_configs = configs.model
             trained_model = EncodeProcessDecode(
                 node_in=model_configs["node_in"],
@@ -161,6 +160,7 @@ class ExperimentUtils:
                 num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
                 mlp_hidden_size=model_configs["mlp_hidden_size"],
             ).to(device)
+
             trained_model.load_state_dict(
                 torch.load(self.model_weights, map_location=torch.device(device))
             )

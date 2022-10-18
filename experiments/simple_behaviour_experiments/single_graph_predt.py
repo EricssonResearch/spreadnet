@@ -23,11 +23,9 @@ import sys
 from black import out
 from spreadnet.utils.experiment_utils import ExperimentUtils
 from spreadnet.utils.visualization_utils import VisualUtils
-from spreadnet.tf_gnn.tf_utils.tf_utils import TfGNNUtils
 from spreadnet.tf_gnn.model import gnn
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
-from spreadnet.pyg_gnn.models import *
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
@@ -47,18 +45,6 @@ from os import path as osp
     all over the placed.
 
 """
-# parser = argparse.ArgumentParser(description="Do predictions.")
-# args = parser.parse_args()
-# yaml_path = args.config
-# which_model = args.model
-# configs = yaml_parser(yaml_path)
-# train_configs = configs.train
-# model_configs = configs.model
-# data_configs = configs.data
-# dataset_path = osp.join(osp.dirname(__file__), data_configs["dataset_path"]).replace(
-#     "\\", "/"
-# )
-# raw_path = dataset_path + "/raw"
 
 
 def single_graph_implementation_test_helper():

@@ -1,14 +1,9 @@
 import collections
 import functools
 from typing import Callable, Optional
-import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow_gnn as tfgnn
-
-
-from spreadnet.tf_gnn.tf_utils.gnn_utils import *
-
-from spreadnet.tf_gnn.tf_utils.build_utils_graph import *
+from spreadnet.tf_gnn.tf_utils.gnn_utils import sum_graphs
 
 
 def GraphNetworkGraphUpdate(
