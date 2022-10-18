@@ -2,6 +2,7 @@
 
 from spreadnet.dijkstra_memoization import dijkstra_algorithm
 
+import networkx as nx
 
 from networkx import weisfeiler_lehman_graph_hash
 
@@ -11,7 +12,7 @@ from networkx import weisfeiler_lehman_graph_hash
 memoTable = {}
 
 
-def add_item_to_memo_table(graph_hash, start_node, item):
+def add_item_to_memo_table(graph_hash, start_node, allPathsFromSource):
     """Fills in the memoization table (dictionary type) with the shortest paths
     The dictionary does not include duplicates so no need to do duplicate
     check.
@@ -25,9 +26,20 @@ def add_item_to_memo_table(graph_hash, start_node, item):
     Returns:
         nothing
     """
-    key_list = item.keys()
+    print("allPathsfromSource", allPathsFromSource)
+    pathDic = {}
+    memoTable.setdefault(graph_hash, {})[start_node] = pathDic
+
+    key_list = allPathsFromSource.keys()
     for item_key in key_list:
-        memoTable[(graph_hash, start_node, item_key)] = item[item_key]
+        pathDic[item_key] = allPathsFromSource[item_key]
+    memoTable[graph_hash][start_node] = pathDic
+
+    # if memoTable[graph_hash] is None:
+    #    memoTable[graph_hash] = {}
+    # key_list = allPathsFromSource.keys()
+    # for item_key in key_list:
+    #    memoTable[graph_hash][(start_node, item_key)] = allPathsFromSource[item_key]
 
 
 def search_memo_table(graph_hash, start_node, end_node):
@@ -44,10 +56,15 @@ def search_memo_table(graph_hash, start_node, end_node):
     """
     # TODO: add a check for if search has been done and not in memo table
     #  (no path) so no second search
-    if memoTable.get((graph_hash, start_node, end_node)):
-        return memoTable[(graph_hash, start_node, end_node)]
-    else:
-        return -1
+    # if memoTable.get(graph_hash, {}).get(start_node, end_node):
+    # memoTable.get((graph_hash, start_node, end_node)):
+    print(
+        "WHAT IS THIS??",
+        memoTable.get(graph_hash, {}).get(start_node, {}).get(end_node),
+    )
+    return memoTable.get(graph_hash, {}).get(start_node, {}).get(end_node)
+    # else:
+    #    return -1
 
 
 def shortest_path(G, start_node, end_node, weight="weight"):
@@ -77,19 +94,74 @@ def shortest_path(G, start_node, end_node, weight="weight"):
     Returns:
       The shortest path from the memoization table or from running Dijkstra algorithm.
     """
-    hashed_graph = weisfeiler_lehman_graph_hash(G)  # + f"{start_node}"
+    hashed_graph = weisfeiler_lehman_graph_hash(G)
     # TODO make sure to implement that it is with unique hash
     #  (add edge features to graph function call)
 
-    if search_memo_table(hashed_graph, start_node, end_node) != -1:
-        return memoTable[(hashed_graph, start_node, end_node)]
+    path = search_memo_table(hashed_graph, start_node, end_node)
+    if path is not None:
+        return path
     else:
         (
             all_lengths_from_source,
             all_paths_from_source,
         ) = dijkstra_algorithm.single_source_dijkstra(G, start_node, None, None, weight)
         add_item_to_memo_table(hashed_graph, start_node, all_paths_from_source)
+        print("memotable from shortest path algorithm", memoTable)
+        print("shortest path", all_paths_from_source[end_node])
         return all_paths_from_source[end_node]
+
+
+def main():
+    # build graph
+    # G_ten = nx.DiGraph()
+    G_ten = nx.path_graph(10)
+    G_ten1 = nx.path_graph(20)
+
+    # H = nx.path_graph(10)
+    # G_ten.add_nodes_from(H)
+    # G_ten.add_edges_from(H.edges)
+    # = nx.complete_graph(100)
+    # G_hundred = nx.path_graph(100)
+    # G_thousand = nx.path_graph(1000)
+    print("G_ten:", G_ten)
+    print(memoTable)
+    hashed_graph = weisfeiler_lehman_graph_hash(G_ten)
+    print("hashed graph", hashed_graph)
+    (
+        all_lengths_from_source,
+        all_paths_from_source,
+    ) = dijkstra_algorithm.single_source_dijkstra(G_ten, 7, None, None, "weight")
+    print("all lengths from source", all_lengths_from_source)
+    print("all_paths form source", all_paths_from_source)
+    add_item_to_memo_table(hashed_graph, 7, all_paths_from_source)
+    print(memoTable)
+    search_memo_table(hashed_graph, 7, 3)
+    print("all lengths from source", all_lengths_from_source)
+    print("all_paths form source", all_paths_from_source)
+
+    shortest_path(G_ten, 1, 4, "weight")
+    shortest_path(G_ten1, 1, 4, "weight")
+
+    # tests here
+    # x = shortest_path(G_ten, 1, 4)
+    # print("Shortest path", x)
+
+    # x = shortest_path(G_ten, 1, 8)
+    # print("Shortest path", x)
+
+    # x = shortest_path(G_ten, 2, 9)
+    # print("Shortest path", x)
+
+    # x = shortest_path(G_ten, 3, 5)
+
+    # print("Shortest path", x)
+    # check memoization table
+    print("memotable final", memoTable)
+
+
+if __name__ == "__main__":
+    main()
 
 
 # TODO: need to add in a comparison to the unchanged SP
