@@ -68,19 +68,19 @@ if not os.path.exists(trainings_plots_path):
 # For plotting learning curves.
 steps_curve = []
 losses_curve = []
-test_losses_curve = []
+validation_losses_curve = []
 accuracies_curve = []
-test_accuracies_curve = []
+validation_accuracies_curve = []
 
 
 def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None):
-    """Execute training or testing.
+    """Execute training or validating.
 
-    :param mode: train | test
+    :param mode: train | validation
     :param dataloader: dataloader
     :param model: model
     :param loss_func: loss function
-    :param optimizer: optional optimizer for test mode
+    :param optimizer: optional optimizer for validation mode
     :return: accuracy
     """
     is_training = mode == "train"
@@ -123,13 +123,13 @@ def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None)
     nodes_loss /= len(dataloader.dataset)
     edges_loss /= len(dataloader.dataset)
 
-    (losses_curve if is_training else test_losses_curve).append(
+    (losses_curve if is_training else validation_losses_curve).append(
         {"nodes": nodes_loss, "edges": edges_loss}
     )
 
     nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy()
     edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy()
-    (accuracies_curve if is_training else test_accuracies_curve).append(
+    (accuracies_curve if is_training else validation_accuracies_curve).append(
         {"nodes": nodes_acc, "edges": edges_acc}
     )
 
@@ -154,9 +154,11 @@ if __name__ == "__main__":
         dataset.shuffle(dataset_size * 10)
 
     train_dataset = list(islice(dataset, 0, train_size))
-    test_dataset = list(islice(dataset, train_size, dataset_size + 1))
+    validation_dataset = list(islice(dataset, train_size, dataset_size + 1))
     train_loader = DataLoader(train_dataset, batch_size=train_configs["batch_size"])
-    test_loader = DataLoader(test_dataset, batch_size=train_configs["batch_size"])
+    validation_loader = DataLoader(
+        validation_dataset, batch_size=train_configs["batch_size"]
+    )
 
     model = EncodeProcessDecode(
         node_in=model_configs["node_in"],
@@ -182,8 +184,8 @@ if __name__ == "__main__":
         steps_curve.append(epoch + 1)
 
         train_acc = execute("train", train_loader, model, hybrid_loss, opt)
-        test_acc = execute("test", test_loader, model, hybrid_loss)
-        cur_acc = (train_acc + test_acc) / 2
+        validation_acc = execute("validation", validation_loader, model, hybrid_loss)
+        cur_acc = (train_acc + validation_acc) / 2
 
         if cur_acc > best_acc:
             best_acc = cur_acc
@@ -199,8 +201,8 @@ if __name__ == "__main__":
         if epoch % 10 == 0:
             print(
                 "\n  Epoch   "
-                + "Train Loss (Node,Edge)  Test Loss (Node,Edge)     "
-                + "Train Acc (Node,Edge)   Test Acc (Node,Edge)"
+                + "Train Loss (Node,Edge)     Validation Loss        "
+                + "Train Acc (Node,Edge)      Validation Acc"
             )
 
         print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
@@ -208,8 +210,8 @@ if __name__ == "__main__":
             "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
                 losses_curve[-1]["nodes"],
                 losses_curve[-1]["edges"],
-                test_losses_curve[-1]["nodes"],
-                test_losses_curve[-1]["edges"],
+                validation_losses_curve[-1]["nodes"],
+                validation_losses_curve[-1]["edges"],
             ),
             end="",
         )
@@ -217,8 +219,8 @@ if __name__ == "__main__":
             "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
                 accuracies_curve[-1]["nodes"],
                 accuracies_curve[-1]["edges"],
-                test_accuracies_curve[-1]["nodes"],
-                test_accuracies_curve[-1]["edges"],
+                validation_accuracies_curve[-1]["nodes"],
+                validation_accuracies_curve[-1]["edges"],
             )
         )
 
@@ -231,8 +233,8 @@ if __name__ == "__main__":
         plot_training_graph(
             steps_curve,
             losses_curve,
-            test_losses_curve,
+            validation_losses_curve,
             accuracies_curve,
-            test_accuracies_curve,
+            validation_accuracies_curve,
             os.path.dirname(__file__) + f"/trainings/{plot_name}",
         )
