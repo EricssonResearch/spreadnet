@@ -80,6 +80,17 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
     # nx.draw_networkx_labels(graph, pos, labels=pos, font_color="r")
 
 
+def get_line_color(mode, type):
+    if type == "nodes" and mode == "training":
+        return "#4682B4"
+    if type == "nodes" and mode == "validation":
+        return "#C60C30"
+    if type == "edges" and mode == "training":
+        return "#87CEEB"
+    if type == "edges" and mode == "validation":
+        return "#fd5c63"
+
+
 def plot_training_graph(
     steps_curve,
     losses_curve,
@@ -87,6 +98,7 @@ def plot_training_graph(
     accuracies_curve,
     validation_accuracies_curve,
     save_path,
+    separate_training_testing=False,
     smoooth_window_half_width=3,
 ):
     """Plot training losses and accuracies.
@@ -98,49 +110,94 @@ def plot_training_graph(
         accuracies_curve: nodes and edges accuracies on training set
         validation_accuracies_curve: nodes and edges accuracies on validation set
         save_path: folder and file name
+        separate_training_testing: separate training and testing graph or merge
         smoooth_window_half_width: smoothen plot lines, the higher the smoother
 
     Returns:
         None
     """
-    fig, axes = plt.subplots(2, 2, figsize=(10, 10))
-    for ax, metric, data_list in zip(
-        [axes[0][0], axes[0][1], axes[1][0], axes[1][1]],
-        [
-            "Training Loss",
-            "Training Accuracy",
-            "Validation Loss",
-            "Validation Accuracy",
-        ],
-        [
-            losses_curve,
-            accuracies_curve,
-            validation_losses_curve,
-            validation_accuracies_curve,
-        ],
-    ):
-        for k in ["edges", "nodes"]:
-            x = steps_curve
-            y = [d[k] for d in data_list]
 
-            window = signal.triang(1 + 2 * smoooth_window_half_width)
-            window /= window.sum()
+    if separate_training_testing:
+        fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+        for ax, metric, data_list in zip(
+            [axes[0][0], axes[0][1], axes[1][0], axes[1][1]],
+            [
+                "Training Loss",
+                "Training Accuracy",
+                "Validation Loss",
+                "Validation Accuracy",
+            ],
+            [
+                losses_curve,
+                accuracies_curve,
+                validation_losses_curve,
+                validation_accuracies_curve,
+            ],
+        ):
+            for k in ["edges", "nodes"]:
+                x = steps_curve
+                y = [d[k] for d in data_list]
 
-            y = signal.convolve(y, window, mode="valid")
-            x = signal.convolve(x, window, mode="valid")
+                window = signal.triang(1 + 2 * smoooth_window_half_width)
+                window /= window.sum()
 
-            ax.plot(x, y, label=k)
+                y = signal.convolve(y, window, mode="valid")
+                x = signal.convolve(x, window, mode="valid")
 
-        ax.set_title(metric)
-        ax.set_ylabel(metric)
-        ax.set_xlabel("Training Iteration")
-        ax.legend()
+                ax.plot(
+                    x, y, label=k, color=get_line_color(metric.split(" ")[0].lower(), k)
+                )
 
-        axes[0][0].set_yscale("log")
-        axes[1][0].set_yscale("log")
+            ax.set_title(metric)
+            ax.set_ylabel(metric)
+            ax.set_xlabel("Training Iteration")
+            ax.legend()
 
-        axes[0][1].set_ylim(0.2, 1.001)
-        axes[1][1].set_ylim(0.2, 1.001)
+            axes[0][0].set_yscale("log")
+            axes[1][0].set_yscale("log")
 
-        plt.subplots_adjust(hspace=0.4)
-        plt.savefig(save_path)
+            axes[0][1].set_ylim(0.2, 1.001)
+            axes[1][1].set_ylim(0.2, 1.001)
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+        for ax, metric, data_list in zip(
+            axes,
+            [
+                "Loss",
+                "Accuracy",
+            ],
+            [
+                [losses_curve, validation_losses_curve],
+                [accuracies_curve, validation_accuracies_curve],
+            ],
+        ):
+            for k in ["edges", "nodes"]:
+                x = steps_curve
+                y0 = [d[k] for d in data_list[0]]
+                y1 = [d[k] for d in data_list[1]]
+
+                window = signal.triang(1 + 2 * smoooth_window_half_width)
+                window /= window.sum()
+
+                y0 = signal.convolve(y0, window, mode="valid")
+                y1 = signal.convolve(y1, window, mode="valid")
+                x = signal.convolve(x, window, mode="valid")
+
+                ax.plot(x, y0, label="Train " + k, color=get_line_color("training", k))
+                ax.plot(
+                    x,
+                    y1,
+                    label="Validation " + k,
+                    color=get_line_color("validation", k),
+                )
+
+            ax.set_title(metric)
+            ax.set_ylabel(metric)
+            ax.set_xlabel("Training Iteration")
+            ax.legend()
+
+            axes[0].set_yscale("log")
+            axes[1].set_ylim(0.6, 1.01)
+
+    plt.subplots_adjust(hspace=0.4)
+    plt.savefig(save_path)
