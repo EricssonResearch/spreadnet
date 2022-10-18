@@ -15,7 +15,7 @@ TODO: make the class not change the working dirrectory
 
 """
 
-
+from black import out
 from spreadnet.utils.config_parser import yaml_parser
 
 from spreadnet.pyg_gnn.models import *
