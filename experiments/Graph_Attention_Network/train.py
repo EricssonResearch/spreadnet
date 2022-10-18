@@ -55,7 +55,8 @@ def train(
             data = data.to(device)
             node_true, edge_true = data.y
             edge_index = data.edge_index
-            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
+            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr, return_attention_weights=True)
+
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
             losses["nodes"].backward(retain_graph=True)
@@ -128,7 +129,12 @@ if __name__ == "__main__":
         dropout=model_configs["dropout"],
         concat=model_configs["concat"],
         add_self_loops=model_configs["add_self_loops"],
-        bias=model_configs["bias"]
+        bias=model_configs["bias"],
+        edge_in_channels=model_configs["edge_in_channels"],
+        edge_hidden_channels=model_configs["edge_hidden_channels"],
+        edge_out_channels=model_configs["edge_out_channels"],
+        edge_num_layers=model_configs["edge_num_layers"],
+        edge_bias=model_configs["edge_bias"]
     ).to(device)
 
     opt = torch.optim.Adam(

@@ -13,12 +13,12 @@ train:
   weight_save_freq: 50
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 200
+  epochs: 1000
   batch_size: 32
   shuffle: True
 
-  adam_lr: !!float 1e-4
-  adam_weight_decay: !!float 5e-5
+  adam_lr: !!float 1e-3
+  adam_weight_decay: !!float 5e-4
 
 model:
   in_channels: 3
@@ -30,4 +30,8 @@ model:
   concat: False
   add_self_loops: True
   bias: True
-
+  edge_in_channels: 5
+  edge_hidden_channels: 16
+  edge_out_channels: 2
+  edge_num_layers: 2
+  edge_bias: True

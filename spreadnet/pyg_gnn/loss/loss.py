@@ -25,15 +25,15 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
         "nodes": torch.nn.functional.cross_entropy(
             node_pred, node_true, reduction="mean"
         ),
-        "edges": torch.nn.functional.binary_cross_entropy(
-            edge_pred.float(), edge_true.float(), reduction="mean"
+        "edges": torch.nn.functional.cross_entropy(
+            edge_pred, edge_true, reduction="mean"
         ),
     }
 
-
     # track the num of correct predictions
     predicted_node_labels = torch.argmax(node_pred, dim=-1).type(torch.int64)
-    predicted_edge_labels = torch.round(edge_pred)
+    predicted_edge_labels = torch.argmax(edge_pred, dim=-1).type(torch.int64)
+
 
     node_comps = (
         (node_true == predicted_node_labels)
