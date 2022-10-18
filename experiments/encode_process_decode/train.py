@@ -239,7 +239,7 @@ if __name__ == "__main__":
             )
         )
 
-        if epoch % plot_after_epochs == 0:
+        if (epoch + 1) % plot_after_epochs == 0:
             create_plot(plot_name)
 
     if weight_base_path is not None:
