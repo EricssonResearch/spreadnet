@@ -1,6 +1,4 @@
-"""
-Shortest path algorithms for weighted graphs.
-"""
+"""Shortest path algorithms for weighted graphs."""
 
 from collections import deque
 from heapq import heappop, heappush
@@ -54,7 +52,6 @@ def _weight_function(G, weight):
     minimum edge weight over all parallel edges is returned. If any edge
     does not have an attribute with key `weight`, it is assumed to
     have weight one.
-
     """
     if callable(weight):
         return weight
@@ -206,7 +203,6 @@ def dijkstra_path_length(G, source, target, weight="weight"):
     bidirectional_dijkstra
     bellman_ford_path_length
     single_source_dijkstra
-
     """
     if source not in G:
         raise nx.NodeNotFound(f"Node {source} not found in graph")
@@ -279,7 +275,6 @@ def single_source_dijkstra_path(G, source, cutoff=None, weight="weight"):
     See Also
     --------
     single_source_dijkstra, single_source_bellman_ford
-
     """
     return multi_source_dijkstra_path(G, {source}, cutoff=cutoff, weight=weight)
 
@@ -350,7 +345,6 @@ def single_source_dijkstra_path_length(G, source, cutoff=None, weight="weight"):
     See Also
     --------
     single_source_dijkstra, single_source_bellman_ford_path_length
-
     """
     return multi_source_dijkstra_path_length(G, {source}, cutoff=cutoff, weight=weight)
 
@@ -457,8 +451,7 @@ def single_source_dijkstra(G, source, target=None, cutoff=None, weight="weight")
 
 
 def multi_source_dijkstra_path(G, sources, cutoff=None, weight="weight"):
-    """Find shortest weighted paths in G from a given set of source
-    nodes.
+    """Find shortest weighted paths in G from a given set of source nodes.
 
     Compute shortest path between any of the source nodes and all other
     reachable nodes for a weighted graph.
@@ -523,15 +516,14 @@ def multi_source_dijkstra_path(G, sources, cutoff=None, weight="weight"):
     See Also
     --------
     multi_source_dijkstra, multi_source_bellman_ford
-
     """
     length, path = multi_source_dijkstra(G, sources, cutoff=cutoff, weight=weight)
     return path
 
 
 def multi_source_dijkstra_path_length(G, sources, cutoff=None, weight="weight"):
-    """Find shortest weighted path lengths in G from a given set of
-    source nodes.
+    """Find shortest weighted path lengths in G from a given set of source
+    nodes.
 
     Compute the shortest path length between any of the source nodes and
     all other reachable nodes for a weighted graph.
@@ -599,7 +591,6 @@ def multi_source_dijkstra_path_length(G, sources, cutoff=None, weight="weight"):
     See Also
     --------
     multi_source_dijkstra
-
     """
     if not sources:
         raise ValueError("sources must not be empty")
@@ -611,8 +602,8 @@ def multi_source_dijkstra_path_length(G, sources, cutoff=None, weight="weight"):
 
 
 def multi_source_dijkstra(G, sources, target=None, cutoff=None, weight="weight"):
-    """Find shortest weighted paths and lengths from a given set of
-    source nodes.
+    """Find shortest weighted paths and lengths from a given set of source
+    nodes.
 
     Uses Dijkstra's algorithm to compute the shortest paths and lengths
     between one of the source nodes and the given `target`, or all other
@@ -707,7 +698,6 @@ def multi_source_dijkstra(G, sources, target=None, cutoff=None, weight="weight")
     --------
     multi_source_dijkstra_path
     multi_source_dijkstra_path_length
-
     """
     if not sources:
         raise ValueError("sources must not be empty")
@@ -721,7 +711,7 @@ def multi_source_dijkstra(G, sources, target=None, cutoff=None, weight="weight")
     dist = _dijkstra_multisource(
         G, sources, weight, paths=paths, cutoff=cutoff, target=target
     )
-    #TODO: Change this. just return entire dictionary of paths
+    # TODO: Change this. just return entire dictionary of paths
     if target is None:
         return (dist, paths)
     try:
@@ -731,13 +721,12 @@ def multi_source_dijkstra(G, sources, target=None, cutoff=None, weight="weight")
 
 
 def _dijkstra(G, source, weight, pred=None, paths=None, cutoff=None, target=None):
-    """Uses Dijkstra's algorithm to find shortest weighted paths from a
-    single source.
+    """Uses Dijkstra's algorithm to find shortest weighted paths from a single
+    source.
 
-    This is a convenience function for :func:`_dijkstra_multisource`
-    with all the arguments the same, except the keyword argument
-    `sources` set to ``[source]``.
-
+    This is a convenience function for :func:`_dijkstra_multisource` with all
+    the arguments the same, except the keyword argument `sources` set to
+    ``[source]``.
     """
     return _dijkstra_multisource(
         G, [source], weight, pred=pred, paths=paths, cutoff=cutoff, target=target
@@ -747,7 +736,7 @@ def _dijkstra(G, source, weight, pred=None, paths=None, cutoff=None, target=None
 def _dijkstra_multisource(
     G, sources, weight, pred=None, paths=None, cutoff=None, target=None
 ):
-    """Uses Dijkstra's algorithm to find shortest weighted paths
+    """Uses Dijkstra's algorithm to find shortest weighted paths.
 
     Parameters
     ----------
@@ -794,7 +783,6 @@ def _dijkstra_multisource(
     The optional predecessor and path dictionaries can be accessed by
     the caller through the original pred and paths objects passed
     as arguments. No need to explicitly return pred or paths.
-
     """
     G_succ = G._adj  # For speed-up (and works for both directed and undirected graphs)
 
@@ -843,7 +831,7 @@ def _dijkstra_multisource(
 
     # The optional predecessor and path dictionaries can be accessed
     # by the caller via the pred and paths objects passed as arguments.
-    #TODO add dist to memoization
+    # TODO add dist to memoization
     return dist
 
 
@@ -1089,7 +1077,6 @@ def all_pairs_dijkstra_path(G, cutoff=None, weight="weight"):
     See Also
     --------
     floyd_warshall, all_pairs_bellman_ford_path
-
     """
     path = single_source_dijkstra_path
     # TODO This can be trivially parallelized.
