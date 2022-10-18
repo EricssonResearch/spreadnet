@@ -60,6 +60,8 @@ class SPGATNet(torch.nn.Module):
         # else:
         #    raise ValueError
 
+        self.linear = Linear(in_channels, hidden_channels)
+
         self.conv1 = GATConv(
             in_channels=in_channels,
             out_channels=hidden_channels,
@@ -97,22 +99,22 @@ class SPGATNet(torch.nn.Module):
             num_layers=edge_num_layers,
             bias=edge_bias
         )
-        #self.linear = Linear(
-        #    out_channels=hidden_channels,
-        #    bias=True
-        #)
 
     def forward(self, x, edge_index, edge_attr, return_attention_weights):
 
-        edge_len = edge_attr.size()[0]
+        #edge_len = edge_attr.size()[0]
 
-        out, (edge_index, alpha) = self.conv1(x=x, edge_index=edge_index, edge_attr=edge_attr,
+        out, (edge_index, alpha) = self.conv1(x=x,
+                                              edge_index=edge_index,
+                                              edge_attr=edge_attr,
                                               return_attention_weights=return_attention_weights,
                                               )
-        #out = F.dropout(out, p=0.5, training=self.training)
+        out = F.dropout(out, p=0.5, training=self.training)
+        out = out + self.linear(x)
 
-        #out, (edge_index, alpha) = self.conv2(x=out, edge_index=edge_index, edge_attr=alpha, return_attention_weights=return_attention_weights)
-        #out = F.dropout(out, p=0.5, training=self.training)
+        out, (edge_index, alpha) = self.conv2(x=out, edge_index=edge_index, edge_attr=alpha, return_attention_weights=return_attention_weights)
+        out = F.dropout(out, p=0.5, training=self.training)
+        out = out + self.linear(x)
 
         out, (edge_index, alpha) = self.conv3(x=out, edge_index=edge_index, edge_attr=alpha,
                                               return_attention_weights=return_attention_weights,
@@ -120,8 +122,8 @@ class SPGATNet(torch.nn.Module):
         out = F.dropout(out, p=0.5, training=self.training)
 
 
-        edge_index = edge_index[:, 0:edge_len]
-        alpha = alpha[0:edge_len, :]
+        #edge_index = edge_index[:, 0:edge_len]
+        #alpha = alpha[0:edge_len, :]
 
         out_src, out_dst = out[edge_index[0]], out[edge_index[1]]
         edge_feat = torch.cat([out_src, alpha, out_dst], dim=-1)

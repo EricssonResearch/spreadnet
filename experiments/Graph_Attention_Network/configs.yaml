@@ -28,7 +28,7 @@ model:
   heads: 1
   dropout: 0.5
   concat: False
-  add_self_loops: True
+  add_self_loops: False
   bias: True
   edge_in_channels: 5
   edge_hidden_channels: 16
