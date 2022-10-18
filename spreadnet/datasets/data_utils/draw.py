@@ -139,8 +139,8 @@ def plot_training_graph(
         axes[0][0].set_yscale("log")
         axes[1][0].set_yscale("log")
 
-        axes[0][1].set_ylim(0.79, 1.01)
-        axes[1][1].set_ylim(0.79, 1.01)
+        axes[0][1].set_ylim(0.2, 1.001)
+        axes[1][1].set_ylim(0.2, 1.001)
 
         plt.subplots_adjust(hspace=0.4)
         plt.savefig(save_path)
