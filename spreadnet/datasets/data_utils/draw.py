@@ -81,14 +81,14 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
 
 
 def get_line_color(mode, type):
-    if type == "nodes" and mode == "training":
+    if type == "nodes" and mode == "training":  # Dark blue
         return "#4682B4"
-    if type == "nodes" and mode == "validation":
+    if type == "nodes" and mode == "validation":  # Dark red
         return "#C60C30"
-    if type == "edges" and mode == "training":
-        return "#87CEEB"
-    if type == "edges" and mode == "validation":
-        return "#fd5c63"
+    if type == "edges" and mode == "training":  # Light blue
+        return "#99D8F2"
+    if type == "edges" and mode == "validation":  # Light red
+        return "#FF8A8F"
 
 
 def plot_training_graph(
