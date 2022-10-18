@@ -1,42 +1,35 @@
 """
-Plots the prediction with prediction probabilities for a single graph.    
-single graphs. This could help us understand how the network behaves. 
+Plots the prediction with prediction probabilities for a single graph.
+single graphs. This could help us understand how the network behaves.
 
 
 TODO:
-    1. Connect to the data loader. 
-    2. Connect to the same graph generator PyG uses for new graph 
+    1. Connect to the data loader.
+    2. Connect to the same graph generator PyG uses for new graph
         generation.
     3. Finish defining the tests and their purpose in the
         context.
-    4. Connect to utils so that both PyG and tensorflow can be tested.    
+    4. Connect to utils so that both PyG and tensorflow can be tested.
 
 Reminder:
-    Same test should work for both implementations. 
+    Same test should work for both implementations.
     Implementation specifc operation should be dealt with
-    in the utils not here. 
+    in the utils not here.
 """
 
-from statistics import mode
-import sys
 
-from black import out
+import sys
+import json
+
 from spreadnet.utils.experiment_utils import ExperimentUtils
 from spreadnet.utils.visualization_utils import VisualUtils
 from spreadnet.tf_gnn.model import gnn
-from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 
 sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
-
-
 sys.modules["gnn"] = gnn
-
-
-import json
-from os import path as osp
 
 
 """
@@ -107,14 +100,16 @@ def single_graph_vis_test1():
     """
     Unseen Graphs
 
-    Pass a new unsen graph to the trainable GNN and see if it finds the correct shortest path.
+    Pass a new unsen graph to the trainable GNN and see if it
+    finds the correct shortest path.
 
     """
 
 
 def single_graph_vis_test2():
     """
-    Take a graph that has been seen before and check the behaviour if you have different start and end nodes.
+    Take a graph that has been seen before and check the
+    behaviour if you have different start and end nodes.
 
     """
     pass
@@ -122,7 +117,8 @@ def single_graph_vis_test2():
 
 def single_graph_vis_test3():
     """
-    The demo report only shows accuracy and loss on the graphs that the network has been trained on.
+    The demo report only shows accuracy and loss on the graphs that
+    the network has been trained on.
     What about the accuracy on graphs that the network has not been trained on?
 
     """

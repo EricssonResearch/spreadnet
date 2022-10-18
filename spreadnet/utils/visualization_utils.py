@@ -25,8 +25,10 @@ class VisualUtils:
         """Draws plot with prediction path. Or with max probability path.
 
         Args:
-            G (_type_): Networkx graph as per documentation specifications. (Documentation not written ask George)
-            ground_truth (bool, optional): _description_. Plot the Ground Truth or the logit class prediction.
+            G (_type_): Networkx graph as per documentation specifications.
+                        (Documentation not written ask George)
+            ground_truth (bool, optional): _description_.
+                    Plot the Ground Truth or the logit class prediction.
         """
 
         is_start_index = 0
@@ -40,9 +42,9 @@ class VisualUtils:
         for i in range(0, G.number_of_nodes()):
             # Construct node positions and find the source and target
             # of the querry.
-            if G.nodes[i]["is_start"] == True:
+            if G.nodes[i]["is_start"] is True:
                 is_start_index = i
-            if G.nodes[i]["is_end"] == True:
+            if G.nodes[i]["is_end"] is True:
 
                 is_end_index = i
             pos[i] = G.nodes[i]["pos"]
@@ -51,13 +53,13 @@ class VisualUtils:
 
             for i in range(0, len(G.nodes)):
                 # Get shortest path nodes ground truth.
-                if G.nodes[i]["is_in_path"] == True:
+                if G.nodes[i]["is_in_path"] is True:
                     sp_path.append(i)
             title = title + "_ground_truth"
             edges_list = list(G.edges(data=True))
 
             for e in edges_list:
-                if e[2]["is_in_path"] == True:
+                if e[2]["is_in_path"] is True:
                     sp_path_edges.append([e[0], e[1]])
 
             labels_edges = nx.get_edge_attributes(G, "weight")
@@ -139,7 +141,8 @@ class VisualUtils:
             node_labels: probability rounded to 2 decimals
             sorted_edges: sorted edges with probability rounded to 2 decimals.
 
-        Note: Sorted edges as edges (A, B) and (B, A) have different probability but in drawing  the labels overlap.
+        Note: Sorted edges as edges (A, B) and (B, A) have different probability
+              but in drawing  the labels overlap.
         TODO: Represent probabilities for both ways of an edge.
         """
         edge_labels = {}
@@ -196,8 +199,8 @@ class VisualUtils:
         return sp_path, sp_path_edges
 
     def _max_probability_walk(self, G, start_node, end_node):
-        """Takes an ouput graph with a start and end node, outputs the nodes and edges if we take the maximum probability.
-        Either node or edge.
+        """Takes an ouput graph with a start and end node, outputs the nodes and edges
+            if we take the maximum probability, either node or edge.
 
         Args:
             G (_type_): Oruput Graph
@@ -234,7 +237,7 @@ class VisualUtils:
 
                     chosen_edge = (e[0], e[1])
 
-            if chosen_edge == None:
+            if chosen_edge is None:
                 chosen_node = None
                 max_probability_node = 0.01
                 for e in edges:
@@ -253,7 +256,7 @@ class VisualUtils:
                         max_probability_node = probability_node
                         chosen_node = e[1]
 
-                if chosen_node != None:
+                if chosen_node is not None:
                     max_prob_walk_edges.append((current_node, chosen_node))
                     max_prob_walk_nodes.append(chosen_node)
                     current_node = chosen_node

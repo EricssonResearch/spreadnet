@@ -1,21 +1,20 @@
 """
-Class for utilities required by the testing suite. 
-Repetitive functions to be included. 
+Class for utilities required by the testing suite.
+Repetitive functions to be included.
 
 
-Assumes that the code is run in a folder placed in experiments. 
-It goes one folder back to pick up the weights. 
+Assumes that the code is run in a folder placed in experiments.
+It goes one folder back to pick up the weights.
 
 
-This testing utils needs to know where the weights are. 
-TODO: Add the weights path 
+This testing utils needs to know where the weights are.
+TODO: Add the weights path
 TODO: make the class not change the working dirrectory
-      durring ussage. 
+      durring ussage.
 
 
 """
 
-from black import out
 from spreadnet.utils.config_parser import yaml_parser
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
@@ -50,12 +49,13 @@ class ExperimentUtils:
 
         """
         TODO: add in configs the trained models for each model type
-        those models are taken from the weights folder. But chosing one is harder as it should require some kind
-         of standardized naming scheme.  
+        those models are taken from the weights folder. But chosing one is
+        harder as it should require some kind
+        of standardized naming scheme.
 
-        Current solution during the experiment we chose the specific model. Deciding on the trained model weights
-        to be used is done during the experiment. 
-
+        Current solution during the experiment we chose the specific model.
+        Deciding on the trained model weights
+        to be used is done during the experiment.
         """
 
         self.model_type = model_type
@@ -66,8 +66,8 @@ class ExperimentUtils:
         """
         Changes the current directory to the weights directory.
 
-        Assumens that it is inside a directory in experiments and that the weights are in a
-        weights directory in the same folder.
+        Assumens that it is inside a directory in experiments and that the weights
+        are in a weights directory in the same folder.
 
         Always call _return
         """
@@ -82,7 +82,8 @@ class ExperimentUtils:
         """
             Prints or returns a list of the available models.
         Args:
-            ret (bool, optional): Return the list of implemented models. Defaults to False.
+            ret (bool, optional): Return the list of implemented models. \
+                Defaults to False.
 
 
         Returns:
@@ -121,7 +122,10 @@ class ExperimentUtils:
             name (str): dataset name
             pickled(bool): Is pickled
         """
-        self._goto_weights()  # TODO Can replace the directory traversal with the weights base path making.
+        self._goto_weights()
+
+        # TODO Can replace the directory traversal
+        # with the weights base path making.
 
         if self.model_type == "tf_gnn":
 
