@@ -22,10 +22,10 @@ train:
 
 model:
   in_channels: 3
-  hidden_channels: 16
+  hidden_channels:
   out_channels: 2
   num_hidden_layers: 2
-  heads: 1
+  heads: 8
   dropout: 0.5
   concat: False
   add_self_loops: False

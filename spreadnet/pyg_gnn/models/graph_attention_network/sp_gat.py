@@ -61,6 +61,8 @@ class SPGATNet(torch.nn.Module):
         #    raise ValueError
 
         self.linear = Linear(in_channels, hidden_channels)
+        self.node_encoder = Linear(in_channels, hidden_channels*2)
+        self.edge_encoder = Linear(1, hidden_channels*2)
 
         self.conv1 = GATConv(
             in_channels=in_channels,
@@ -103,6 +105,8 @@ class SPGATNet(torch.nn.Module):
     def forward(self, x, edge_index, edge_attr, return_attention_weights):
 
         #edge_len = edge_attr.size()[0]
+        out = self.node_encoder(x)
+        edge_attr = self.edge_encoder(edge_attr)
 
         out, (edge_index, alpha) = self.conv1(x=x,
                                               edge_index=edge_index,
@@ -129,5 +133,6 @@ class SPGATNet(torch.nn.Module):
         edge_feat = torch.cat([out_src, alpha, out_dst], dim=-1)
 
         edge_out = self.edge_classifier(edge_feat)
-
+        #out = F.sigmoid(out)
+        #edge_out = F.relu(edge_out)
         return out, edge_out
