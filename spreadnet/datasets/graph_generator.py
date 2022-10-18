@@ -67,11 +67,12 @@ class GraphGenerator:
         Args:
             random_seed:  A random seed for the graph generator. Default= None.
             num_nodes_min_max: A sequence [lower, upper) number of nodes per graph.
-            dimensions: (optional) An `int` number of dimensions for the positions. Default= 2.
-            theta: graph's threshold. Large values (1000+) make mostly trees.Try 20-60 for good non-trees.
-                    Default=1000.0.
-            min_length: (optional) An `int` minimum number of edges in the shortest path. Default= 1.
-                        sampling distribution. Default= 1.0.
+            dimensions: (optional) An `int` number of dimensions for the positions.
+                        Default= 2.
+            theta: graph's threshold. Large values (1000+) make mostly trees.Try 20-60
+                    for good non-trees. Default=1000.0.
+            min_length: (optional) An `int` minimum number of edges in the shortest
+                        path. Default= 1. sampling distribution. Default= 1.0.
         """
 
         self.random_state = np.random.RandomState(random_seed)
@@ -82,8 +83,7 @@ class GraphGenerator:
         self.rate = rate
 
     def task_graph_generator(self):
-        """
-        The graphs are geographic threshold graphs, but with added edges via
+        """The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.
         The generated graph is a directed graph, and it contains path
         information.
@@ -95,8 +95,7 @@ class GraphGenerator:
             yield self._generate_task_graph()
 
     def base_graph_generator(self):
-        """
-        The graphs are geographic threshold graphs, but with added edges via
+        """The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.
 
         returns:
@@ -111,12 +110,10 @@ class GraphGenerator:
         return graph
 
     def _generate_base_graph(self):
-        """
-        Generate the base graph for the task.
+        """Generate the base graph for the task.
 
         Returns:
             A basic graph.
-
         """
         # 1. Sample num_nodes.
         num_nodes = self.random_state.randint(*self.num_nodes_min_max)

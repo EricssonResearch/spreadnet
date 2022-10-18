@@ -83,9 +83,9 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
 def plot_training_graph(
     steps_curve,
     losses_curve,
-    test_losses_curve,
+    validation_losses_curve,
     accuracies_curve,
-    test_accuracies_curve,
+    validation_accuracies_curve,
     save_path,
     smoooth_window_half_width=3,
 ):
@@ -94,9 +94,9 @@ def plot_training_graph(
     Args:
         steps_curve: epoch iteration
         losses_curve: nodes and edges losses on training set
-        test_losses_curve: nodes and edges losses on test set
+        validation_losses_curve: nodes and edges losses on validation set
         accuracies_curve: nodes and edges accuracies on training set
-        test_accuracies_curve: nodes and edges accuracies on test set
+        validation_accuracies_curve: nodes and edges accuracies on validation set
         save_path: folder and file name
         smoooth_window_half_width: smoothen plot lines, the higher the smoother
 
@@ -106,8 +106,18 @@ def plot_training_graph(
     fig, axes = plt.subplots(2, 2, figsize=(10, 10))
     for ax, metric, data_list in zip(
         [axes[0][0], axes[0][1], axes[1][0], axes[1][1]],
-        ["Train Loss", "Train Accuracy", "Test Loss", "Test Accuracy"],
-        [losses_curve, accuracies_curve, test_losses_curve, test_accuracies_curve],
+        [
+            "Training Loss",
+            "Training Accuracy",
+            "Validation Loss",
+            "Validation Accuracy",
+        ],
+        [
+            losses_curve,
+            accuracies_curve,
+            validation_losses_curve,
+            validation_accuracies_curve,
+        ],
     ):
         for k in ["edges", "nodes"]:
             x = steps_curve

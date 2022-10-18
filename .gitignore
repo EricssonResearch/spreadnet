@@ -9,6 +9,7 @@ __pycache__/
 *.pickle
 *.pth
 *.vscode
+*.csv
 # Distribution / packaging
 .Python
 build/
