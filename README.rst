@@ -67,8 +67,7 @@ Development Workflow
          # Test your installation
          PYTHONPATH=. pytest spreadnet
 
-   * Finally, we recommend you use a pre-commit hook, which runs black and flake8 et.
-al. when
+   * Finally, we recommend you use a pre-commit hook, which runs black and flake8 et al. when
      you type ``git commit``::
 
        pre-commit install
