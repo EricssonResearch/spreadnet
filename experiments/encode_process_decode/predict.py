@@ -92,11 +92,10 @@ if __name__ == "__main__":
     weight_base_path = osp.join(
         osp.dirname(__file__), train_configs["weight_base_path"]
     )
-    # model_path = weight_base_path + "model_weights_best.pth"
+
     model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
-    # test data
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
         .decode(pt_decoder)
