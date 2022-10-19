@@ -49,7 +49,8 @@ def nest_to_numpy(nest):
 
 # TODO(b/205123804): Provide a library function for this.
 def graph_tensor_spec_from_sample_graph(sample_graph):
-    """Build variable node/edge spec given a sample graph without batch axes."""
+    """Build variable node/edge spec given a sample graph without batch
+    axes."""
     tfgnn.check_scalar_graph_tensor(sample_graph)
     sample_graph_spec = sample_graph.spec
     node_sets_spec = {}

@@ -1,5 +1,5 @@
 """
-Tensorflow GNN specifc utilities used during testing.
+Tensorflow GNN specific utilities used during testing.
     TODO:
         1. nx to tensor used by tf_gnn function.
             1.1 All helper functions
@@ -14,7 +14,7 @@ Details:
     If the tensorflow data generation is included it should be only
     for testing purposes and removed at the end.
     The final code should use the same DataLoader that pyg_gnn uses.
-     
+
 """
 import networkx as nx
 import numpy as np
@@ -125,7 +125,6 @@ class TfGNNUtils:
     def tf_pred_tensor_graph_to_nx_graph(self, graph_tensor):
         """Predicted tensor graph to nx graph for tf_gnn.
 
-
         Args:
             graph_tensor (_type_): Graph in tensor  format as used by the
 
@@ -149,7 +148,7 @@ class TfGNNUtils:
         node_weights = node_set["weight"].numpy()
         in_path_node_mask = node_set["is_in_path"].numpy()
 
-        # Add nodes with specifc atributes
+        # Add nodes with specific attributes
         for i in range(len(node_positions)):
             path_flag = False
             start_flag = False
@@ -197,14 +196,14 @@ class TfGNNUtils:
         return G
 
     def prob_labels(self, ot_graph) -> nx.Graph:
-        """Gets a output tensorflow graph and computes probabilities
-           as labels for nx graph.
+        """Gets a output tensorflow graph and computes probabilities as labels
+        for nx graph.
 
         Used by the nx_draw_custom function.
 
         Args:
             ot_graph (_type_): Instead of features the network has a
-                hidden state that only contains the outpus.
+                hidden state that only contains the outputs.
 
         Returns:
             node_labels (dict): {node_num: prob_is_in_path 0..1}

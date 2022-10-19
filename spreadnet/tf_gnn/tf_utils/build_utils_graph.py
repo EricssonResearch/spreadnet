@@ -1,8 +1,4 @@
-"""
-Really not sure what this thing is.
-
-
-"""
+"""Really not sure what this thing is."""
 
 
 import tensorflow as tf

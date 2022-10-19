@@ -17,7 +17,8 @@ def GraphNetworkGraphUpdate(
     use_input_context_state: bool = True,
     name: str = "graph_network",
 ):
-    """Returns a GraphUpdate to run a GraphNetwork on all node sets and edge sets.
+    """Returns a GraphUpdate to run a GraphNetwork on all node sets and edge
+    sets.
 
     The returned layer implements a Graph Network, as described by
     Battaglia et al.: ["Relational inductive biases, deep learning, and

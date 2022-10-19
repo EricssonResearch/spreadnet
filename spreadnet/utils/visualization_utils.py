@@ -1,11 +1,9 @@
-"""
-    Utilities for visualizing graphs. 
-    The code was initially designed for tf_gnn. 
+"""Utilities for visualizing graphs. The code was initially designed for
+tf_gnn.
 
-    TODO: Add utilities for pyg_gnn if needed. 
-    TODO: Combine ground truth and prediction graphs into a single plot./
-            Add a title to the plot and a decription of what the numbers mean.  
-
+TODO: Add utilities for pyg_gnn if needed.
+TODO: Combine ground truth and prediction graphs into a single plot./
+        Add a title to the plot and a description of what the numbers mean.
 """
 
 import networkx as nx
@@ -41,7 +39,7 @@ class VisualUtils:
 
         for i in range(0, G.number_of_nodes()):
             # Construct node positions and find the source and target
-            # of the querry.
+            # of the query.
             if G.nodes[i]["is_start"] is True:
                 is_start_index = i
             if G.nodes[i]["is_end"] is True:
@@ -178,7 +176,7 @@ class VisualUtils:
 
         Returns:
             sp_path: list of nodes in the shortest path.
-            sp_path_edges: list of edges(as tupples) in the shortest path.
+            sp_path_edges: list of edges(as tuples) in the shortest path.
         """
         sp_path = []
         sp_path_edges = []
@@ -199,8 +197,8 @@ class VisualUtils:
         return sp_path, sp_path_edges
 
     def _max_probability_walk(self, G, start_node, end_node):
-        """Takes an ouput graph with a start and end node, outputs the nodes and edges
-            if we take the maximum probability, either node or edge.
+        """Takes an output graph with a start and end node, outputs the nodes
+        and edges if we take the maximum probability, either node or edge.
 
         Args:
             G (_type_): Oruput Graph

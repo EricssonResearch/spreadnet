@@ -1,7 +1,5 @@
-"""
-Class for utilities required by the testing suite.
-Repetitive functions to be included.
-
+"""Class for utilities required by the testing suite. Repetitive functions to
+be included.
 
 Assumes that the code is run in a folder placed in experiments.
 It goes one folder back to pick up the weights.
@@ -10,9 +8,7 @@ It goes one folder back to pick up the weights.
 This testing utils needs to know where the weights are.
 TODO: Add the weights path
 TODO: make the class not change the working dirrectory
-      durring ussage.
-
-
+      during ussage.
 """
 
 from spreadnet.utils.config_parser import yaml_parser
@@ -49,7 +45,7 @@ class ExperimentUtils:
 
         """
         TODO: add in configs the trained models for each model type
-        those models are taken from the weights folder. But chosing one is
+        those models are taken from the weights folder. But choosing one is
         harder as it should require some kind
         of standardized naming scheme.
 
@@ -63,8 +59,7 @@ class ExperimentUtils:
             sys.exit("The model type given is not part of the implemented models.")
 
     def _goto_weights(self):
-        """
-        Changes the current directory to the weights directory.
+        """Changes the current directory to the weights directory.
 
         Assumens that it is inside a directory in experiments and that the weights
         are in a weights directory in the same folder.
@@ -97,7 +92,8 @@ class ExperimentUtils:
             return self.implemented_models
 
     def show_model_used(self, ret=False):
-        """Print or/and return the name of the model the class instance is using.
+        """Print or/and return the name of the model the class instance is
+        using.
 
         Args:
             ret (bool, optional): To return or not to return. Defaults to False.
@@ -113,7 +109,8 @@ class ExperimentUtils:
     def _load_model(
         self,
     ):
-        """Loads a specifc model.
+        """Loads a specific model.
+
         If it is a tensorflow model it loads it from a pickle.
         The class pickled needs to exist when unpickling.
         If it is a PyG model it loads it from the specific
@@ -173,8 +170,7 @@ class ExperimentUtils:
         self.trained_model = trained_model
 
     def inferer_single_data(self, input_graph):
-        """
-            Return model inference for an input depending on the model type.
+        """Return model inference for an input depending on the model type.
         Assumes that the input already is in the format required by the model.
 
         Args:

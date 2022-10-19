@@ -11,7 +11,6 @@ from random import randrange
 from os import path as osp
 import torch
 import webdataset as wds
-from spreadnet.pyg_gnn.models import *
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
