@@ -1,7 +1,5 @@
-"""
-Plots the prediction with prediction probabilities for a single graph.
+"""Plots the prediction with prediction probabilities for a single graph.
 single graphs. This could help us understand how the network behaves.
-
 
 TODO:
     1. Connect to the data loader.
@@ -13,7 +11,7 @@ TODO:
 
 Reminder:
     Same test should work for both implementations.
-    Implementation specifc operation should be dealt with
+    Implementation specific operation should be dealt with
     in the utils not here.
 """
 
@@ -34,19 +32,17 @@ sys.modules["gnn"] = gnn
 
 """
     The following is boilerplate code and should be dealt with.
-    It is ugly and keeps beeing reproduced in different formats
+    It is ugly and keeps being reproduced in different formats
     all over the placed.
 
 """
 
 
 def single_graph_implementation_test_helper():
-    """
+    """Temporary test to make sure that the visualization integration works.
 
-    Temporary test to make sure that the visualization integration works.
-    It uses a trained pickled tf_gnn model and it generates a graph using
-    the utils from the tf_gnn repository that came with the paper.
-
+    It uses a trained pickled tf_gnn model and it generates a graph using the
+    utils from the tf_gnn repository that came with the paper.
     """
 
     vis = VisualUtils()
@@ -56,8 +52,7 @@ def single_graph_implementation_test_helper():
     ]
 
     # TODO fix this path thing with the configs
-    # graphs = json.load(raw_path + "random.json")
-    # Broken window priciple applies tho
+
     datasets = [
         "random.json",
         "random_25-35.20.json",
@@ -97,30 +92,24 @@ def single_graph_vis_pyg_test0(trained_gnn):
 
 
 def single_graph_vis_test1():
-    """
-    Unseen Graphs
+    """Unseen Graphs.
 
-    Pass a new unsen graph to the trainable GNN and see if it
-    finds the correct shortest path.
-
+    Pass a new unsen graph to the trainable GNN and see if it finds the correct
+    shortest path.
     """
 
 
 def single_graph_vis_test2():
-    """
-    Take a graph that has been seen before and check the
-    behaviour if you have different start and end nodes.
-
-    """
+    """Take a graph that has been seen before and check the behaviour if you
+    have different start and end nodes."""
     pass
 
 
 def single_graph_vis_test3():
-    """
-    The demo report only shows accuracy and loss on the graphs that
-    the network has been trained on.
-    What about the accuracy on graphs that the network has not been trained on?
+    """The demo report only shows accuracy and loss on the graphs that the
+    network has been trained on.
 
+    What about the accuracy on graphs that the network has not been trained on?
     """
 
     pass
