@@ -121,21 +121,24 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, batch_size=train_configs["batch_size"])
 
     model = SPGATNet(
-        in_channels=model_configs["in_channels"],
-        hidden_channels=model_configs["hidden_channels"],
-        out_channels=model_configs["out_channels"],
-        num_hidden_layers=model_configs["num_hidden_layers"],
-        heads=model_configs["heads"],
-        dropout=model_configs["dropout"],
-        concat=model_configs["concat"],
-        add_self_loops=model_configs["add_self_loops"],
-        bias=model_configs["bias"],
-        edge_in_channels=model_configs["edge_in_channels"],
-        edge_hidden_channels=model_configs["edge_hidden_channels"],
-        edge_out_channels=model_configs["edge_out_channels"],
-        edge_num_layers=model_configs["edge_num_layers"],
-        edge_bias=model_configs["edge_bias"]
+
     ).to(device)
+    '''
+            in_channels=model_configs["in_channels"],
+            hidden_channels=model_configs["hidden_channels"],
+            out_channels=model_configs["out_channels"],
+            num_hidden_layers=model_configs["num_hidden_layers"],
+            heads=model_configs["heads"],
+            dropout=model_configs["dropout"],
+            concat=model_configs["concat"],
+            add_self_loops=model_configs["add_self_loops"],
+            bias=model_configs["bias"],
+            edge_in_channels=model_configs["edge_in_channels"],
+            edge_hidden_channels=model_configs["edge_hidden_channels"],
+            edge_out_channels=model_configs["edge_out_channels"],
+            edge_num_layers=model_configs["edge_num_layers"],
+            edge_bias=model_configs["edge_bias"]
+    '''
 
     opt = torch.optim.Adam(
         model.parameters(),
