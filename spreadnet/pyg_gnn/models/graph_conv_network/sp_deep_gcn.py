@@ -39,10 +39,23 @@ class SPCoDeepGCN(torch.nn.Module):
         )
 
         self.layers = torch.nn.ModuleList()
+        self.layers.append(
+            SPDeepGENLayer(
+                hidden_channels,
+                hidden_channels,
+                hidden_channels,
+                hidden_channels,
+                make_deep_layer=False,
+            )
+        )
 
-        for i in range(1, num_layers + 1):
+        for i in range(2, num_layers + 1):
             layer = SPDeepGENLayer(
-                hidden_channels, hidden_channels, hidden_channels, hidden_channels
+                hidden_channels,
+                hidden_channels,
+                hidden_channels,
+                hidden_channels,
+                ckpt_grad=bool(i % 3),
             )
             self.layers.append(layer)
 

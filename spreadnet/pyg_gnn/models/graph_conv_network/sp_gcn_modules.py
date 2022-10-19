@@ -16,15 +16,16 @@ class SPDeepGENLayer(MessagePassing):
         node_out_channels,
         edge_in_channels,
         edge_out_channels,
+        make_deep_layer: bool = True,
         ckpt_grad: bool = False,
     ):
         super(SPDeepGENLayer, self).__init__(aggr="add")
-        # assemble edge deep conv layer
 
+        # assemble edge deep conv layer
         self.edge_linear = Linear(
             edge_in_channels + node_out_channels * 2, edge_out_channels
         )
-        _edge_conv = GENConv(
+        edge_conv = GENConv(
             edge_in_channels,
             edge_out_channels,
             aggr="softmax",
@@ -33,20 +34,23 @@ class SPDeepGENLayer(MessagePassing):
             num_layers=2,
             norm="layer",
         )
-        _edge_norm = LayerNorm(edge_in_channels, elementwise_affine=True)
-        _edge_act = ReLU(inplace=True)
 
-        self.edge_fn = DeepGCNLayer(
-            _edge_conv,
-            _edge_norm,
-            _edge_act,
-            block="res+",
-            dropout=0.1,
-            ckpt_grad=ckpt_grad,
-        )
+        if make_deep_layer:
+            edge_norm = LayerNorm(edge_in_channels, elementwise_affine=True)
+            edge_act = ReLU(inplace=True)
+            self.edge_fn = DeepGCNLayer(
+                edge_conv,
+                edge_norm,
+                edge_act,
+                block="res+",
+                dropout=0.1,
+                ckpt_grad=ckpt_grad,
+            )
+        else:
+            self.edge_fn = edge_conv
 
         # assemble node deep conv layer
-        _node_conv = GENConv(
+        node_conv = GENConv(
             node_in_channels,
             node_out_channels,
             aggr="softmax",
@@ -55,17 +59,21 @@ class SPDeepGENLayer(MessagePassing):
             num_layers=2,
             norm="layer",
         )
-        _node_norm = LayerNorm(node_in_channels, elementwise_affine=True)
-        _node_act = ReLU(inplace=True)
 
-        self.node_fn = DeepGCNLayer(
-            _node_conv,
-            _node_norm,
-            _node_act,
-            block="res+",
-            dropout=0.1,
-            ckpt_grad=ckpt_grad,
-        )
+        if make_deep_layer:
+            node_norm = LayerNorm(node_in_channels, elementwise_affine=True)
+            node_act = ReLU(inplace=True)
+
+            self.node_fn = DeepGCNLayer(
+                node_conv,
+                node_norm,
+                node_act,
+                block="res+",
+                dropout=0.1,
+                ckpt_grad=ckpt_grad,
+            )
+        else:
+            self.node_fn = node_conv
 
     def edge_update(self, x_i, x_j, edge_features, e_edge_index):
         # print("Edge Update: ", x_i.size())
