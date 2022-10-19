@@ -9,7 +9,7 @@ from torch.nn import LayerNorm, ReLU, Linear
 from torch_geometric.nn import GENConv, DeepGCNLayer, MessagePassing
 
 
-class SPDeepGENLayer(MessagePassing):
+class SPGENLayer(MessagePassing):
     def __init__(
         self,
         node_in_channels,
@@ -19,7 +19,7 @@ class SPDeepGENLayer(MessagePassing):
         make_deep_layer: bool = True,
         ckpt_grad: bool = False,
     ):
-        super(SPDeepGENLayer, self).__init__(aggr="add")
+        super(SPGENLayer, self).__init__(aggr="add")
 
         # assemble edge deep conv layer
         self.edge_linear = Linear(
