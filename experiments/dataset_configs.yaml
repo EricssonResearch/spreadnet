@@ -3,7 +3,7 @@ data:
   random_seed: 0
   num_node_min: 8
   num_node_max: 50
-  starting_theta: 15 # the higher the less edge
+  starting_theta: 17 # the higher the less edge
   min_path_length: 1
   visualize_graph: 25 # less than or equal to dataset_size
 

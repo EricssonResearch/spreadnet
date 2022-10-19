@@ -34,7 +34,8 @@ if __name__ == "__main__":
     theta = starting_theta
     increase_theta_after = (
         data_configs["num_node_max"] - data_configs["num_node_min"]
-    ) * 7
+    ) * 15
+    cap_theta = 60
 
     generator = GraphGenerator(
         random_seed=random_seed,
@@ -64,7 +65,7 @@ if __name__ == "__main__":
             draw_networkx(fig, g, idx + 1, visualize_graph)
             graphs_to_be_drawn -= 1
 
-        if (idx + 1) % increase_theta_after == 0:
+        if theta < cap_theta and (idx + 1) % increase_theta_after == 0:
             theta += 1
             generator.set_theta(theta)
 
