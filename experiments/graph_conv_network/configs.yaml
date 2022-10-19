@@ -1,5 +1,8 @@
 train:
+  # "deep" or "simple"
+  which_model: "simple"
   weight_base_path: "./weights"
+  deep_weight_base_path: "./deep_weights"
   weight_save_freq: 50
   best_weight_name: "model_weights_best.pth"
 
@@ -11,19 +14,17 @@ train:
   adam_weight_decay: !!float 5e-4
 
 model:
-  gcn_in_channels: 3
-  gcn_num_hidden_layers: 1
-  gcn_hidden_channels: 64
-  gcn_out_channels: 64
-  gcn_use_normalization: True
-  gcn_use_bias: True
-#  node_mlp_in_channels:
-  node_mlp_bias: True
-  node_mlp_hidden_channels: 32
-  node_mlp_num_layers: 1
-  node_mlp_out_channels: 2
-#  edge_mlp_in_channels:
-  edge_mlp_bias: True
-  edge_mlp_hidden_channels: 32
-  edge_mlp_num_layers: 1
-  edge_mlp_out_channels: 2
+  node_in: 3
+  edge_in: 1
+  hidden_channels: 64
+  num_layers: 4
+  node_out: 2
+  edge_out: 2
+
+deep_model:
+  node_in: 3
+  edge_in: 1
+  hidden_channels: 64
+  num_layers: 16
+  node_out: 2
+  edge_out: 2
