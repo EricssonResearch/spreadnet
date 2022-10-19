@@ -67,7 +67,7 @@ class SPCoDeepGCN(torch.nn.Module):
         e_x = self.edge_encoder(e_x)
 
         for layer in self.layers:
-            v_x, v_e = layer(v_x, v_edge_index, e_x, e_edge_index)
+            v_x, e_x = layer(v_x, v_edge_index, e_x, e_edge_index)
 
         node_out = self.node_decoder(v_x)
         edge_out = self.edge_decoder(e_x)
