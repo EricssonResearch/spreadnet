@@ -10,3 +10,6 @@ spreadnet~=0.0.1
 tqdm~=4.64.1
 webdataset>=0.2.26
 yaml~=0.2.5
+tensorflow==2.10.0
+
+tensorflow-gnn==0.2.1

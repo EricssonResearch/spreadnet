@@ -1,27 +1,25 @@
 """
-Tensorflow GNN specifc utilities used during testing.  
-    TODO: 
+Tensorflow GNN specifc utilities used during testing.
+    TODO:
         1. nx to tensor used by tf_gnn function.
             1.1 All helper functions
-        2. For license purposes mention that some of the code related to tf_gnn is taken from 
+        2. For license purposes mention that some of the code related to
+        tf_gnn is taken from
             the Relational Inductive iases... paper
 Libraries:
     networkx, tensorflow, tensorflow_gnn
 
 
 Details:
-    If the tensorflow data generation is included it should be only 
-    for testing purposes and removed at the end. 
+    If the tensorflow data generation is included it should be only
+    for testing purposes and removed at the end.
     The final code should use the same DataLoader that pyg_gnn uses.
      
 """
 import networkx as nx
-from scipy import spatial
 import numpy as np
 import tensorflow as tf
 import tensorflow_gnn as tfgnn
-import itertools
-import collections
 
 
 class TfGNNUtils:
