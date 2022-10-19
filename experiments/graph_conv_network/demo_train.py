@@ -76,13 +76,13 @@ def train(
         nodes_corrects, edges_corrects = 0, 0
         dataset_nodes_size, dataset_edges_size = 0, 0  # for accuracy
 
-        print(f"Epoch: {epoch + 1}")
+        print(f"[Epoch: {epoch + 1:4}/{epoch_num}] ")
         for batch, (data,) in tqdm(
             enumerate(dataloader), unit="batch", total=len(list(dataloader))
         ):
-            # for batch, (data,) in enumerate(tqdm(dataloader)):
             n_data = data.to(device)
-            e_data = line_graph(data=n_data.clone())
+            e_data = n_data.clone()
+            e_data = line_graph(data=e_data)
             # print(n_data)
             # print(e_data)
 
@@ -91,9 +91,6 @@ def train(
             e_index = e_data.edge_index
             n_feats = n_data.x
             e_feats = e_data.x
-
-            # print(n_feats.size())
-            # print(e_feats.size())
 
             node_pred, edge_pred = trainable_model(n_feats, n_index, e_feats, e_index)
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
@@ -124,9 +121,8 @@ def train(
             best_model_wts = copy.deepcopy(model.state_dict())
 
         print(
-            f"[Epoch: {epoch + 1:4}/{epoch_num}] "
-            f" Losses: {{'nodes': {nodes_loss}, 'edges': {edges_loss} }} "
-            f"\n\t\t    Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}"
+            f" Losses: {{'nodes': {nodes_loss}, 'edges': {edges_loss} }}\n"
+            f" Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}"
         )
 
     if save_path is not None:
