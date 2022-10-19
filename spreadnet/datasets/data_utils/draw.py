@@ -155,9 +155,8 @@ def plot_training_graph(
 
             axes[0][0].set_yscale("log")
             axes[1][0].set_yscale("log")
-
-            axes[0][1].set_ylim(0.2, 1.001)
-            axes[1][1].set_ylim(0.2, 1.001)
+            axes[0][1].margins(0.02, 0.02)
+            axes[1][1].margins(0.02, 0.02)
     else:
         fig, axes = plt.subplots(1, 2, figsize=(10, 5))
         for ax, metric, data_list in zip(
@@ -197,7 +196,7 @@ def plot_training_graph(
             ax.legend()
 
             axes[0].set_yscale("log")
-            axes[1].set_ylim(0.6, 1.01)
+            axes[1].margins(0.02, 0.02)
 
     plt.subplots_adjust(hspace=0.4)
     plt.savefig(save_path)
