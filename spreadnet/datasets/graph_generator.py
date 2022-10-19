@@ -47,6 +47,8 @@ def _pairwise(iterable):
 class GraphGenerator:
     """A graph generator that creates a connected graph."""
 
+    mst_algorithms = ["kruskal", "prim", "boruvka"]
+
     def __init__(
         self,
         random_seed: int,
@@ -139,8 +141,10 @@ class GraphGenerator:
         )  # list [(0, 0, w), (0, 1, w).....]
 
         mst_graph = nx.Graph()
-        mst_graph.add_weighted_edges_from(weighted_edges, weight="weight")
-        mst_graph = nx.minimum_spanning_tree(mst_graph, weight="weight")
+        mst_graph.add_weighted_edges_from(weighted_edges)
+
+        mst_algorithm = self.mst_algorithms[self.random_state.randint(0, 2)]
+        mst_graph = nx.minimum_spanning_tree(mst_graph, algorithm=mst_algorithm)
 
         # 4. Put geo_graph's node attributes into the mst_graph.
         for i in mst_graph.nodes():
