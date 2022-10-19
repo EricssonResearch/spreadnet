@@ -7,7 +7,7 @@
 import torch
 from torch_geometric.nn import MLP
 
-from spreadnet.pyg_gnn.models.graph_conv_network.sp_gcn_modules import SPGENLayer
+from spreadnet.pyg_gnn.models.co_graph_conv_network.sp_gcn_modules import SPGENLayer
 
 
 class SPCoDeepGCNet(torch.nn.Module):
