@@ -7,7 +7,7 @@ train:
   batch_size: 128
   shuffle: True
 
-  adam_lr: !!float 1e-2
+  adam_lr: !!float 1e-4
   adam_weight_decay: !!float 5e-4
 
 model:
