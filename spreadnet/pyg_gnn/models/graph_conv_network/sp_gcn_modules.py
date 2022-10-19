@@ -45,9 +45,6 @@ class SPDeepGENLayer(MessagePassing):
             ckpt_grad=ckpt_grad,
         )
 
-        self.node_linear = Linear(
-            edge_out_channels + node_in_channels, node_in_channels
-        )
         # assemble node deep conv layer
         _node_conv = GENConv(
             node_in_channels,
@@ -82,19 +79,18 @@ class SPDeepGENLayer(MessagePassing):
         edge_features = self.edge_fn(edge_features, e_edge_index)
         return edge_features
 
-    def message(self, edge_features):
-        return edge_features
-
-    def update(self, aggregated, x, edge_index):
-        x_updated = torch.concat([aggregated, x], dim=-1)
-        x_updated = self.node_linear(x_updated)
-        x_updated = self.node_fn(x_updated, edge_index)
-        return x_updated
+    # def message(self, edge_features):
+    #     return edge_features
+    #
+    # def update(self, aggregated, x, edge_index):
+    #     x_updated = torch.concat([aggregated, x], dim=-1)
+    #     x_updated = self.node_fn(x_updated, edge_index)
+    #     return x_updated
 
     def forward(self, v_x, v_edge_index, e_x, e_edge_index):
         e_x = self.edge_updater(
             edge_index=v_edge_index, x=v_x, edge_features=e_x, e_edge_index=e_edge_index
         )
 
-        v_x = self.propagate(edge_index=v_edge_index, x=v_x, edge_features=e_x)
+        v_x = self.node_fn(v_x, v_edge_index)
         return v_x, e_x
