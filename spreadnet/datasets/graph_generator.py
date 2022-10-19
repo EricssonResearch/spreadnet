@@ -78,6 +78,9 @@ class GraphGenerator:
         self.min_length = min_length
         self.rate = rate
 
+    def set_theta(self, new_theta):
+        self.theta = new_theta
+
     def task_graph_generator(self):
         """The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.

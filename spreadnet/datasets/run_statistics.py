@@ -41,7 +41,7 @@ class RunStatistics:
                     "num_node_min",
                     "num_node_max",
                     "num_nodes",
-                    "theta",
+                    "starting_theta",
                     "max_edges_per_node",
                     "avg_edges_per_node",
                     "dataset_size",

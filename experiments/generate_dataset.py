@@ -21,7 +21,7 @@ visualize_graph = int(data_configs["visualize_graph"])
 random_seed = data_configs["random_seed"]
 min_path_length = int(data_configs["min_path_length"])
 num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
-theta = data_configs["theta"]
+starting_theta = data_configs["starting_theta"]
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
@@ -31,12 +31,19 @@ if not os.path.exists(raw_path):
 
 # ------------------------------------------
 if __name__ == "__main__":
-    graph_generator = GraphGenerator(
+    theta = starting_theta
+    increase_theta_after = (
+        data_configs["num_node_max"] - data_configs["num_node_min"]
+    ) * 7
+
+    generator = GraphGenerator(
         random_seed=random_seed,
         num_nodes_min_max=num_nodes_min_max,
         theta=theta,
         min_length=min_path_length,
-    ).task_graph_generator()
+    )
+
+    graph_generator = generator.task_graph_generator()
 
     all_graphs = list()
 
@@ -57,10 +64,13 @@ if __name__ == "__main__":
             draw_networkx(fig, g, idx + 1, visualize_graph)
             graphs_to_be_drawn -= 1
 
-        # print(str(idx + 1) + "/" + str(dataset_size) + " Done")
+        if (idx + 1) % increase_theta_after == 0:
+            theta += 1
+            generator.set_theta(theta)
 
     file_name = (
-        f"random_.{random_seed}.{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{theta}"
+        f"random_.{random_seed}."
+        + f"{num_nodes_min_max[0]}-{num_nodes_min_max[1]}.{starting_theta}"
     )
 
     if visualize_graph:
