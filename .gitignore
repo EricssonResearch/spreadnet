@@ -174,3 +174,11 @@ weights/*.pth
 
 # training plots
 experiments/encode_process_decode/trainings/*.jpg
+
+# latex aux files
+*.aux
+*.out
+*.pdf
+*.fdb_latexmk
+*.fls
+*.synctex.gz
