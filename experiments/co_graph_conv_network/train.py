@@ -17,6 +17,7 @@ from datetime import datetime
 from itertools import islice
 
 from torch_geometric.transforms import LineGraph
+from tqdm import tqdm
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoGCNet, SPCoDeepGCNet
@@ -121,7 +122,14 @@ def cogcn_preprocessor(data):
 
 
 def execute(
-    mode, dataloader, preprocessor, model, loss_func, optimizer: Optional[str] = None
+    mode,
+    epoch,
+    total_epoch,
+    dataloader,
+    preprocessor,
+    model,
+    loss_func,
+    optimizer: Optional[str] = None,
 ):
     """
     Execute training or validating.
@@ -137,10 +145,11 @@ def execute(
         accuracy
     """
     is_training = mode == "train"
-
     if is_training:
+        pb_str = "Train"
         model.train()
     else:
+        pb_str = "validation"
         model.eval()
 
     nodes_loss, edges_loss = 0.0, 0.0
@@ -148,7 +157,13 @@ def execute(
     dataset_nodes_size, dataset_edges_size = 0, 0
 
     with torch.enable_grad() if is_training else torch.no_grad():
-        for batch, (data,) in enumerate(dataloader):
+        for batch, (data,) in tqdm(
+            enumerate(dataloader),
+            unit="batch",
+            total=len(list(dataloader)),
+            desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {pb_str} ]",
+            leave=False,
+        ):
             data = data.to(device)
             inputs, labels = preprocessor(data)
 
@@ -236,7 +251,9 @@ if __name__ == "__main__":
             edge_out=model_configs["edge_out"],
         ).to(device)
 
-    print(model)
+    print("\n" + str(model) + "\n")
+
+    print("Start training...\n")
 
     opt = torch.optim.Adam(
         model.parameters(),
@@ -251,10 +268,23 @@ if __name__ == "__main__":
         steps_curve.append(epoch + 1)
 
         train_acc = execute(
-            "train", train_loader, cogcn_preprocessor, model, hybrid_loss, opt
+            "train",
+            epoch,
+            epochs,
+            train_loader,
+            cogcn_preprocessor,
+            model,
+            hybrid_loss,
+            opt,
         )
         validation_acc = execute(
-            "validation", validation_loader, cogcn_preprocessor, model, hybrid_loss
+            "validation",
+            epoch,
+            epochs,
+            validation_loader,
+            cogcn_preprocessor,
+            model,
+            hybrid_loss,
         )
         cur_acc = (train_acc + validation_acc) / 2
 
