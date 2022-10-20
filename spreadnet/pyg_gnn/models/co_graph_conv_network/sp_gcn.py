@@ -4,6 +4,8 @@
     @Author  : Haodong Zhao
 
 """
+from typing import Optional, Tuple
+
 import torch
 from torch_geometric.nn import MLP
 
@@ -75,7 +77,17 @@ class SPCoDeepGCNet(torch.nn.Module):
             num_layers=2,
         )
 
-    def forward(self, v_x, v_edge_index, e_x, e_edge_index):
+    def forward(
+        self,
+        v_x=None,
+        v_edge_index=None,
+        e_x=None,
+        e_edge_index=None,
+        inputs_tuple: Optional[Tuple] = None,
+    ):
+        if isinstance(inputs_tuple, Tuple):
+            v_x, v_edge_index, e_x, e_edge_index = inputs_tuple
+
         v_x = self.node_encoder(v_x)
         e_x = self.edge_encoder(e_x)
 
@@ -147,7 +159,17 @@ class SPCoGCNet(torch.nn.Module):
             num_layers=2,
         )
 
-    def forward(self, v_x, v_edge_index, e_x, e_edge_index):
+    def forward(
+        self,
+        v_x=None,
+        v_edge_index=None,
+        e_x=None,
+        e_edge_index=None,
+        inputs_tuple: Optional[Tuple] = None,
+    ):
+        if isinstance(inputs_tuple, Tuple):
+            v_x, v_edge_index, e_x, e_edge_index = inputs_tuple
+
         v_x = self.node_encoder(v_x)
         e_x = self.edge_encoder(e_x)
 
