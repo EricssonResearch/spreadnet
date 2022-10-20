@@ -47,6 +47,7 @@ data_configs = dataset_configs.data
 dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
+train_ratio = train_configs["train_ratio"]
 
 
 def load_model(model_path):
@@ -66,12 +67,12 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    nodes_output, edges_output = model(
+    node_pred, edge_pred = model(
         graph_data.x, graph_data.edge_index, graph_data.edge_attr
     )
 
-    node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
-    edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
+    node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
+    edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
 
     return node_infer, edge_infer
 
@@ -92,11 +93,10 @@ if __name__ == "__main__":
     weight_base_path = osp.join(
         osp.dirname(__file__), train_configs["weight_base_path"]
     )
-    # model_path = weight_base_path + "model_weights_best.pth"
+
     model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
-    # test data
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
         .decode(pt_decoder)
@@ -104,14 +104,21 @@ if __name__ == "__main__":
             "pt",
         )
     )
-    (graph,) = list(dataset)[randrange(len(list(dataset)))]
-    node_label, edge_label = graph.y
-    print("--- Ground_truth --- ")
-    print("node: ", node_label)
-    print("edge: ", edge_label)
 
+    dataset_size = len(list(dataset))
+    train_size = int(train_ratio * dataset_size)
+
+    graph_idx = randrange(train_size, dataset_size)
+    (graph,) = list(dataset)[graph_idx]
+    node_label, edge_label = graph.y
     # predict
-    node_infer, edge_infer = infer(model, graph.to(device))
-    print("--- Predicted ---")
-    print("node: ", node_infer)
-    print("edge: ", edge_infer)
+    (node_infer, edge_infer) = infer(model, graph.to(device))
+
+    print("Graph idx: ", graph_idx)
+    print("--- Node --- ")
+    print("Truth:     ", node_label.tolist())
+    print("Predicted: ", node_infer.cpu().tolist())
+
+    print("--- Edge ---\n")
+    print("Truth:     ", edge_label.tolist())
+    print("Predicted: ", edge_infer.cpu().tolist())

@@ -16,14 +16,10 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
         edge_true: the ground-truth edge label
 
     Returns:
-        losses: (node_loss, edge_loss)
-        corrects: (node_corrects, edge_corrects)
+        losses: { nodes: loss, edges: loss }
+        corrects: { nodes: correct, edges: correct }
     """
 
-    # print("[in loss] node_pred: ", node_pred.size())
-    # print("[in loss] node_true: ", node_true.size())
-    # print("[in loss] edge_logits", edge_logits.size())
-    # print("[in loss] edge_true", edge_true.size())
     losses = {
         "nodes": torch.nn.functional.cross_entropy(
             node_pred, node_true, reduction="mean"
@@ -33,53 +29,23 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
         ),
     }
 
-    # track the num of correct predictions
-    predicted_node_labels = torch.argmax(node_pred, dim=-1).type(torch.int64)
-    predicted_edge_labels = torch.argmax(edge_pred, dim=-1).type(torch.int64)
+    node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
+    edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
+    corrects = {
+        "nodes": torch.sum(
+            (node_true == node_infer)
+            .clone()
+            .detach()
+            .type(torch.int64)
+            .to(node_pred.device)
+        ),
+        "edges": torch.sum(
+            (edge_true == edge_infer)
+            .clone()
+            .detach()
+            .type(torch.float)
+            .to(node_pred.device)
+        ),
+    }
 
-    node_comps = (
-        (node_true == predicted_node_labels)
-        .clone()
-        .detach()
-        .type(torch.int64)
-        .to(node_pred.device)
-    )
-    edge_comps = (
-        (edge_true == predicted_edge_labels)
-        .clone()
-        .detach()
-        .type(torch.int64)
-        .to(node_pred.device)
-    )
-
-    corrects = {"nodes": torch.sum(node_comps), "edges": torch.sum(edge_comps)}
-
-    # assert data.num_nodes >= torch.sum(node_comps)
-    # assert data.num_edges >= torch.sum(edge_comps)
     return losses, corrects
-
-
-def cross_entropy_loss(pred_val, true_val):
-    """A simple cross entropy loss.
-
-    Args:
-        pred_val: the predicted value
-        true_val: the ground-truth value
-
-    Returns:
-        model loss and the num of correct predictions
-    """
-
-    loss = torch.nn.functional.cross_entropy(pred_val, true_val, reduction="mean")
-
-    predicted_labels = torch.argmax(pred_val, dim=-1).type(torch.int64)
-    comp = (
-        (true_val == predicted_labels)
-        .clone()
-        .detach()
-        .type(torch.int64)
-        .to(pred_val.device)
-    )
-    correct = torch.sum(comp)
-
-    return loss, correct
