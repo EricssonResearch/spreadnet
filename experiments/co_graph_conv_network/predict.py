@@ -8,19 +8,30 @@ Usage:
 """
 
 import argparse
+import os
 from random import randrange
 from os import path as osp
 import torch
 import webdataset as wds
+from torch_geometric.transforms import LineGraph
 
-from spreadnet.pyg_gnn.models import SPGCNet
+from spreadnet.pyg_gnn.models import SPCoGCNet, SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
+default_dataset_yaml_path = os.path.join(
+    os.path.dirname(__file__), "../dataset_configs.yaml"
+)
+
 parser = argparse.ArgumentParser(description="Use trained GCN to do the predictions.")
 parser.add_argument(
     "--config", default=default_yaml_path, help="Specify the path of the config file. "
+)
+parser.add_argument(
+    "--dataset-config",
+    default=default_dataset_yaml_path,
+    help="Specify the path of the dataset config file. ",
 )
 parser.add_argument(
     "--model",
@@ -32,14 +43,18 @@ args = parser.parse_args()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 yaml_path = args.config
-which_model = args.model
+dataset_yaml_path = args.dataset_config
 configs = yaml_parser(yaml_path)
+dataset_configs = yaml_parser(dataset_yaml_path)
+which_model = args.model
 train_configs = configs.train
 model_configs = configs.model
-data_configs = configs.data
-dataset_path = osp.join(osp.dirname(__file__), data_configs["dataset_path"]).replace(
-    "\\", "/"
-)
+data_configs = dataset_configs.data
+dataset_path = osp.join(
+    osp.dirname(__file__), "..", data_configs["dataset_path"]
+).replace("\\", "/")
+
+line_graph = LineGraph(force_directed=True)
 
 
 def load_model(model_path):
@@ -59,9 +74,15 @@ def infer(model, graph_data):
     :param graph_data: graph data from dataset
     :return: the shortest path info
     """
-    nodes_output, edges_output = model(
-        graph_data.x, graph_data.edge_index, graph_data.edge_attr
-    )
+    model.eval()
+    n_data = graph_data.to(device)
+    e_data = n_data.clone()
+    e_data = line_graph(data=e_data)
+
+    n_index, e_index = n_data.edge_index, e_data.edge_index
+    n_feats, e_feats = n_data.x, e_data.x
+
+    nodes_output, edges_output = model(n_feats, n_index, e_feats, e_index)
 
     node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
@@ -70,28 +91,36 @@ def infer(model, graph_data):
 
 
 if __name__ == "__main__":
-
     # load model
-    model = SPGCNet(
-        node_gcn_in_channels=model_configs["node_gcn_in_channels"],
-        node_gcn_num_hidden_layers=model_configs["node_gcn_num_hidden_layers"],
-        node_gcn_hidden_channels=model_configs["node_gcn_hidden_channels"],
-        node_gcn_out_channels=model_configs["node_gcn_out_channels"],
-        node_gcn_use_normalization=model_configs["node_gcn_use_normalization"],
-        node_gcn_use_bias=model_configs["node_gcn_use_bias"],
-        edge_mlp_in_channels=model_configs["edge_mlp_in_channels"],
-        edge_mlp_bias=model_configs["edge_mlp_bias"],
-        edge_mlp_hidden_channels=model_configs["edge_mlp_hidden_channels"],
-        edge_mlp_num_layers=model_configs["edge_mlp_num_layers"],
-        edge_mlp_out_channels=model_configs["edge_mlp_out_channels"],
+    model_name = train_configs["which_model"]
+    weight_base_path = train_configs["weight_base_path"]
+    model = SPCoGCNet(
+        node_in=model_configs["node_in"],
+        edge_in=model_configs["edge_in"],
+        hidden_channels=model_configs["hidden_channels"],
+        num_layers=model_configs["num_layers"],
+        node_out=model_configs["node_out"],
+        edge_out=model_configs["edge_out"],
     ).to(device)
 
-    weight_base_path = osp.join(
-        osp.dirname(__file__), train_configs["weight_base_path"]
-    )
+    if model_name == "deep":
+        print("Prepare to infer with deep GCN model...")
+        weight_base_path = train_configs["deep_weight_base_path"]
+        model_configs = configs.deep_model
+        model = SPCoDeepGCNet(
+            node_in=model_configs["node_in"],
+            edge_in=model_configs["edge_in"],
+            hidden_channels=model_configs["hidden_channels"],
+            num_layers=model_configs["num_layers"],
+            node_out=model_configs["node_out"],
+            edge_out=model_configs["edge_out"],
+        ).to(device)
+    else:
+        print("Prepare to infer with GCN model...")
 
-    # model_path = weight_base_path + "model_weights_best.pth"
+    weight_base_path = os.path.join(os.path.dirname(__file__), weight_base_path)
     model_path = osp.abspath(osp.join(weight_base_path, which_model))
+    # print(model_path)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
     # test data
