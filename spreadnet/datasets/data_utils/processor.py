@@ -15,6 +15,8 @@ def process(dataset_path, output_name, raw_matcher=""):
 
     Args:
         dataset_path: path to json graph folder
+        output_name: output file prefix
+        raw_matcher: pattern to match raw files in dataset_path
 
     Returns:
         None
