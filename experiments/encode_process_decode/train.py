@@ -47,6 +47,7 @@ configs = yaml_parser(yaml_path)
 dataset_configs = yaml_parser(dataset_yaml_path)
 train_configs = configs.train
 epochs = train_configs["epochs"]
+plot_after_epochs = train_configs["plot_after_epochs"]
 model_configs = configs.model
 data_configs = dataset_configs.data
 dataset_path = os.path.join(
@@ -71,6 +72,17 @@ losses_curve = []
 validation_losses_curve = []
 accuracies_curve = []
 validation_accuracies_curve = []
+
+
+def create_plot(plot_name):
+    plot_training_graph(
+        steps_curve,
+        losses_curve,
+        validation_losses_curve,
+        accuracies_curve,
+        validation_accuracies_curve,
+        os.path.dirname(__file__) + f"/trainings/{plot_name}",
+    )
 
 
 def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None):
@@ -138,6 +150,7 @@ def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None)
 
 if __name__ == "__main__":
     print(f"Using {device} device...")
+    date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
@@ -149,6 +162,8 @@ if __name__ == "__main__":
 
     dataset_size = len(list(dataset))
     train_size = int(train_ratio * dataset_size)
+
+    plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
 
     if bool(train_configs["shuffle"]):
         dataset.shuffle(dataset_size * 10)
@@ -224,17 +239,10 @@ if __name__ == "__main__":
             )
         )
 
+        if (epoch + 1) % plot_after_epochs == 0:
+            create_plot(plot_name)
+
     if weight_base_path is not None:
         weight_name = train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(weight_base_path, weight_name))
-
-        date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-        plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
-        plot_training_graph(
-            steps_curve,
-            losses_curve,
-            validation_losses_curve,
-            accuracies_curve,
-            validation_accuracies_curve,
-            os.path.dirname(__file__) + f"/trainings/{plot_name}",
-        )
+        create_plot(plot_name)
