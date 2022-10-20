@@ -47,7 +47,6 @@ data_configs = dataset_configs.data
 dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
-train_ratio = train_configs["train_ratio"]
 
 
 def load_model(model_path):
@@ -98,7 +97,7 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
     dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        wds.WebDataset("file:" + dataset_path + "/processed/test.all_000000.tar")
         .decode(pt_decoder)
         .to_tuple(
             "pt",
@@ -106,9 +105,8 @@ if __name__ == "__main__":
     )
 
     dataset_size = len(list(dataset))
-    train_size = int(train_ratio * dataset_size)
 
-    graph_idx = randrange(train_size, dataset_size)
+    graph_idx = randrange(0, dataset_size)
     (graph,) = list(dataset)[graph_idx]
     node_label, edge_label = graph.y
     # predict
