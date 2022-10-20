@@ -10,7 +10,7 @@ import os
 from glob import glob
 
 
-def process(dataset_path):
+def process(dataset_path, output_name, raw_matcher=""):
     """Convert json to networkx graph and write as tar file.
 
     Args:
@@ -27,12 +27,14 @@ def process(dataset_path):
 
     idx = 0
     sink = wds.ShardWriter(
-        os.path.abspath(processed_path + "/all_%06d.tar"),
+        os.path.abspath(processed_path + f"/{output_name}_%06d.tar"),
         maxsize=2e9,
         encoder=pt_encoder,
         compress=True,
     )  # 2GB per shard
-    raw_file_paths = list(map(os.path.basename, glob(raw_path + "/*.json")))
+    raw_file_paths = list(
+        map(os.path.basename, glob(raw_path + f"/{raw_matcher}*.json"))
+    )
 
     for raw_file_path in raw_file_paths:
         graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
@@ -89,4 +91,4 @@ def process(dataset_path):
             idx += 1
 
     sink.close()
-    print("Size of the dataset: " + str(idx))
+    print(f"Size of the dataset {output_name}: " + str(idx))

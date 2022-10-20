@@ -4,9 +4,13 @@ data:
   num_node_min: 8
   num_node_max: 50
   starting_theta: 17 # the higher the less edge
+  num_node_min_test: 51
+  num_node_max_test: 100
+  starting_theta_test: 25 # the higher the less edge
   min_path_length: 1
   visualize_graph: 25 # less than or equal to dataset_size
 
   # dataset generator
   dataset_path: "dataset"
   dataset_size: 5120
+  dataset_size_test: 10
