@@ -47,7 +47,6 @@ data_configs = dataset_configs.data
 dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
-train_ratio = train_configs["train_ratio"]
 
 
 def load_model(model_path):
