@@ -108,7 +108,7 @@ if __name__ == "__main__":
         num_nodes_min_max,
         data_configs["starting_theta"],
     )
-    process(dataset_path, "all")
+    process(dataset_path, "all", "[!test.]")
 
     # Test set
     print("Generating test set...")
