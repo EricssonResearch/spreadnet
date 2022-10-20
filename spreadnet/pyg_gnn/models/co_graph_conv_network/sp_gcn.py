@@ -1,8 +1,7 @@
-"""
+"""Co-embedding Deep GENConv Networks.
 
-    @Time    : 10/19/2022 1:40 PM
-    @Author  : Haodong Zhao
-
+@Time    : 10/19/2022 1:40 PM
+@Author  : Haodong Zhao
 """
 from typing import Optional, Tuple
 
@@ -13,6 +12,11 @@ from spreadnet.pyg_gnn.models.co_graph_conv_network.sp_gcn_modules import SPGENL
 
 
 class SPCoDeepGCNet(torch.nn.Module):
+    """Co-embedding Deep GENConv Network. Similar to Encode-Process-Decode.
+
+    Add mechanisms in DeepGCNLayer: normalize, residual, dropout, etc.
+    """
+
     def __init__(
         self,
         node_in: int,
@@ -101,6 +105,11 @@ class SPCoDeepGCNet(torch.nn.Module):
 
 
 class SPCoGCNet(torch.nn.Module):
+    """Co-embedding Simple GENConv Network.
+
+    Similar to Encode-Process-Decode.
+    """
+
     def __init__(
         self,
         node_in: int,
