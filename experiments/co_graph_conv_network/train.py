@@ -3,31 +3,28 @@
 Usage:
     python train.py [--config config_file_path]
 
-@Time    : 10/3/2022 2:16 PM
-@Author  : Haodong Zhao
+    @Time    : 10/20/2022 8:54 PM
+    @Author  : Haodong Zhao
 """
 import copy
 import os
 import argparse
-from datetime import datetime
-
+from typing import Optional
 import torch
-
 import webdataset as wds
 from torch_geometric.loader import DataLoader
-from typing import Optional
+from datetime import datetime
+from itertools import islice
 
 from torch_geometric.transforms import LineGraph
-from tqdm import tqdm
 
-from spreadnet.datasets.data_utils.draw import plot_training_graph
-from spreadnet.pyg_gnn.loss.loss import hybrid_loss
-from spreadnet.pyg_gnn.models import SPCoDeepGCNet, SPCoGCNet
+from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.models import SPCoGCNet, SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
+from spreadnet.datasets.data_utils.draw import plot_training_graph
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
-
 default_dataset_yaml_path = os.path.join(
     os.path.dirname(__file__), "../dataset_configs.yaml"
 )
@@ -46,127 +43,156 @@ args = parser.parse_args()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# yaml_path = str(get_project_root()) + "/configs.yaml"
 yaml_path = args.config
 dataset_yaml_path = args.dataset_config
 configs = yaml_parser(yaml_path)
 dataset_configs = yaml_parser(dataset_yaml_path)
-
 train_configs = configs.train
+epochs = train_configs["epochs"]
+plot_after_epochs = train_configs["plot_after_epochs"]
 data_configs = dataset_configs.data
 dataset_path = os.path.join(
     os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
 
+model_type = train_configs["model_type"]
+
+if model_type == "simple":
+    weight_base_path = train_configs["weight_base_path"]
+    model_configs = configs.model
+    log_folder = "trainings"
+    print("Prepare to train the simple GCN model...")
+else:
+    weight_base_path = train_configs["deep_weight_base_path"]
+    model_configs = configs.deep_model
+    log_folder = "deep_trainings"
+    print("Prepare to train deep GCN model...")
+
+weight_base_path = os.path.join(os.path.dirname(__file__), weight_base_path)
+
+trainings_plots_path = os.path.join(os.path.dirname(__file__), log_folder)
+train_ratio = train_configs["train_ratio"]
+
+if not os.path.exists(weight_base_path):
+    os.makedirs(weight_base_path)
+
+if not os.path.exists(trainings_plots_path):
+    os.makedirs(trainings_plots_path)
+
 # For plotting learning curves.
 steps_curve = []
 losses_curve = []
+validation_losses_curve = []
 accuracies_curve = []
+validation_accuracies_curve = []
 
 
-def train(
-    epoch_num,
-    dataloader,
-    trainable_model,
-    loss_func,
-    optimizer,
-    save_path: Optional[str],
-    trainings_plots_path,
-):
-    dataset_size = len(list(dataloader.dataset))  # for accuracy
-    best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0  # record the best accuracies
+def create_plot(plot_name):
+    plot_training_graph(
+        steps_curve,
+        losses_curve,
+        validation_losses_curve,
+        accuracies_curve,
+        validation_accuracies_curve,
+        os.path.dirname(__file__) + f"/trainings/{plot_name}",
+    )
+
+
+def cogcn_preprocessor(data):
+    """Preprocessor for CoGCNet Preprocess the data from dataset.
+
+    Args:
+        data: Pytorch Geometric data
+
+    Returns:
+        1. the inputs for the GCN model
+        2. the ground-truth labels
+    """
     line_graph = LineGraph(force_directed=True)
+    n_data = data
+    e_data = n_data.clone()
+    e_data = line_graph(data=e_data)
 
-    for epoch in range(epoch_num):
-        nodes_loss, edges_loss = 0.0, 0.0
-        nodes_corrects, edges_corrects = 0, 0
-        dataset_nodes_size, dataset_edges_size = 0, 0  # for accuracy
+    (node_true, edge_true) = data.y
+    n_index, e_index = n_data.edge_index, e_data.edge_index
+    n_feats, e_feats = n_data.x, e_data.x
 
-        for batch, (data,) in tqdm(
-            enumerate(dataloader),
-            unit="batch",
-            total=len(list(dataloader)),
-            desc=f"[Epoch: {epoch + 1:4}/{epoch_num}] ",
-        ):
-            n_data = data.to(device)
-            e_data = n_data.clone()
-            e_data = line_graph(data=e_data)
-            # print(n_data)
-            # print(e_data)
+    return (n_feats, n_index, e_feats, e_index), (node_true, edge_true)
 
-            (node_true, edge_true) = data.y
-            n_index = n_data.edge_index
-            e_index = e_data.edge_index
-            n_feats = n_data.x
-            e_feats = e_data.x
 
-            node_pred, edge_pred = trainable_model(n_feats, n_index, e_feats, e_index)
-            losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
-            optimizer.zero_grad()
-            losses["nodes"].backward(retain_graph=True)
-            losses["edges"].backward()
+def execute(
+    mode, dataloader, preprocessor, model, loss_func, optimizer: Optional[str] = None
+):
+    """
+    Execute training or validating.
+    Args:
+        mode: train | validation
+        dataloader: dataloader
+        preprocessor: preprocess
+        model: model
+        loss_func: loss function
+        optimizer: optional optimizer for validation mode
 
-            # losses["nodes"].backward()
-            # # losses["edges"].backward()
+    Returns:
+        accuracy
+    """
+    is_training = mode == "train"
 
-            optimizer.step()
+    if is_training:
+        model.train()
+    else:
+        model.eval()
 
-            assert data.num_nodes >= corrects["nodes"]
-            assert data.num_edges >= corrects["edges"]
-            dataset_nodes_size += data.num_nodes
-            dataset_edges_size += data.num_edges
+    nodes_loss, edges_loss = 0.0, 0.0
+    nodes_corrects, edges_corrects = 0, 0
+    dataset_nodes_size, dataset_edges_size = 0, 0
+
+    with torch.enable_grad() if is_training else torch.no_grad():
+        for batch, (data,) in enumerate(dataloader):
+            data = data.to(device)
+            inputs, labels = preprocessor(data)
+
+            if is_training:
+                optimizer.zero_grad()
+
+            (node_true, edge_true) = labels
+            (node_pred, edge_pred) = model(inputs_tuple=inputs)
+
+            # Losses
+            (losses, corrects) = loss_func(node_pred, edge_pred, node_true, edge_true)
             nodes_loss += losses["nodes"].item() * data.num_graphs
             edges_loss += losses["edges"].item() * data.num_graphs
+
+            if is_training:
+                losses["nodes"].backward(retain_graph=True)
+                losses["edges"].backward()
+                optimizer.step()
+
+            # Accuracies
             nodes_corrects += corrects["nodes"]
             edges_corrects += corrects["edges"]
+            dataset_nodes_size += data.num_nodes
+            dataset_edges_size += data.num_edges
 
-        # get epoch losses and accuracies
-        nodes_loss /= dataset_size
-        edges_loss /= dataset_size
-        nodes_acc = nodes_corrects / dataset_nodes_size
-        edges_acc = edges_corrects / dataset_edges_size
+    nodes_loss /= len(dataloader.dataset)
+    edges_loss /= len(dataloader.dataset)
 
-        cur_acc = nodes_acc
+    (losses_curve if is_training else validation_losses_curve).append(
+        {"nodes": nodes_loss, "edges": edges_loss}
+    )
 
-        if cur_acc > best_acc:
-            best_acc = cur_acc
-            best_model_wts = copy.deepcopy(model.state_dict())
+    nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy()
+    edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy()
+    (accuracies_curve if is_training else validation_accuracies_curve).append(
+        {"nodes": nodes_acc, "edges": edges_acc}
+    )
 
-        print(
-            f" Losses: {{'nodes': {nodes_loss}, 'edges': {edges_loss} }}\n"
-            f" Accuracies: {{'nodes': {nodes_acc}, 'edges': {edges_acc}}}"
-        )
-
-        steps_curve.append(epoch + 1)
-        losses_curve.append({"nodes": nodes_loss, "edges": edges_loss})
-        accuracies_curve.append(
-            {"nodes": nodes_acc.cpu().numpy(), "edges": edges_acc.cpu().numpy()}
-        )
-
-        if save_path is not None:
-            if epoch % train_configs["weight_save_freq"] == 0:
-                weight_name = "model_weights_ep_{ep}.pth".format(ep=epoch)
-                torch.save(model.state_dict(), os.path.join(save_path, weight_name))
-
-    if save_path is not None:
-        weight_name = train_configs["best_weight_name"]
-        torch.save(best_model_wts, os.path.join(save_path, weight_name))
-
-        date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
-        plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
-        plot_training_graph(
-            steps_curve,
-            losses_curve,
-            accuracies_curve,
-            trainings_plots_path + f"/{plot_name}",
-        )
+    return (nodes_acc + edges_acc) / 2
 
 
 if __name__ == "__main__":
     print(f"Using {device} device...")
-
-    epochs = train_configs["epochs"]
+    date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
@@ -176,30 +202,23 @@ if __name__ == "__main__":
         )
     )
 
+    dataset_size = len(list(dataset))
+    train_size = int(train_ratio * dataset_size)
+
+    plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
+
     if bool(train_configs["shuffle"]):
-        dataset.shuffle(len(list(dataset)) * 10)
+        dataset.shuffle(dataset_size * 10)
 
-    loader = DataLoader(dataset, batch_size=train_configs["batch_size"])
+    train_dataset = list(islice(dataset, 0, train_size))
+    validation_dataset = list(islice(dataset, train_size, dataset_size + 1))
+    train_loader = DataLoader(train_dataset, batch_size=train_configs["batch_size"])
+    validation_loader = DataLoader(
+        validation_dataset, batch_size=train_configs["batch_size"]
+    )
 
-    which_model = train_configs["which_model"]
-    weight_base_path = train_configs["weight_base_path"]
-    model_configs = configs.model
-    log_folder = "trainings"
-    model = SPCoGCNet(
-        node_in=model_configs["node_in"],
-        edge_in=model_configs["edge_in"],
-        hidden_channels=model_configs["hidden_channels"],
-        num_layers=model_configs["num_layers"],
-        node_out=model_configs["node_out"],
-        edge_out=model_configs["edge_out"],
-    ).to(device)
-
-    if which_model == "deep":
-        print("Prepare to train deep GCN model...")
-        weight_base_path = train_configs["deep_weight_base_path"]
-        log_folder = "deep_trainings"
-        model_configs = configs.deep_model
-        model = SPCoDeepGCNet(
+    if model_type == "simple":
+        model = SPCoGCNet(
             node_in=model_configs["node_in"],
             edge_in=model_configs["edge_in"],
             hidden_channels=model_configs["hidden_channels"],
@@ -208,33 +227,78 @@ if __name__ == "__main__":
             edge_out=model_configs["edge_out"],
         ).to(device)
     else:
-        print("Prepare to train GCN model...")
+        model = SPCoDeepGCNet(
+            node_in=model_configs["node_in"],
+            edge_in=model_configs["edge_in"],
+            hidden_channels=model_configs["hidden_channels"],
+            num_layers=model_configs["num_layers"],
+            node_out=model_configs["node_out"],
+            edge_out=model_configs["edge_out"],
+        ).to(device)
 
-    print(model, "\n")
+    print(model)
 
     opt = torch.optim.Adam(
         model.parameters(),
         lr=train_configs["adam_lr"],
+        weight_decay=train_configs["adam_weight_decay"],
     )
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, "min")
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_acc = 0.0
 
-    weight_base_path = os.path.join(os.path.dirname(__file__), weight_base_path)
+    for epoch in range(epochs):
+        steps_curve.append(epoch + 1)
 
-    if not os.path.exists(weight_base_path):
-        os.makedirs(weight_base_path)
+        train_acc = execute(
+            "train", train_loader, cogcn_preprocessor, model, hybrid_loss, opt
+        )
+        validation_acc = execute(
+            "validation", validation_loader, cogcn_preprocessor, model, hybrid_loss
+        )
+        cur_acc = (train_acc + validation_acc) / 2
 
-    trainings_plots_path = os.path.join(os.path.dirname(__file__), log_folder)
+        if cur_acc > best_acc:
+            best_acc = cur_acc
+            best_model_wts = copy.deepcopy(model.state_dict())
 
-    if not os.path.exists(trainings_plots_path):
-        os.makedirs(trainings_plots_path)
+        if weight_base_path is not None:
+            if epoch % train_configs["weight_save_freq"] == 0:
+                weight_name = f"model_weights_ep_{epoch}.pth"
+                torch.save(
+                    model.state_dict(), os.path.join(weight_base_path, weight_name)
+                )
 
-    train(
-        epoch_num=epochs,
-        dataloader=loader,
-        trainable_model=model,
-        loss_func=hybrid_loss,
-        optimizer=opt,
-        save_path=weight_base_path,
-        trainings_plots_path=trainings_plots_path,
-    )
+        if epoch % 10 == 0:
+            print(
+                "\n  Epoch   "
+                + "Train Loss (Node,Edge)     Validation Loss        "
+                + "Train Acc (Node,Edge)      Validation Acc"
+            )
+
+        print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
+        print(
+            "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
+                losses_curve[-1]["nodes"],
+                losses_curve[-1]["edges"],
+                validation_losses_curve[-1]["nodes"],
+                validation_losses_curve[-1]["edges"],
+            ),
+            end="",
+        )
+        print(
+            "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
+                accuracies_curve[-1]["nodes"],
+                accuracies_curve[-1]["edges"],
+                validation_accuracies_curve[-1]["nodes"],
+                validation_accuracies_curve[-1]["edges"],
+            )
+        )
+
+        if (epoch + 1) % plot_after_epochs == 0:
+            create_plot(plot_name)
+
+    if weight_base_path is not None:
+        weight_name = train_configs["best_weight_name"]
+        torch.save(best_model_wts, os.path.join(weight_base_path, weight_name))
+        create_plot(plot_name)
