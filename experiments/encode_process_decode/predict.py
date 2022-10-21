@@ -59,9 +59,10 @@ def load_model(model_path):
     return model
 
 
-def predict(graph):
+def predict(model, graph):
     """Make prediction.
 
+    :param model: model to be used
     :param graph: graph to predict
 
     :return: None
@@ -123,5 +124,5 @@ if __name__ == "__main__":
     for idx, (graph,) in enumerate(list(dataset)):
         print("\n\n")
         print("Graph idx: ", idx)
-        predict(graph)
+        predict(model, graph)
         input("Press enter to continue")
