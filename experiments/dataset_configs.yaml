@@ -13,4 +13,4 @@ data:
   # dataset generator
   dataset_path: "dataset"
   dataset_size: 5120
-  dataset_size_test: 10
+  dataset_size_test: 50
