@@ -113,10 +113,8 @@ def execute(
     is_training = mode == "train"
 
     if is_training:
-        pb_str = "Train"
         model.train()
     else:
-        pb_str = "validation"
         model.eval()
 
     nodes_loss, edges_loss = 0.0, 0.0
@@ -128,7 +126,7 @@ def execute(
             enumerate(dataloader),
             unit="batch",
             total=len(list(dataloader)),
-            desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {pb_str} ]",
+            desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {mode.capitalize()} ]",
             leave=False,
         ):
             data = data.to(device)
