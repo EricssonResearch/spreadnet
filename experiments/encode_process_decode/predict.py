@@ -64,7 +64,7 @@ def predict(graph):
 
     :param graph: graph to predict
 
-    :return: the loaded model
+    :return: None
     """
     graph = graph.to(device)
 
