@@ -57,7 +57,7 @@ dataset_path = osp.join(
 line_graph = LineGraph(force_directed=True)
 
 
-def cogcn_preprocessor(data):
+def data_preprocessor(data):
     """Preprocessor for CoGCNet Preprocess the data from dataset.
 
     Args:
@@ -67,16 +67,11 @@ def cogcn_preprocessor(data):
         1. the inputs for the GCN model
         2. the ground-truth labels
     """
-    line_graph = LineGraph(force_directed=True)
-    n_data = data.to(device)
-    e_data = n_data.clone()
-    e_data = line_graph(data=e_data)
-
     (node_true, edge_true) = data.y
-    n_index, e_index = n_data.edge_index, e_data.edge_index
-    n_feats, e_feats = n_data.x, e_data.x
+    x, edge_index = data.x, data.edge_index
+    edge_attr = data.edge_attr
 
-    return (n_feats, n_index, e_feats, e_index), (node_true, edge_true)
+    return (x, edge_index, edge_attr), (node_true, edge_true)
 
 
 def load_model(model_path):
@@ -103,9 +98,9 @@ def infer(model, preprocessor, graph_data):
     """
 
     data = graph_data.to(device)
-    inputs, labels = preprocessor(data)
+    (x, edge_index, edge_attr), _ = preprocessor(data)
 
-    nodes_output, edges_output = model(inputs_tuple=inputs)
+    nodes_output, edges_output = model(x, edge_index, edge_attr)
 
     node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
@@ -161,7 +156,7 @@ if __name__ == "__main__":
     print("edge: ", edge_label)
 
     # predict
-    node_infer, edge_infer = infer(model, cogcn_preprocessor, graph.to(device))
+    node_infer, edge_infer = infer(model, data_preprocessor, graph.to(device))
     print("--- Predicted ---")
     print("node: ", node_infer)
     print("edge: ", edge_infer)
