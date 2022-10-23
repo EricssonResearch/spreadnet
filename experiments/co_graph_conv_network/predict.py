@@ -143,20 +143,26 @@ if __name__ == "__main__":
 
     # test data
     dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        wds.WebDataset("file:" + dataset_path + "/processed/test.all_000000.tar")
         .decode(pt_decoder)
         .to_tuple(
             "pt",
         )
     )
-    (graph,) = list(dataset)[randrange(data_configs["dataset_size"])]
-    node_label, edge_label = graph.y
-    print("--- Ground_truth --- ")
-    print("node: ", node_label)
-    print("edge: ", edge_label)
 
+    dataset_size = len(list(dataset))
+
+    graph_idx = randrange(0, dataset_size)
+    (graph,) = list(dataset)[graph_idx]
+    node_label, edge_label = graph.y
     # predict
-    node_infer, edge_infer = infer(model, data_preprocessor, graph.to(device))
-    print("--- Predicted ---")
-    print("node: ", node_infer)
-    print("edge: ", edge_infer)
+    (node_infer, edge_infer) = infer(model, data_preprocessor, graph.to(device))
+
+    print("Graph idx: ", graph_idx)
+    print("--- Node --- ")
+    print("Truth:     ", node_label.tolist())
+    print("Predicted: ", node_infer.cpu().tolist())
+
+    print("--- Edge ---\n")
+    print("Truth:     ", edge_label.tolist())
+    print("Predicted: ", edge_infer.cpu().tolist())
