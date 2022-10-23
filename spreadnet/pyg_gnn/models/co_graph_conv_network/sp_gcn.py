@@ -3,12 +3,29 @@
 @Time    : 10/19/2022 1:40 PM
 @Author  : Haodong Zhao
 """
-from typing import Optional, Tuple
 
 import torch
 from torch_geometric.nn import MLP
+from torch_scatter import scatter_add
+from torch_sparse import coalesce
 
 from spreadnet.pyg_gnn.models.co_graph_conv_network.sp_gcn_modules import SPGENLayer
+
+
+def undirected_linegraph_index(edge_index, edge_attr, num_nodes):
+    N = num_nodes
+    (row, col), edge_attr = coalesce(edge_index, edge_attr, N, N)
+
+    i = torch.arange(row.size(0), dtype=torch.long, device=row.device)
+
+    count = scatter_add(torch.ones_like(row), row, dim=0, dim_size=N)
+    cumsum = torch.cat([count.new_zeros(1), count.cumsum(0)], dim=0)
+    cols = [i[cumsum[col[j]] : cumsum[col[j] + 1]] for j in range(col.size(0))]
+    rows = [row.new_full((c.numel(),), j) for j, c in enumerate(cols)]
+    row, col = torch.cat(rows, dim=0), torch.cat(cols, dim=0)
+    e_edge_index = torch.stack([row, col], dim=0)
+
+    return e_edge_index
 
 
 class SPCoDeepGCNet(torch.nn.Module):
@@ -83,20 +100,19 @@ class SPCoDeepGCNet(torch.nn.Module):
 
     def forward(
         self,
-        v_x=None,
-        v_edge_index=None,
-        e_x=None,
-        e_edge_index=None,
-        inputs_tuple: Optional[Tuple] = None,
+        x,
+        edge_index,
+        edge_attr,
     ):
-        if isinstance(inputs_tuple, Tuple):
-            v_x, v_edge_index, e_x, e_edge_index = inputs_tuple
 
-        v_x = self.node_encoder(v_x)
-        e_x = self.edge_encoder(e_x)
+        v_x = self.node_encoder(x)
+        num_node = v_x.size()[0]
+
+        e_edge_index = undirected_linegraph_index(edge_index, edge_attr, num_node)
+        e_x = self.edge_encoder(edge_attr)
 
         for layer in self.layers:
-            v_x, e_x = layer(v_x, v_edge_index, e_x, e_edge_index)
+            v_x, e_x = layer(v_x, edge_index, e_x, e_edge_index)
 
         node_out = self.node_decoder(v_x)
         edge_out = self.edge_decoder(e_x)
@@ -170,20 +186,19 @@ class SPCoGCNet(torch.nn.Module):
 
     def forward(
         self,
-        v_x=None,
-        v_edge_index=None,
-        e_x=None,
-        e_edge_index=None,
-        inputs_tuple: Optional[Tuple] = None,
+        x,
+        edge_index,
+        edge_attr,
     ):
-        if isinstance(inputs_tuple, Tuple):
-            v_x, v_edge_index, e_x, e_edge_index = inputs_tuple
 
-        v_x = self.node_encoder(v_x)
-        e_x = self.edge_encoder(e_x)
+        v_x = self.node_encoder(x)
+        num_node = v_x.size()[0]
+
+        e_edge_index = undirected_linegraph_index(edge_index, edge_attr, num_node)
+        e_x = self.edge_encoder(edge_attr)
 
         for layer in self.layers:
-            v_x, e_x = layer(v_x, v_edge_index, e_x, e_edge_index)
+            v_x, e_x = layer(v_x, edge_index, e_x, e_edge_index)
 
         node_out = self.node_decoder(v_x)
         edge_out = self.edge_decoder(e_x)

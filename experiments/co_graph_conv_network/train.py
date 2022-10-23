@@ -16,7 +16,6 @@ from torch_geometric.loader import DataLoader
 from datetime import datetime
 from itertools import islice
 
-from torch_geometric.transforms import LineGraph
 from tqdm import tqdm
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
@@ -99,7 +98,7 @@ def create_plot(plot_name):
     )
 
 
-def cogcn_preprocessor(data):
+def data_preprocessor(data):
     """Preprocessor for CoGCNet Preprocess the data from dataset.
 
     Args:
@@ -109,16 +108,12 @@ def cogcn_preprocessor(data):
         1. the inputs for the GCN model
         2. the ground-truth labels
     """
-    line_graph = LineGraph(force_directed=True)
-    n_data = data
-    e_data = n_data.clone()
-    e_data = line_graph(data=e_data)
 
     (node_true, edge_true) = data.y
-    n_index, e_index = n_data.edge_index, e_data.edge_index
-    n_feats, e_feats = n_data.x, e_data.x
+    x, edge_index = data.x, data.edge_index
+    edge_attr = data.edge_attr
 
-    return (n_feats, n_index, e_feats, e_index), (node_true, edge_true)
+    return (x, edge_index, edge_attr), (node_true, edge_true)
 
 
 def execute(
@@ -165,13 +160,12 @@ def execute(
             leave=False,
         ):
             data = data.to(device)
-            inputs, labels = preprocessor(data)
+            (x, edge_index, edge_attr), (node_true, edge_true) = preprocessor(data)
 
             if is_training:
                 optimizer.zero_grad()
 
-            (node_true, edge_true) = labels
-            (node_pred, edge_pred) = model(inputs_tuple=inputs)
+            (node_pred, edge_pred) = model(x, edge_index, edge_attr)
 
             # Losses
             (losses, corrects) = loss_func(node_pred, edge_pred, node_true, edge_true)
@@ -272,7 +266,7 @@ if __name__ == "__main__":
             epoch,
             epochs,
             train_loader,
-            cogcn_preprocessor,
+            data_preprocessor,
             model,
             hybrid_loss,
             opt,
@@ -282,7 +276,7 @@ if __name__ == "__main__":
             epoch,
             epochs,
             validation_loader,
-            cogcn_preprocessor,
+            data_preprocessor,
             model,
             hybrid_loss,
         )
