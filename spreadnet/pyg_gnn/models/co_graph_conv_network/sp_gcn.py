@@ -12,6 +12,7 @@ from torch_sparse import coalesce
 from spreadnet.pyg_gnn.models.co_graph_conv_network.sp_gcn_modules import SPGENLayer
 
 
+@torch.no_grad()
 def undirected_linegraph_index(edge_index, edge_attr, num_nodes):
     N = num_nodes
     (row, col), edge_attr = coalesce(edge_index, edge_attr, N, N)
