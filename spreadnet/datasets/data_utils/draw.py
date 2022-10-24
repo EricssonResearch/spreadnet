@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import matplotlib
 import math
 from scipy import signal
@@ -44,6 +45,23 @@ def draw_networkx(
         plot_index,
     )
     ax.set_title(title)
+    info = [
+        Line2D([0], [0], color="#FFF3B8", lw=4),
+        Line2D([0], [0], color="#90EE90", lw=4),
+        Line2D([0], [0], color="#C9FFD8", lw=4),
+        Line2D([0], [0], color="r", lw=4),
+        Line2D([0], [0], color="b", lw=4),
+    ]
+    ax.legend(
+        info,
+        [
+            "Start Node",
+            "Destination Node",
+            "Path Node",
+            "Path Edge",
+            "Discarded prediction probability",
+        ],
+    )
 
     path_edges = list()
     normal_edges = list()
