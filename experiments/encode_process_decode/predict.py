@@ -7,7 +7,6 @@ Usage:
 @Author  : Haodong Zhao
 """
 import argparse
-from random import randrange
 from os import path as osp
 import torch
 import webdataset as wds
@@ -15,6 +14,8 @@ import webdataset as wds
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
+from spreadnet.pyg_gnn.loss.loss import get_infers
+
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
@@ -47,7 +48,6 @@ data_configs = dataset_configs.data
 dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
-train_ratio = train_configs["train_ratio"]
 
 
 def load_model(model_path):
@@ -60,21 +60,36 @@ def load_model(model_path):
     return model
 
 
-def infer(model, graph_data):
-    """do the inference.
+def predict(model, graph):
+    """Make prediction.
 
-    :param model: the model to do the prediction
-    :param graph_data: graph data from dataset
-    :return: the shortest path info
+    :param model: model to be used
+    :param graph: graph to predict
+
+    :return: None
     """
-    node_pred, edge_pred = model(
-        graph_data.x, graph_data.edge_index, graph_data.edge_attr
-    )
+    graph = graph.to(device)
 
-    node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
-    edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
+    node_true, edge_true = graph.y
 
-    return node_infer, edge_infer
+    # predict
+    (node_pred, edge_pred) = model(graph.x, graph.edge_index, graph.edge_attr)
+    (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
+
+    node_acc = corrects["nodes"] / graph.num_nodes
+    edge_acc = corrects["edges"] / graph.num_edges
+
+    print("--- Node ---")
+    print("Truth:     ", node_true.tolist())
+    print("Predicted: ", infers["nodes"].cpu().tolist())
+
+    print("\n--- Edge ---")
+    print("Truth:     ", edge_true.tolist())
+    print("Predicted: ", infers["edges"].cpu().tolist())
+
+    print("\n--- Accuracies ---")
+    print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
+    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
 
 
 if __name__ == "__main__":
@@ -98,7 +113,7 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
     dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        wds.WebDataset("file:" + dataset_path + "/processed/test.all_000000.tar")
         .decode(pt_decoder)
         .to_tuple(
             "pt",
@@ -106,19 +121,9 @@ if __name__ == "__main__":
     )
 
     dataset_size = len(list(dataset))
-    train_size = int(train_ratio * dataset_size)
 
-    graph_idx = randrange(train_size, dataset_size)
-    (graph,) = list(dataset)[graph_idx]
-    node_label, edge_label = graph.y
-    # predict
-    (node_infer, edge_infer) = infer(model, graph.to(device))
-
-    print("Graph idx: ", graph_idx)
-    print("--- Node --- ")
-    print("Truth:     ", node_label.tolist())
-    print("Predicted: ", node_infer.cpu().tolist())
-
-    print("--- Edge ---\n")
-    print("Truth:     ", edge_label.tolist())
-    print("Predicted: ", edge_infer.cpu().tolist())
+    for idx, (graph,) in enumerate(list(dataset)):
+        print("\n\n")
+        print("Graph idx: ", idx)
+        predict(model, graph)
+        input("Press enter to continue")
