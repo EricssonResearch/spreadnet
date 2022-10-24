@@ -7,7 +7,6 @@ from torch_geometric.loader import DataLoader
 from typing import Optional
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
-from spreadnet.pyg_gnn.loss.loss import cross_entropy_loss
 from spreadnet.pyg_gnn.models import SPGATNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
@@ -35,12 +34,12 @@ dataset_path = os.path.join(
 
 
 def train(
-        epoch_num,
-        dataloader,
-        trainable_model,
-        loss_func,
-        optimizer,
-        save_path: Optional[str] = None,
+    epoch_num,
+    dataloader,
+    trainable_model,
+    loss_func,
+    optimizer,
+    save_path: Optional[str] = None,
 ):
     dataset_size = len(list(dataloader.dataset))  # for accuracy
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -55,7 +54,12 @@ def train(
             data = data.to(device)
             node_true, edge_true = data.y
             edge_index = data.edge_index
-            node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr, return_attention_weights=True)
+            node_pred, edge_pred = trainable_model(
+                data.x,
+                edge_index,
+                data.edge_attr,
+                return_attention_weights=model_configs["return_attention_weights"],
+            )
 
             losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
             optimizer.zero_grad()
@@ -109,8 +113,8 @@ if __name__ == "__main__":
 
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
-            .decode(pt_decoder)
-            .to_tuple(
+        .decode(pt_decoder)
+        .to_tuple(
             "pt",
         )
     )
@@ -121,24 +125,24 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, batch_size=train_configs["batch_size"])
 
     model = SPGATNet(
-
+        num_hidden_layers=model_configs["num_hidden_layers"],
+        in_channels=model_configs["in_channels"],
+        hidden_channels=model_configs["hidden_channels"],
+        out_channels=model_configs["out_channels"],
+        heads=model_configs["heads"],
+        # dropout=model_configs[""],
+        add_self_loops=model_configs["add_self_loops"],
+        bias=model_configs["bias"],
+        edge_hidden_channels=model_configs["edge_hidden_channels"],
+        edge_out_channels=model_configs["edge_out_channels"],
+        edge_num_layers=model_configs["edge_num_layers"],
+        edge_bias=model_configs["edge_bias"],
+        encode_node_in=model_configs["encode_node_in"],
+        encode_edge_in=model_configs["encode_edge_in"],
+        encode_node_out=model_configs["encode_node_out"],
+        encode_edge_out=model_configs["encode_edge_out"],
     ).to(device)
-    '''
-            in_channels=model_configs["in_channels"],
-            hidden_channels=model_configs["hidden_channels"],
-            out_channels=model_configs["out_channels"],
-            num_hidden_layers=model_configs["num_hidden_layers"],
-            heads=model_configs["heads"],
-            dropout=model_configs["dropout"],
-            concat=model_configs["concat"],
-            add_self_loops=model_configs["add_self_loops"],
-            bias=model_configs["bias"],
-            edge_in_channels=model_configs["edge_in_channels"],
-            edge_hidden_channels=model_configs["edge_hidden_channels"],
-            edge_out_channels=model_configs["edge_out_channels"],
-            edge_num_layers=model_configs["edge_num_layers"],
-            edge_bias=model_configs["edge_bias"]
-    '''
+    print(model)
 
     opt = torch.optim.Adam(
         model.parameters(),
