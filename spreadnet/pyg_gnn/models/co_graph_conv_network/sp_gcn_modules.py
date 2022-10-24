@@ -93,5 +93,5 @@ class SPGENLayer(MessagePassing):
             edge_index=v_edge_index, x=v_x, edge_features=e_x, e_edge_index=e_edge_index
         )
 
-        v_x = self.node_fn(v_x, v_edge_index)
+        v_x = self.node_fn(v_x, v_edge_index, e_x)
         return v_x, e_x
