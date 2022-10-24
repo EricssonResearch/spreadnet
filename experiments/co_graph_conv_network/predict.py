@@ -15,7 +15,7 @@ import torch
 import webdataset as wds
 from torch_geometric.transforms import LineGraph
 
-from spreadnet.pyg_gnn.models import SPCoGCNet, SPCoDeepGCNet
+from spreadnet.pyg_gnn.models import SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
@@ -110,9 +110,8 @@ def infer(model, preprocessor, graph_data):
 
 if __name__ == "__main__":
     # load model
-    model_name = train_configs["model_type"]
     weight_base_path = train_configs["weight_base_path"]
-    model = SPCoGCNet(
+    model = SPCoDeepGCNet(
         node_in=model_configs["node_in"],
         edge_in=model_configs["edge_in"],
         hidden_channels=model_configs["hidden_channels"],
@@ -121,20 +120,7 @@ if __name__ == "__main__":
         edge_out=model_configs["edge_out"],
     ).to(device)
 
-    if model_name == "deep":
-        print("Prepare to infer with deep GCN model...")
-        weight_base_path = train_configs["deep_weight_base_path"]
-        model_configs = configs.deep_model
-        model = SPCoDeepGCNet(
-            node_in=model_configs["node_in"],
-            edge_in=model_configs["edge_in"],
-            hidden_channels=model_configs["hidden_channels"],
-            num_layers=model_configs["num_layers"],
-            node_out=model_configs["node_out"],
-            edge_out=model_configs["edge_out"],
-        ).to(device)
-    else:
-        print("Prepare to infer with GCN model...")
+    print("Prepare to infer with GCN model...")
 
     weight_base_path = os.path.join(os.path.dirname(__file__), weight_base_path)
     model_path = osp.abspath(osp.join(weight_base_path, which_model))

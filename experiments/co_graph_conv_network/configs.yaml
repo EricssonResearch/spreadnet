@@ -1,8 +1,5 @@
 train:
-  # "deep" or "simple"
-  model_type: "simple"
   weight_base_path: "./weights"
-  deep_weight_base_path: "./deep_weights"
   weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
@@ -16,14 +13,6 @@ train:
   adam_weight_decay: !!float 5e-4
 
 model:
-  node_in: 3
-  edge_in: 1
-  hidden_channels: 64
-  num_layers: 4
-  node_out: 2
-  edge_out: 2
-
-deep_model:
   node_in: 3
   edge_in: 1
   hidden_channels: 64

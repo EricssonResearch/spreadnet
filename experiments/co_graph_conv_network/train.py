@@ -19,7 +19,7 @@ from itertools import islice
 from tqdm import tqdm
 
 from spreadnet.pyg_gnn.loss import hybrid_loss
-from spreadnet.pyg_gnn.models import SPCoGCNet, SPCoDeepGCNet
+from spreadnet.pyg_gnn.models import SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -55,18 +55,10 @@ dataset_path = os.path.join(
     os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
 
-model_type = train_configs["model_type"]
-
-if model_type == "simple":
-    weight_base_path = train_configs["weight_base_path"]
-    model_configs = configs.model
-    log_folder = "trainings"
-    print("Prepare to train the simple GCN model...")
-else:
-    weight_base_path = train_configs["deep_weight_base_path"]
-    model_configs = configs.deep_model
-    log_folder = "deep_trainings"
-    print("Prepare to train deep GCN model...")
+weight_base_path = train_configs["weight_base_path"]
+model_configs = configs.model
+log_folder = "trainings"
+print("Prepare to train the GCN model...")
 
 weight_base_path = os.path.join(os.path.dirname(__file__), weight_base_path)
 
@@ -226,24 +218,14 @@ if __name__ == "__main__":
         validation_dataset, batch_size=train_configs["batch_size"]
     )
 
-    if model_type == "simple":
-        model = SPCoGCNet(
-            node_in=model_configs["node_in"],
-            edge_in=model_configs["edge_in"],
-            hidden_channels=model_configs["hidden_channels"],
-            num_layers=model_configs["num_layers"],
-            node_out=model_configs["node_out"],
-            edge_out=model_configs["edge_out"],
-        ).to(device)
-    else:
-        model = SPCoDeepGCNet(
-            node_in=model_configs["node_in"],
-            edge_in=model_configs["edge_in"],
-            hidden_channels=model_configs["hidden_channels"],
-            num_layers=model_configs["num_layers"],
-            node_out=model_configs["node_out"],
-            edge_out=model_configs["edge_out"],
-        ).to(device)
+    model = SPCoDeepGCNet(
+        node_in=model_configs["node_in"],
+        edge_in=model_configs["edge_in"],
+        hidden_channels=model_configs["hidden_channels"],
+        num_layers=model_configs["num_layers"],
+        node_out=model_configs["node_out"],
+        edge_out=model_configs["edge_out"],
+    ).to(device)
 
     print("\n" + str(model) + "\n")
 
