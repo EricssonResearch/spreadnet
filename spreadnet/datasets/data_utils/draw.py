@@ -19,7 +19,7 @@ def get_node_color(node):
     )
 
 
-def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
+def draw_networkx(title, figure, graph, plot_index, num_graphs_to_draw):
     """Draw networkx graph to figure.
 
     Args:
@@ -43,11 +43,13 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
 
     pos = nx.get_node_attributes(graph, "pos")
 
-    figure.add_subplot(
+    ax = figure.add_subplot(
         math.ceil(num_graphs_to_draw / 5),
         num_graphs_to_draw if num_graphs_to_draw <= 5 else 5,
         plot_index,
     )
+
+    ax.set_title(title)
 
     values = list(map(lambda node: get_node_color(node), graph.nodes(data=True)))
     nx.draw_networkx_nodes(
