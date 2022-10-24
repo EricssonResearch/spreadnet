@@ -9,12 +9,12 @@ Usage:
 
 import argparse
 import os
-from random import randrange
 from os import path as osp
 import torch
 import webdataset as wds
 from torch_geometric.transforms import LineGraph
 
+from spreadnet.pyg_gnn.loss.loss import get_infers
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
@@ -87,25 +87,36 @@ def load_model(model_path):
     return model
 
 
-def infer(model, preprocessor, graph_data):
-    """do the inference.
+def predict(model, preprocessor, graph):
+    """Make prediction.
 
-    Args:
-        model: the model to do the prediction
-        graph_data: graph data from dataset
+    :param model: model to be used
+    :param graph: graph to predict
 
-    Returns:the shortest path info
+    :return: None
     """
+    graph = graph.to(device)
 
-    data = graph_data.to(device)
-    (x, edge_index, edge_attr), _ = preprocessor(data)
+    (x, edge_index, edge_attr), (node_true, edge_true) = preprocessor(graph)
 
-    nodes_output, edges_output = model(x, edge_index, edge_attr)
+    # predict
+    (node_pred, edge_pred) = model(x, edge_index, edge_attr)
+    (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
 
-    node_infer = torch.argmax(nodes_output, dim=-1).type(torch.int64)
-    edge_infer = torch.argmax(edges_output, dim=-1).type(torch.int64)
+    node_acc = corrects["nodes"] / graph.num_nodes
+    edge_acc = corrects["edges"] / graph.num_edges
 
-    return node_infer, edge_infer
+    print("--- Node ---")
+    print("Truth:     ", node_true.tolist())
+    print("Predicted: ", infers["nodes"].cpu().tolist())
+
+    print("\n--- Edge ---")
+    print("Truth:     ", edge_true.tolist())
+    print("Predicted: ", infers["edges"].cpu().tolist())
+
+    print("\n--- Accuracies ---")
+    print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
+    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
 
 
 if __name__ == "__main__":
@@ -122,12 +133,13 @@ if __name__ == "__main__":
 
     print("Prepare to infer with GCN model...")
 
-    weight_base_path = os.path.join(os.path.dirname(__file__), weight_base_path)
-    model_path = osp.abspath(osp.join(weight_base_path, which_model))
-    # print(model_path)
+    weight_base_path = osp.join(
+        osp.dirname(__file__), train_configs["weight_base_path"]
+    )
+
+    model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
-    # test data
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/test.all_000000.tar")
         .decode(pt_decoder)
@@ -138,17 +150,8 @@ if __name__ == "__main__":
 
     dataset_size = len(list(dataset))
 
-    graph_idx = randrange(0, dataset_size)
-    (graph,) = list(dataset)[graph_idx]
-    node_label, edge_label = graph.y
-    # predict
-    (node_infer, edge_infer) = infer(model, data_preprocessor, graph.to(device))
-
-    print("Graph idx: ", graph_idx)
-    print("--- Node --- ")
-    print("Truth:     ", node_label.tolist())
-    print("Predicted: ", node_infer.cpu().tolist())
-
-    print("--- Edge ---\n")
-    print("Truth:     ", edge_label.tolist())
-    print("Predicted: ", edge_infer.cpu().tolist())
+    for idx, (graph,) in enumerate(list(dataset)):
+        print("\n\n")
+        print("Graph idx: ", idx)
+        predict(model, data_preprocessor, graph)
+        input("Press enter to continue")
