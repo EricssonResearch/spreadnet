@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.pyg_gnn.loss.loss import get_infers
-from spreadnet.datasets.data_utils.processor import process_nx
+from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
 from spreadnet.datasets.data_utils.draw import draw_networkx
 
 
@@ -126,7 +126,6 @@ if __name__ == "__main__":
 
     raw_path = dataset_path + "/raw"
     raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
-    softmax = torch.nn.functional.softmax
 
     for raw_file_path in raw_file_paths:
         graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
@@ -135,21 +134,8 @@ if __name__ == "__main__":
             print("Graph idx: ", idx + 1)
 
             graph_nx = nx.node_link_graph(graph_json)
-            pred_graph_nx = nx.node_link_graph(graph_json)
-
             (preds, infers) = predict(model, process_nx(graph_nx))
-            node_pred = preds["nodes"].cpu().detach()
-            edge_pred = preds["edges"].cpu().detach()
-
-            for i, (n, data) in enumerate(pred_graph_nx.nodes(data=True)):
-                probability = softmax(node_pred[i], dim=-1).numpy()[1]
-                data["is_in_path"] = bool(infers["nodes"][i])
-                data["probability"] = probability
-
-            for i, (s, e, data) in enumerate(pred_graph_nx.edges(data=True)):
-                probability = softmax(edge_pred[i], dim=-1).numpy()[1]
-                data["is_in_path"] = bool(infers["edges"][i])
-                data["probability"] = probability
+            pred_graph_nx = process_prediction(graph_nx, preds, infers)
 
             print("Drawing comparison...")
             fig = plt.figure(figsize=(80, 40))

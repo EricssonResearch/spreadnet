@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
-from spreadnet.datasets.data_utils.processor import process_folder
+from spreadnet.datasets.data_utils.processor import process_raw_data_folder
 from spreadnet.datasets.data_utils.draw import draw_networkx
 from spreadnet.datasets import run_statistics
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         num_nodes_min_max,
         data_configs["starting_theta"],
     )
-    process_folder(dataset_path, "all", "[!test.]")
+    process_raw_data_folder(dataset_path, "all", "[!test.]")
 
     # Test set
     print("Generating test set...")
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     )
 
     print("Graph Generation Done...\nProcessing...")
-    process_folder(dataset_path, "test.all", "test.")
+    process_raw_data_folder(dataset_path, "test.all", "test.")
 
     run_stat = run_statistics.RunStatistics()
     run_stat.add_data("raw_path", raw_path)

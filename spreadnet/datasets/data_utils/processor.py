@@ -5,7 +5,9 @@ from networkx import node_link_graph
 from torch_geometric.data import Data
 import os
 from glob import glob
+import copy
 
+from torch.nn.functional import softmax
 from spreadnet.datasets.data_utils.convertor import graphnx_to_dict_spec
 from spreadnet.datasets.data_utils.encoder import pt_encoder
 
@@ -59,7 +61,7 @@ def process_nx(graph_nx):
     )
 
 
-def process_folder(dataset_path, output_name, raw_matcher=""):
+def process_raw_data_folder(dataset_path, output_name, raw_matcher=""):
     """Convert json to networkx graph and write as tar file.
 
     Args:
@@ -104,3 +106,21 @@ def process_folder(dataset_path, output_name, raw_matcher=""):
 
     sink.close()
     print(f"Size of the dataset {output_name}: " + str(idx))
+
+
+def process_prediction(input_graph_nx, preds, infers):
+    pred_graph_nx = copy.deepcopy(input_graph_nx)
+    node_pred = preds["nodes"].cpu().detach()
+    edge_pred = preds["edges"].cpu().detach()
+
+    for i, (n, data) in enumerate(pred_graph_nx.nodes(data=True)):
+        probability = softmax(node_pred[i], dim=-1).numpy()[1]
+        data["is_in_path"] = bool(infers["nodes"][i])
+        data["probability"] = probability
+
+    for i, (s, e, data) in enumerate(pred_graph_nx.edges(data=True)):
+        probability = softmax(edge_pred[i], dim=-1).numpy()[1]
+        data["is_in_path"] = bool(infers["edges"][i])
+        data["probability"] = probability
+
+    return pred_graph_nx
