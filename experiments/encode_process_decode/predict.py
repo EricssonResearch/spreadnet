@@ -88,19 +88,20 @@ def predict(model, graph):
     node_acc = corrects["nodes"] / graph.num_nodes
     edge_acc = corrects["edges"] / graph.num_edges
 
-    print("--- Node ---")
-    print("Truth:     ", node_true.tolist())
-    print("Predicted: ", infers["nodes"].cpu().tolist())
+    preds = {"nodes": node_pred, "edges": edge_pred}
 
-    print("\n--- Edge ---")
-    print("Truth:     ", edge_true.tolist())
-    print("Predicted: ", infers["edges"].cpu().tolist())
+    # print("--- Node ---")
+    # print("Truth:     ", node_true.tolist())
+    # print("Predicted: ", infers["nodes"].cpu().tolist())
+
+    # print("\n--- Edge ---")
+    # print("Truth:     ", edge_true.tolist())
+    # print("Predicted: ", infers["edges"].cpu().tolist())
 
     print("\n--- Accuracies ---")
     print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
     print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
 
-    preds = {"nodes": node_pred, "edges": edge_pred}
     return preds, infers
 
 
