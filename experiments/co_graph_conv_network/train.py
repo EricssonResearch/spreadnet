@@ -243,9 +243,24 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         steps_curve.append(epoch + 1)
 
-        execute("train", epoch, epochs, train_loader, model, hybrid_loss, opt)
+        execute(
+            "train",
+            epoch,
+            epochs,
+            train_loader,
+            data_preprocessor,
+            model,
+            hybrid_loss,
+            opt,
+        )
         validation_acc = execute(
-            "validation", epoch, epochs, validation_loader, model, hybrid_loss
+            "validation",
+            epoch,
+            epochs,
+            validation_loader,
+            data_preprocessor,
+            model,
+            hybrid_loss,
         )
 
         if validation_acc > best_acc:
