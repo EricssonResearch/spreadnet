@@ -286,3 +286,7 @@ class ExperimentUtils:
         )
 
         return data
+
+    def generate_data_increasing_size():
+        """Gradually increasing size."""
+        pass
