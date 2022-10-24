@@ -221,16 +221,13 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         steps_curve.append(epoch + 1)
 
-        train_acc = execute(
-            "train", epoch, epochs, train_loader, model, hybrid_loss, opt
-        )
+        execute("train", epoch, epochs, train_loader, model, hybrid_loss, opt)
         validation_acc = execute(
             "validation", epoch, epochs, validation_loader, model, hybrid_loss
         )
-        cur_acc = (train_acc + validation_acc) / 2
 
-        if cur_acc > best_acc:
-            best_acc = cur_acc
+        if validation_acc > best_acc:
+            best_acc = validation_acc
             best_model_wts = copy.deepcopy(model.state_dict())
 
         if weight_base_path is not None:

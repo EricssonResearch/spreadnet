@@ -29,8 +29,30 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
         ),
     }
 
+    (_, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
+
+    return losses, corrects
+
+
+def get_infers(node_pred, edge_pred, node_true, edge_true):
+    """Get number of correct predictions.
+
+    Args:
+        node_pred: the node prediction
+        edge_pred: the edge prediction
+        node_true: the ground-truth node label
+        edge_true: the ground-truth edge label
+
+    Returns:
+        infers: { nodes: infer, edges: infer }
+        corrects: { nodes: correct, edges: correct }
+    """
+
     node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
     edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
+
+    infers = {"nodes": node_infer, "edges": edge_infer}
+
     corrects = {
         "nodes": torch.sum(
             (node_true == node_infer)
@@ -47,5 +69,4 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
             .to(node_pred.device)
         ),
     }
-
-    return losses, corrects
+    return (infers, corrects)
