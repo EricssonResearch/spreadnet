@@ -16,6 +16,7 @@ from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 
+
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
 parser = argparse.ArgumentParser(description="Do predictions.")
