@@ -109,18 +109,40 @@ def process_raw_data_folder(dataset_path, output_name, raw_matcher=""):
 
 
 def process_prediction(input_graph_nx, preds, infers):
+    """Construct networkx graph from prediction results.
+
+    Args:
+        input_graph_nx: original graph
+        preds: nodes and edges prediction
+        infers: nodes and edges infers
+
+    Returns:
+        (predicted, truth_total_weight, pred_total_weight)
+    """
+
     pred_graph_nx = copy.deepcopy(input_graph_nx)
     node_pred = preds["nodes"].cpu().detach()
     edge_pred = preds["edges"].cpu().detach()
 
+    truth_total_weight = 0.0
+    pred_total_weight = 0.0
+
     for i, (n, data) in enumerate(pred_graph_nx.nodes(data=True)):
-        probability = softmax(node_pred[i], dim=-1).numpy()[1]
         data["is_in_path"] = bool(infers["nodes"][i])
+
+        probability = softmax(node_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
 
     for i, (s, e, data) in enumerate(pred_graph_nx.edges(data=True)):
-        probability = softmax(edge_pred[i], dim=-1).numpy()[1]
+        if data["is_in_path"]:
+            truth_total_weight += data["weight"]
+
         data["is_in_path"] = bool(infers["edges"][i])
+
+        if data["is_in_path"]:
+            pred_total_weight += data["weight"]
+
+        probability = softmax(edge_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
 
-    return pred_graph_nx
+    return pred_graph_nx, truth_total_weight, pred_total_weight
