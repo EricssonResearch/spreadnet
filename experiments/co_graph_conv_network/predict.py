@@ -8,16 +8,19 @@ Usage:
 """
 
 import argparse
-import os
 from os import path as osp
 import torch
-import webdataset as wds
-from torch_geometric.transforms import LineGraph
+import networkx as nx
+import json
+import os
+from glob import glob
+import matplotlib.pyplot as plt
 
 from spreadnet.pyg_gnn.loss.loss import get_infers
+from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
+from spreadnet.datasets.data_utils.draw import draw_networkx
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
-from spreadnet.datasets.data_utils.decoder import pt_decoder
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
@@ -54,24 +57,10 @@ dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
 
-line_graph = LineGraph(force_directed=True)
+predictions_path = osp.join(osp.dirname(__file__), "predictions").replace("\\", "/")
 
-
-def data_preprocessor(data):
-    """Preprocessor for CoGCNet Preprocess the data from dataset.
-
-    Args:
-        data: Pytorch Geometric data
-
-    Returns:
-        1. the inputs for the GCN model
-        2. the ground-truth labels
-    """
-    (node_true, edge_true) = data.y
-    x, edge_index = data.x, data.edge_index
-    edge_attr = data.edge_attr
-
-    return (x, edge_index, edge_attr), (node_true, edge_true)
+if not os.path.exists(predictions_path):
+    os.makedirs(predictions_path)
 
 
 def load_model(model_path):
@@ -87,36 +76,39 @@ def load_model(model_path):
     return model
 
 
-def predict(model, preprocessor, graph):
+def predict(model, graph):
     """Make prediction.
 
     :param model: model to be used
     :param graph: graph to predict
 
-    :return: None
+    :return: predictions, infer
     """
     graph = graph.to(device)
 
-    (x, edge_index, edge_attr), (node_true, edge_true) = preprocessor(graph)
+    node_true, edge_true = graph.y
 
     # predict
-    (node_pred, edge_pred) = model(x, edge_index, edge_attr)
+    (node_pred, edge_pred) = model(graph.x, graph.edge_index, graph.edge_attr)
     (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
 
     node_acc = corrects["nodes"] / graph.num_nodes
     edge_acc = corrects["edges"] / graph.num_edges
 
-    print("--- Node ---")
-    print("Truth:     ", node_true.tolist())
-    print("Predicted: ", infers["nodes"].cpu().tolist())
-
-    print("\n--- Edge ---")
-    print("Truth:     ", edge_true.tolist())
-    print("Predicted: ", infers["edges"].cpu().tolist())
+    preds = {"nodes": node_pred, "edges": edge_pred}
+    # print("--- Node ---")
+    # print("Truth:     ", node_true.tolist())
+    # print("Predicted: ", infers["nodes"].cpu().tolist())
+    #
+    # print("\n--- Edge ---")
+    # print("Truth:     ", edge_true.tolist())
+    # print("Predicted: ", infers["edges"].cpu().tolist())
 
     print("\n--- Accuracies ---")
     print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
     print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
+
+    return preds, infers
 
 
 if __name__ == "__main__":
@@ -140,18 +132,46 @@ if __name__ == "__main__":
     model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
 
-    dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/test.all_000000.tar")
-        .decode(pt_decoder)
-        .to_tuple(
-            "pt",
-        )
-    )
+    raw_path = dataset_path + "/raw"
+    raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
 
-    dataset_size = len(list(dataset))
+    for raw_file_path in raw_file_paths:
+        graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
+        for idx, graph_json in enumerate(graphs_json):
+            print("==" * 30)
 
-    for idx, (graph,) in enumerate(list(dataset)):
-        print("\n\n")
-        print("Graph idx: ", idx)
-        predict(model, data_preprocessor, graph)
-        input("Press enter to continue")
+            print("Graph idx: ", idx + 1)
+
+            graph_nx = nx.node_link_graph(graph_json)
+            (preds, infers) = predict(model, process_nx(graph_nx))
+            (pred_graph_nx, truth_total_weight, pred_total_weight) = process_prediction(
+                graph_nx, preds, infers
+            )
+
+            print(f"Truth weights: {truth_total_weight}")
+            print(f"Pred weights: {pred_total_weight}")
+
+            print("Drawing comparison...")
+            fig = plt.figure(figsize=(80, 40))
+            draw_networkx(
+                f"Truth, total edge weights: {round(truth_total_weight, 2)}",
+                fig,
+                graph_nx,
+                1,
+                2,
+            )
+            draw_networkx(
+                f"Prediction, total edge weights: {round(pred_total_weight, 2)}",
+                fig,
+                pred_graph_nx,
+                2,
+                2,
+                "probability",
+                "probability",
+            )
+            plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}.jpg"
+            plt.savefig(plot_name, pad_inches=0, bbox_inches="tight")
+            plt.clf()
+            print("Image saved at ", plot_name)
+
+            input("Press enter to predict another graph")
