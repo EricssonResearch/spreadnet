@@ -99,12 +99,7 @@ class SPCoDeepGCNet(torch.nn.Module):
             num_layers=2,
         )
 
-    def forward(
-        self,
-        x,
-        edge_index,
-        edge_attr,
-    ):
+    def forward(self, x, edge_index, edge_attr):
 
         v_x = self.node_encoder(x)
         num_node = v_x.size()[0]
@@ -185,12 +180,7 @@ class SPCoGCNet(torch.nn.Module):
             num_layers=2,
         )
 
-    def forward(
-        self,
-        x,
-        edge_index,
-        edge_attr,
-    ):
+    def forward(self, x, edge_index, edge_attr):
 
         v_x = self.node_encoder(x)
         num_node = v_x.size()[0]
