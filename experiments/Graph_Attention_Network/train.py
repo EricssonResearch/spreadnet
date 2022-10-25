@@ -3,8 +3,8 @@
 Usage:
     python train.py [--config config_file_path]
 
-@Time    : 9/16/2022 1:31 PM
-@Author  : Haodong Zhao
+@Time    : 10/25/2022 1:31 PM
+@Author  : Haoyuan Li
 """
 import copy
 import os
