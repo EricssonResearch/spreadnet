@@ -90,7 +90,7 @@ class SPGATNet(torch.nn.Module):
                     )
                 )
 
-        self.linear = Linear(16, 2)
+        self.linear = Linear(out_channels, edge_out_channels)
         self.skip_connection = Linear(encode_node_in, hidden_channels)
         self.edge_classifier = MLP(
             in_channels=out_channels + heads + out_channels,

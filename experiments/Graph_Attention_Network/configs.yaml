@@ -1,30 +1,22 @@
-data:
-  # graph generator
-  random_seed: 0
-  num_node_min: 8
-  num_node_max: 17
-
-  # dataset generator
-  dataset_path: "../dataset"
-  dataset_size: 5000
-
 train:
   weight_base_path: "./weights"
-  weight_save_freq: 50
+  weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 1000
-  batch_size: 32
+  epochs: 600
+  batch_size: 64
+  train_ratio: 0.7
   shuffle: True
+  plot_after_epochs: 100
 
   adam_lr: !!float 1e-3
   adam_weight_decay: !!float 5e-4
 
 model:
-  num_hidden_layers: 4
+  num_hidden_layers: 6
   in_channels: 64
-  hidden_channels: 128
-  out_channels: 16
+  hidden_channels: 256
+  out_channels: 32
   heads: 8
   #dropout: 0.5
   add_self_loops: False
