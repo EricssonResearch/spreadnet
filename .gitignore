@@ -175,3 +175,6 @@ weights/*.pth
 # training plots
 experiments/encode_process_decode/trainings/*.jpg
 experiments/simple_behaviour_experiments/*.png
+
+# predictions
+experiments/encode_process_decode/predictions/*.jpg
