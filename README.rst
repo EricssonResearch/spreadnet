@@ -22,14 +22,14 @@ Development Workflow
 
          # Create a virtualenv named ``spreadnet-dev`` that lives in the directory of
          # the same name
-         # It is recommended that Python>=3.9
+         # It is recommended that Python>=3.7
          python -m venv spreadnet-dev
          # Activate it
          source spreadnet-dev/bin/activate
          # Install Pytorch: https://pytorch.org/get-started/locally/
          # Install PyG: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-         # Make sure that Pytorch and PyG are both corectly installed
-         
+         # Make sure that Pytorch and PyG are both correctly installed
+
          # Install the other dependencies of spreadnet
          pip install -r requirements.txt
          #
@@ -47,13 +47,13 @@ Development Workflow
        ::
 
          # Create a conda environment named ``spreadnet-dev``
-         conda create --name spreadnet-dev python=3.9
+         conda create --name spreadnet-dev python=3.7
          # Activate it
          conda activate spreadnet-dev
-         
+
          # Install Pytorch: https://pytorch.org/get-started/locally/
          # Install PyG: https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-         # Make sure that Pytorch and PyG are both corectly installed
+         # Make sure that Pytorch and PyG are both correctly installed
          # Install the other dependencies of spreadnet
          conda install -c conda-forge --file requirements.txt
          #
@@ -67,8 +67,7 @@ Development Workflow
          # Test your installation
          PYTHONPATH=. pytest spreadnet
 
-   * Finally, we recommend you use a pre-commit hook, which runs black and flake8 et.
-al. when
+   * Finally, we recommend you use a pre-commit hook, which runs black and flake8 et al. when
      you type ``git commit``::
 
        pre-commit install

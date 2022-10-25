@@ -21,6 +21,12 @@ to ensure all nodes are connected.
 
 This Graph generator is modified from the graph generation part of tensorflow/gnn
     https://github.com/tensorflow/gnn/blob/main/examples/notebooks/graph_network_shortest_path.ipynb
+
+TODO: Code duplicated in the tf_gnn utils also. One copy has to be removed.
+      Do all models require this type of data generation?
+TODO: For the final spreadnet(aka non epxerimental).
+      Get rid of all code that is not written by us so that
+      we do not have to bother with their license.
 """
 
 import collections
@@ -47,25 +53,28 @@ def _pairwise(iterable):
 class GraphGenerator:
     """A graph generator that creates a connected graph."""
 
+    mst_algorithms = ["kruskal", "prim", "boruvka"]
+
     def __init__(
-            self,
-            random_seed: int,
-            num_nodes_min_max: Tuple[int, int],
-            dimensions: int = 2,
-            theta: float = 1000.0,
-            min_length: int = 1,
-            rate: float = 1.0,
+        self,
+        random_seed: int,
+        num_nodes_min_max: Tuple[int, int],
+        dimensions: int = 2,
+        theta: float = 1000.0,
+        min_length: int = 1,
+        rate: float = 1.0,
     ):
         """
 
         Args:
             random_seed:  A random seed for the graph generator. Default= None.
             num_nodes_min_max: A sequence [lower, upper) number of nodes per graph.
-            dimensions: (optional) An `int` number of dimensions for the positions. Default= 2.
-            theta: graph's threshold. Large values (1000+) make mostly trees.Try 20-60 for good non-trees.
-                    Default=1000.0.
-            min_length: (optional) An `int` minimum number of edges in the shortest path. Default= 1.
-                        sampling distribution. Default= 1.0.
+            dimensions: (optional) An `int` number of dimensions for the positions.
+                        Default= 2.
+            theta: graph's threshold. Large values (1000+) make mostly trees.Try 20-60
+                    for good non-trees. Default=1000.0.
+            min_length: (optional) An `int` minimum number of edges in the shortest
+                        path. Default= 1. sampling distribution. Default= 1.0.
         """
 
         self.random_state = np.random.RandomState(random_seed)
@@ -75,9 +84,11 @@ class GraphGenerator:
         self.min_length = min_length
         self.rate = rate
 
+    def set_theta(self, new_theta):
+        self.theta = new_theta
+
     def task_graph_generator(self):
-        """
-        The graphs are geographic threshold graphs, but with added edges via
+        """The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.
         The generated graph is a directed graph, and it contains path
         information.
@@ -89,8 +100,7 @@ class GraphGenerator:
             yield self._generate_task_graph()
 
     def base_graph_generator(self):
-        """
-        The graphs are geographic threshold graphs, but with added edges via
+        """The graphs are geographic threshold graphs, but with added edges via
         a minimum spanning tree algorithm, to ensure all nodes are connected.
 
         returns:
@@ -105,12 +115,10 @@ class GraphGenerator:
         return graph
 
     def _generate_base_graph(self):
-        """
-        Generate the base graph for the task.
+        """Generate the base graph for the task.
 
         Returns:
             A basic graph.
-
         """
         # 1. Sample num_nodes.
         num_nodes = self.random_state.randint(*self.num_nodes_min_max)
@@ -142,8 +150,10 @@ class GraphGenerator:
         )  # list [(0, 0, w), (0, 1, w).....]
 
         mst_graph = nx.Graph()
-        mst_graph.add_weighted_edges_from(weighted_edges, weight="weight")
-        mst_graph = nx.minimum_spanning_tree(mst_graph, weight="weight")
+        mst_graph.add_weighted_edges_from(weighted_edges)
+
+        mst_algorithm = self.mst_algorithms[self.random_state.randint(0, 2)]
+        mst_graph = nx.minimum_spanning_tree(mst_graph, algorithm=mst_algorithm)
 
         # 4. Put geo_graph's node attributes into the mst_graph.
         for i in mst_graph.nodes():

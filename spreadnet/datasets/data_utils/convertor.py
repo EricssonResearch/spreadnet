@@ -5,19 +5,16 @@
 """
 
 import numpy as np
-import torch
 
 
 def graphnx_to_dict_spec(graph_nx):
-    """
-    Convert networkx graph to a dictionary.
+    """Convert networkx graph to a dictionary.
 
     Args:
         graph_nx: a networkx graph
 
     Returns:
         A dictionary that contains graph data.
-
     """
     ret_dict = {}
 
@@ -51,38 +48,42 @@ def graphnx_to_dict_spec(graph_nx):
 
     return ret_dict
 
-#
+
 # def data_to_input_label(pyg_data):
 #     """
 #     Convert PyG data to input_data and ground-truth labels.
-#
+
 #     Args:
 #         pyg_data: one graph data from pyg dataset set
-#
+
 #     Returns:
 #         input_data: Tuple:[nodes_data, edges_data],
 #         labels: the ground-truth labels of nodes and edges
-#
+
 #     """
 #     node_labels, edge_labels = pyg_data.label
-#
+
 #     node_labels = node_labels.type(torch.int64)  # node: is_in_path
 #     edge_labels = edge_labels.type(torch.int64)  # edge: is_in_path
 #     label = (node_labels, edge_labels)
-#
+
 #     nodes_weight = pyg_data["weight"].type(torch.float32)
 #     nodes_start = pyg_data["is_start"].type(torch.float32)
 #     nodes_end = pyg_data["is_end"].type(torch.float32)
-#
+
 #     edges_weight = pyg_data["edge_weight"].type(torch.float32)
 #     nodes_data = torch.concat(
-#         [nodes_weight[..., None], nodes_start[..., None], nodes_end[..., None]], dim=-1
+#         [
+#             nodes_weight[..., None],
+#             nodes_start[..., None],
+#             nodes_end[..., None]],
+#             dim=-1
 #     )
 #     edges_data = torch.concat([edges_weight[..., None]], dim=-1)
-#
+
 #     input_data = (nodes_data, edges_data)
-#
+
 #     # print("[node_data size] ", nodes_data.size())
 #     # print("[edges_data size] ", edges_data.size())
-#
+
 #     return input_data, label

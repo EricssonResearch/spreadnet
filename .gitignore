@@ -9,6 +9,7 @@ __pycache__/
 *.pickle
 *.pth
 *.vscode
+*.csv
 # Distribution / packaging
 .Python
 build/
@@ -165,7 +166,15 @@ cython_debug/
 
 # random generated dataset
 experiments/dataset/raw/*.json
+experiments/dataset/raw/*.jpg
 experiments/dataset/processed/*.tar
 
 # model weights
 weights/*.pth
+
+# training plots
+experiments/encode_process_decode/trainings/*.jpg
+experiments/simple_behaviour_experiments/*.png
+
+# predictions
+experiments/encode_process_decode/predictions/*.jpg
