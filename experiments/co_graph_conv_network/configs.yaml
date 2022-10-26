@@ -15,7 +15,9 @@ train:
 model:
   node_in: 3
   edge_in: 1
-  hidden_channels: 64
-  num_layers: 16
+  mlp_hidden_channels: 128
+  mlp_hidden_layers: 2
+  gcn_hidden_channels: 64
+  gcn_num_layers: 16
   node_out: 2
   edge_out: 2

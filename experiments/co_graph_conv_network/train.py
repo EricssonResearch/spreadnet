@@ -221,8 +221,10 @@ if __name__ == "__main__":
     model = SPCoDeepGCNet(
         node_in=model_configs["node_in"],
         edge_in=model_configs["edge_in"],
-        hidden_channels=model_configs["hidden_channels"],
-        num_layers=model_configs["num_layers"],
+        gcn_hidden_channels=model_configs["gcn_hidden_channels"],
+        gcn_num_layers=model_configs["gcn_num_layers"],
+        mlp_hidden_channels=model_configs["mlp_hidden_channels"],
+        mlp_hidden_layers=model_configs["mlp_hidden_layers"],
         node_out=model_configs["node_out"],
         edge_out=model_configs["edge_out"],
     ).to(device)
