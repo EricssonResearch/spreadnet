@@ -124,6 +124,7 @@ if __name__ == "__main__":
 
     model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+    model.eval()
 
     raw_path = dataset_path + "/raw"
     raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
