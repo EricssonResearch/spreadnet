@@ -6,34 +6,41 @@ from multiprocessing import Pool, cpu_count
 
 # from spreadnet.utils.experiment_utils import ExperimentUtils
 import json
-import os
+
+
 from spreadnet.tf_gnn.model import gnn
 import random
 import networkx as nx
-
+from tqdm import tqdm
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.datasets.graph_generator import GraphGenerator
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.utils.experiment_utils import ExperimentUtils
+import os
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
 sys.modules["gnn"] = gnn
 
 
-def inc_pred(results_dir, experiments_dir, model, datasets):
-    for ds in datasets:
+def inc_pred(results_dir, model, graphs, ds):
+    """Task for process paralelization. Currently unfeasible as the arguments
+    are very large and we probably just keep overwriting the cache. Preliminary
+    results show a decrease in performance. Could bring paralelization to just
+    the inference part.
 
-        raw_data_path = experiments_dir + "/" + ds
-        file_raw = open(raw_data_path)
-
-        graphs = json.load(file_raw)
-
-        output_graphs = list()
-        output_name = ds.replace(".json", "_out.json")
-
+    Args:
+        results_dir (_type_): _description_
+        model (_type_): _description_
+        graphs (_type_): _description_
+        ds (_type_): _description_
+    """
+    output_name = ds.replace(
+        ".json", "_out_" + model.show_model_used(ret=True, wh_w=True) + ".json"
+    )
+    output_graphs = list()
     for g in graphs:
-        print("Inference")
-        output_graphs.append(model.inferer_single_data(g))
+        output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
 
     with open(results_dir + f"/{output_name}", "w") as outfile:
         json.dump(output_graphs, outfile, cls=NpEncoder)
@@ -41,14 +48,14 @@ def inc_pred(results_dir, experiments_dir, model, datasets):
     print(output_name, model.show_model_used(), " Done")
 
 
+# @profile
 def increasing_graph_size_experiment():
     """Predict for files in the increasing_size_experiment_data folder.
 
     Saves the results in the same folder as the
     """
     models_trained = [
-        # ExperimentUtils(model_type="tf_gnn",
-        # weights_model="pickled_2000_model.pickle"),
+        ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
         ExperimentUtils(model_type="pyg_gnn", weights_model="model_weights_best.pth"),
     ]
     experiments_dir = "increasing_size_experiment_data"
@@ -58,23 +65,34 @@ def increasing_graph_size_experiment():
         # check if current path is a file
         if os.path.isfile(os.path.join(experiments_dir, path)):
             datasets.append(path)
-    # Chose according to the number of processors
 
-    param_list = []
-    for m in models_trained:
-        param_list.append([results_dir, experiments_dir, m, datasets])
+    # pool = Pool(processes=3)
+    for ds in tqdm(datasets):
 
-    pool = Pool(processes=cpu_count() - 1)
+        raw_data_path = experiments_dir + "/" + ds
+        file_raw = open(raw_data_path)
 
-    pool.starmap(inc_pred, param_list)
-    pool.close()
+        graphs = json.load(file_raw)
+        #     param_list = []
+        #     for m in models_trained:
+        #         param_list.append([results_dir, m, graphs, ds])
 
-    # This one can be paralelied
-    #     for g in tqdm(graphs, desc="Model: " + str(idx_m)):
-    #         output_graphs.append(models_trained[idx_m].inferer_single_data(g))
+        #     pool.starmap(inc_pred, param_list)
+        #     pool.close()
 
-    # with open(results_dir + f"/{output_name}", "w") as outfile:
-    #     json.dump(output_graphs, outfile, cls=NpEncoder)
+        # # cpu_count() - 1)
+
+        for model in models_trained:
+            output_name = ds.replace(
+                ".json", "_out_" + model.show_model_used(ret=True, wh_w=True) + ".json"
+            )
+
+            output_graphs = list()
+            for g in graphs:
+                output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
+
+            with open(results_dir + f"/{output_name}", "w") as outfile:
+                json.dump(output_graphs, outfile, cls=NpEncoder)
 
 
 def inc_process(
