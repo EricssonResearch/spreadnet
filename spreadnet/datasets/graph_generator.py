@@ -185,6 +185,12 @@ class GraphGenerator:
             for y, length in yy.items():
                 if length >= min_length:
                     pair_to_length_dict[x, y] = length
+
+        if len(pair_to_length_dict.values()) == 0:
+            return (
+                self._generate_task_graph()
+            )  # returns digraph, calls for new graph generation and adds sp path
+
         if max(pair_to_length_dict.values()) < min_length:
             raise ValueError("All shortest paths are below the minimum length")
         # The node pairs which exceed the minimum length.
