@@ -23,6 +23,15 @@ sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
 sys.modules["gnn"] = gnn
 
 
+def inc_pred_infer(model, g):
+    """Paralelize the inference calls.
+
+    Would it work better to do it in batches? I suspect that the model can not
+    fit in the cache anyway.
+    """
+    return nx.node_link_data(model.inferer_single_data(g))
+
+
 def inc_pred(results_dir, model, graphs, ds):
     """Task for process paralelization. Currently unfeasible as the arguments
     are very large and we probably just keep overwriting the cache. Preliminary
@@ -40,6 +49,7 @@ def inc_pred(results_dir, model, graphs, ds):
     )
     output_graphs = list()
     for g in graphs:
+
         output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
 
     with open(results_dir + f"/{output_name}", "w") as outfile:
@@ -88,6 +98,10 @@ def increasing_graph_size_experiment():
             )
 
             output_graphs = list()
+            # pool = Pool(processes=cpu_count() - 3)
+            # output_graphs = pool.starmap(inc_pred_infer, [model, graphs])
+            # pool.close()
+
             for g in graphs:
                 output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
 
