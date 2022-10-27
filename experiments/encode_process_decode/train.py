@@ -15,7 +15,6 @@ import webdataset as wds
 from torch_geometric.loader import DataLoader
 from datetime import datetime
 from itertools import islice
-import wandb
 
 from tqdm import tqdm
 
@@ -25,7 +24,6 @@ from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
 
-wandb.init(project="project_dv")
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
