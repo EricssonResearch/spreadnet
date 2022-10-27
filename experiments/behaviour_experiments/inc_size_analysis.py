@@ -12,8 +12,29 @@ import matplotlib.pyplot as plt
 # Currently for each graph we can deduce the minimum path length.
 
 
+def plot_graph(df, pb_treshold, model_name):
+    df.drop(
+        [
+            "Model Type",
+        ],
+        axis=1,
+        inplace=True,
+    )
+
+    for pb in pb_treshold:
+        df_tr = df[df["Probabiltiy Threshold"] == pb]
+        plt.scatter(df_tr["Graph Size"], df_tr["Accuracy"])
+    plt.yticks(np.arange(0, df_tr["Accuracy"].max() + 0.1, 0.01))
+    plt.legend(df["Probabiltiy Threshold"], title="Probability Threshold")
+    plt.xlabel("Grapph Size")
+    plt.ylabel("Accuracy")
+    plt.title("In path prediction over all nodes" + model_name)
+    plt.grid(visible=True)
+    plt.show()
+
+
 def prob_plot():
-    """Plot the accuracies for each prob treshold."""
+    """Plot the accuracies for each prob threshold."""
     df = pd.read_csv("results.csv", index_col=False)
     df = df.sort_values(["Graph Size", "Model Type"])
     pd.set_option("display.max_rows", None)
@@ -21,29 +42,9 @@ def prob_plot():
     # pb_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
     pb_treshold = [0.5, 0.25, 0.01]
     df_pyg = df[df["Model Type"] == "pyg"]
-    # df_pyg = df_pyg[df_pyg["Probabiltiy Treshold"] == 0.5]
-
-    # df_pyg = df_pyg[df_pyg["Graph Size"] == 185]
     df_tf = df[df["Model Type"] == "tf"]
-    df_tf = df_tf[df_tf["Probabiltiy Treshold"] == 0.5]
-    df_tf = df_tf[df_tf["Graph Size"] == 185]
-
-    df_pyg.drop(
-        [
-            "Model Type",
-        ],
-        axis=1,
-        inplace=True,
-    )
-    print(df_pyg)
-    for pb in pb_treshold:
-        df_pyg_tr = df_pyg[df_pyg["Probabiltiy Treshold"] == pb]
-
-        plt.scatter(df_pyg_tr["Graph Size"], df_pyg_tr["Accuracy"])
-    plt.xlabel("Grapph Size")
-    plt.ylabel("Accuracy")
-
-    plt.show()
+    plot_graph(df_pyg, pb_treshold=pb_treshold, model_name="Pyg Original")
+    plot_graph(df_tf, pb_treshold=pb_treshold, model_name="Tensorflow Original")
 
 
 def prob_accuracy():
@@ -104,7 +105,7 @@ def prob_accuracy():
 
     df["Graph Size"] = g_size
     df["Model Type"] = model_type
-    df["Probabiltiy Treshold"] = prob_treshold_df
+    df["Probabiltiy Threshold"] = prob_treshold_df
 
     df["Accuracy"] = node_accuracy
 
@@ -143,5 +144,5 @@ def prob_accuracy():
 
 
 if __name__ == "__main__":
-    prob_accuracy()
+    # prob_accuracy()
     prob_plot()
