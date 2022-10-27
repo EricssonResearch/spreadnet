@@ -166,10 +166,10 @@ def increasing_graph_size_generator():
     graph_size_increment = 10
     graph_size_gap = 15  # gap between the min and the max
     graph_size_start = 10
-    max_min_graph_size = 250
+    max_min_graph_size = 1000
     theta = 20
     path_length_increaser = 3
-    number_of_graphs = 50
+    number_of_graphs = 5
     param_list = []
 
     for i in range(graph_size_start, max_min_graph_size, graph_size_increment):

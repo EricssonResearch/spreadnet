@@ -3,7 +3,18 @@ import numpy as np
 
 
 class MaxProbWalk:
-    def max_probability_walk(self, G, start_node, end_node, prob_treshold):
+    def get_start_end_nodes(self, G):
+        for i in range(0, G.number_of_nodes()):
+            # Construct node positions and find the source and target
+            # of the query.
+            if G.nodes[i]["is_start"] is True:
+                start_node = i
+            if G.nodes[i]["is_end"] is True:
+                end_node = i
+
+        return start_node, end_node
+
+    def max_probability_walk(self, G, prob_treshold):
         """Takes an output graph with a start and end node, outputs the nodes
         and edges if we take the maximum probability, either node or edge.
 
@@ -20,6 +31,8 @@ class MaxProbWalk:
 
         max_prob_walk_nodes = []
         max_prob_walk_edges = []
+
+        start_node, end_node = self.get_start_end_nodes(G)
 
         current_node = start_node
         max_prob_walk_nodes.append(start_node)
