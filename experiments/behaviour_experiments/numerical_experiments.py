@@ -174,9 +174,9 @@ def increasing_graph_size_generator():
 
     for i in range(graph_size_start, max_min_graph_size, graph_size_increment):
         nodes_min_max = (i, i + graph_size_gap)
-        if i % 500 == 0:
+        if i % 250 == 0:
             path_length_increaser += 1
-            theta += 1
+            theta += 10
 
         param_list.append(
             [

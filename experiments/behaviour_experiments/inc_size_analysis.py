@@ -26,7 +26,7 @@ def plot_graph(df, pb_treshold, model_name, title):
         plt.scatter(df_tr["Graph Size"], df_tr["Accuracy"])
     plt.yticks(np.arange(0, df_tr["Accuracy"].max() + 0.1, 0.05))
     plt.legend(df["Probabiltiy Threshold"], title="Probability Threshold")
-    plt.xlabel("Grapph Size")
+    plt.xlabel("Graph Size")
     plt.ylabel("Accuracy Nodes")
     plt.title(title + model_name)
     plt.grid(visible=True)
@@ -50,7 +50,10 @@ def prob_plot(file_name, title):
     )
 
 
-def prob_accuracy():
+def prob_accuracy(
+    file_name,
+    only_path=False,
+):
     pred_dir = "increasing_size_predictions"
     datasets = list()
 
@@ -73,25 +76,33 @@ def prob_accuracy():
             pred = []
             for g in graphs:
                 g = nx.node_link_graph(g)  # TODO add probability for the edges also
+
+                if only_path:
+                    no_ground_truth_nodes = 0
+                    for i in range(0, g.number_of_node):
+                        if g.nodes[i]["is_in_path"]:
+                            no_ground_truth_nodes += 1
                 for i in range(0, g.number_of_nodes()):
                     prob = np.round(tf.nn.softmax(g.nodes[i]["logits"])[1].numpy(), 2)
                     if prob >= pt and g.nodes[i]["is_in_path"]:
                         # print(prob, pt, g.nodes[i]["is_in_path"])
                         probs.append(prob)
                         pred.append(1)
-                    elif prob < pt and not g.nodes[i]["is_in_path"]:
+                    elif prob < pt and not g.nodes[i]["is_in_path"] and not only_path:
                         pred.append(1)
                     else:
                         pred.append(0)
                 # print(ds, pt, sum(pred) / len(pred))
             # print(ds, pt, sum(pred) / len(pred))
-
-            node_accuracy.append(sum(pred) / len(pred))
+            if only_path:
+                node_accuracy.append(sum(pred) / no_ground_truth_nodes)
+            else:
+                node_accuracy.append(sum(pred) / len(pred))
     to_df_format(
         datasets,
         prob_threshold=prob_treshold,
         accuracy=node_accuracy,
-        name="all_pred_accuracy.csv",
+        name=file_name,
     )
 
 
@@ -189,7 +200,10 @@ def max_prob_path_lengths():
 
 
 if __name__ == "__main__":
-    prob_accuracy()
+    prob_accuracy(only_path=False, file_name="all_nodes_acc.csv")
+    prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
     max_prob_path_lengths()
+
     prob_plot("acc_prob_walk.csv", "Max Prob Walk")
     prob_plot("all_pred_accuracy.csv", "All Nodes Walk")
+    prob_plot("only_path_nodes_acc.csv", "Only Path Nodes Walk")
