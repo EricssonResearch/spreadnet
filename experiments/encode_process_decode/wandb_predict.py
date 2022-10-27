@@ -11,6 +11,8 @@ from random import randrange
 from os import path as osp
 import torch
 import webdataset as wds
+import wandb
+from datetime import datetime
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
@@ -79,6 +81,14 @@ def infer(model, graph_data):
 
 
 if __name__ == "__main__":
+
+    date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    now = datetime.now().strftime("%H:%M:%S_%d-%m-%y")
+    wandb.init(
+        project="gnn_pytorch_test_exp",
+        name=f"pred_{now}",
+        config=configs,  # type: ignore
+    )
     # load model
     model = EncodeProcessDecode(
         node_in=model_configs["node_in"],
@@ -115,11 +125,22 @@ if __name__ == "__main__":
     # predict
     (node_infer, edge_infer) = infer(model, graph.to(device))
 
-    print("Graph idx: ", graph_idx)
-    print("--- Node --- ")
-    print("Truth:     ", node_label.tolist())
-    print("Predicted: ", node_infer.cpu().tolist())
+    node_truth_str = str(node_label.tolist())
+    node_predicted_str = str(node_infer.cpu().tolist())
+    edge_truth_str = str(edge_label.tolist())
+    edge_predicted_str = str(edge_infer.cpu().tolist())
 
-    print("--- Edge ---\n")
-    print("Truth:     ", edge_label.tolist())
-    print("Predicted: ", edge_infer.cpu().tolist())
+    pred_table = wandb.Table(
+        columns=["graph_idx", "node_truth", "node_pred", "edge_truth", "edge_pred"]
+    )
+    pred_table.add_data(
+        graph_idx,
+        node_truth_str,
+        node_predicted_str,
+        edge_truth_str,
+        edge_predicted_str,
+    )
+    wandb.log({"Predictions": pred_table}, commit=True)
+
+    # Mark the run as finished
+    wandb.finish()

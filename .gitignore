@@ -174,3 +174,7 @@ weights/*.pth
 
 # training plots
 experiments/encode_process_decode/trainings/*.jpg
+
+#wandb local run files
+experiments/encode_process_decode/wandb/
+experiments/wandb/
