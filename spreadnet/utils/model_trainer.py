@@ -16,22 +16,21 @@ import webdataset as wds
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
+from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 
 
 class ModelTrainer:
     def __init__(
         self,
-        model_name: str,
         model_configs: dict,
         train_configs: dict,
         dataset_path: str,
         dataset_configs: dict,
         model_save_path: str,
     ):
-
-        self.model_name = model_name
         self.model_configs = model_configs
+        self.model_name = self.model_configs["model_name"]
         self.train_configs = train_configs
 
         self.dataset_path = dataset_path
@@ -45,15 +44,21 @@ class ModelTrainer:
         self.optimizer = None
 
         # plot settings
-        self.plots_save_path = os.path.join(self.model_save_path, "training")
+        self.plots_save_path = os.path.join(model_save_path, "../", "trainings")
         self.steps_curve = []
         self.losses_curve = []
         self.validation_losses_curve = []
         self.accuracies_curve = []
         self.validation_accuracies_curve = []
 
+        if not os.path.exists(self.model_save_path):
+            os.makedirs(self.model_save_path)
+
+        if not os.path.exists(self.plots_save_path):
+            os.makedirs(self.plots_save_path)
+
     def construct_model(self):
-        if self.model_name == "MPNN":
+        if self.model_name == "EncodeProcessDecode":
             self.model = EncodeProcessDecode(
                 node_in=self.model_configs["node_in"],
                 edge_in=self.model_configs["edge_in"],
@@ -66,7 +71,7 @@ class ModelTrainer:
                 num_mlp_hidden_layers=self.model_configs["num_mlp_hidden_layers"],
                 mlp_hidden_size=self.model_configs["mlp_hidden_size"],
             ).to(self.device)
-        elif self.model_name == "DEEPCOGCN":
+        elif self.model_name == "DeepCoGCN":
             self.model = SPCoDeepGCNet(
                 node_in=self.model_configs["node_in"],
                 edge_in=self.model_configs["edge_in"],
@@ -79,7 +84,8 @@ class ModelTrainer:
             ).to(self.device)
         elif self.model_name == "GAT":
             self.model = None
-            pass
+
+        return self.model
 
     def create_plot(self, plot_name):
         plot_training_graph(
@@ -88,7 +94,7 @@ class ModelTrainer:
             self.validation_losses_curve,
             self.accuracies_curve,
             self.validation_accuracies_curve,
-            self.plots_save_path + f"{plot_name}",
+            os.path.join(self.plots_save_path, f"{plot_name}"),
         )
 
     def data_preprocessor(self, data):
@@ -109,7 +115,11 @@ class ModelTrainer:
         return (x, edge_index, edge_attr), (node_true, edge_true)
 
     def construct_dataloader(self):
+        """Construct dataloaders: train loader and validation loader.
 
+        Returns:
+            train_loader, validation_loader
+        """
         dataset = (
             wds.WebDataset("file:" + self.dataset_path + "/processed/all_000000.tar")
             .decode(pt_decoder)
@@ -119,7 +129,7 @@ class ModelTrainer:
         )
 
         dataset_size = len(list(dataset))
-        train_size = int(self.dataset_configs["train_ratio"] * dataset_size)
+        train_size = int(self.train_configs["train_ratio"] * dataset_size)
 
         if bool(self.train_configs["shuffle"]):
             dataset.shuffle(dataset_size * 10)
@@ -134,7 +144,19 @@ class ModelTrainer:
         )
         return train_loader, validation_loader
 
-    def epoch_execute(self, mode, epoch, total_epoch, dataloader, loss_func):
+    def sub_execute(self, mode, epoch, total_epoch, dataloader, loss_func):
+        """sub execution: train or validation in one epoch.
+
+        Args:
+            mode: train | validation
+            epoch: the current epoch
+            total_epoch: the total epoch
+            dataloader: dataloader
+            loss_func: loass function
+
+        Returns:
+            nodes_loss, edges_loss, nodes_acc, edges_acc
+        """
         is_training = mode == "train"
         if is_training:
             pb_str = "Train"
@@ -186,40 +208,55 @@ class ModelTrainer:
 
         nodes_loss /= len(dataloader.dataset)
         edges_loss /= len(dataloader.dataset)
-        nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy()
-        edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy()
+        nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy().item()
+        edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy().item()
         return nodes_loss, edges_loss, nodes_acc, edges_acc
 
-    def execute(self, mode, epoch, total_epoch, dataloader, loss_func):
+    def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
         """
         Execute training or validating.
         Args:
+
             epoch: current epoch
             total_epoch: the number of total epoch
-            mode: train | validation
-            dataloader: dataloader
+            valid_loader:
+            train_loader:
             loss_func: loss function
 
         Returns:
             accuracy
         """
-
-        is_training = mode == "train"
-        nodes_loss, edges_loss, nodes_acc, edges_acc = self.epoch_execute(
-            mode, epoch, total_epoch, dataloader, loss_func
-        )
-
-        (self.losses_curve if is_training else self.validation_losses_curve).append(
-            {"nodes": nodes_loss, "edges": edges_loss}
-        )
+        (
+            train_nodes_loss,
+            train_edges_loss,
+            train_nodes_acc,
+            train_edges_acc,
+        ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
 
         (
-            self.accuracies_curve if is_training else self.validation_accuracies_curve
-        ).append({"nodes": nodes_acc, "edges": edges_acc})
+            validation_nodes_loss,
+            validation_edges_loss,
+            validation_nodes_acc,
+            validation_edges_acc,
+        ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
 
-        return (nodes_acc + edges_acc) / 2
+        self.losses_curve.append({"nodes": train_nodes_loss, "edges": train_edges_loss})
+        self.validation_losses_curve.append(
+            {"nodes": validation_nodes_loss, "edges": validation_edges_loss}
+        )
 
-    def train(self, print_info: bool = True):
+        self.accuracies_curve.append(
+            {"nodes": train_nodes_acc, "edges": train_edges_acc}
+        )
+        self.validation_accuracies_curve.append(
+            {"nodes": validation_nodes_acc, "edges": validation_edges_acc}
+        )
+
+        validation_acc = (validation_nodes_acc + validation_edges_acc) / 2
+
+        return validation_acc
+
+    def train(self):
         print(f"Using {self.device} device...")
         date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
@@ -234,6 +271,8 @@ class ModelTrainer:
 
         train_loader, validation_loader = self.construct_dataloader()
 
+        self.construct_model()
+
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
             lr=self.train_configs["adam_lr"],
@@ -246,16 +285,14 @@ class ModelTrainer:
         epochs = self.train_configs["epochs"]
         plot_after_epochs = self.train_configs["plot_after_epochs"]
 
-        if print_info:
-            print(self.model)
-            print("\n")
+        print(self.model)
+        print("\n")
 
         for epoch in range(epochs):
             self.steps_curve.append(epoch + 1)
 
-            _ = self.execute("train", epoch, epochs, train_loader)
             validation_acc = self.execute(
-                "validation", epoch, epochs, validation_loader
+                epoch, epochs, train_loader, validation_loader, hybrid_loss
             )
 
             if validation_acc > best_acc:
@@ -270,32 +307,30 @@ class ModelTrainer:
                 )
 
             if epoch % 10 == 0:
-                if print_info:
-                    print(
-                        "\n  Epoch   "
-                        + "Train Loss (Node,Edge)     Validation Loss        "
-                        + "Train Acc (Node,Edge)      Validation Acc"
-                    )
+                print(
+                    "\n  Epoch   "
+                    + "Train Loss (Node,Edge)     Validation Loss        "
+                    + "Train Acc (Node,Edge)      Validation Acc"
+                )
 
-            if print_info:
-                print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
-                print(
-                    "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
-                        self.losses_curve[-1]["nodes"],
-                        self.losses_curve[-1]["edges"],
-                        self.validation_losses_curve[-1]["nodes"],
-                        self.validation_losses_curve[-1]["edges"],
-                    ),
-                    end="",
+            print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
+            print(
+                "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
+                    self.losses_curve[-1]["nodes"],
+                    self.losses_curve[-1]["edges"],
+                    self.validation_losses_curve[-1]["nodes"],
+                    self.validation_losses_curve[-1]["edges"],
+                ),
+                end="",
+            )
+            print(
+                "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
+                    self.accuracies_curve[-1]["nodes"],
+                    self.accuracies_curve[-1]["edges"],
+                    self.validation_accuracies_curve[-1]["nodes"],
+                    self.validation_accuracies_curve[-1]["edges"],
                 )
-                print(
-                    "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
-                        self.accuracies_curve[-1]["nodes"],
-                        self.accuracies_curve[-1]["edges"],
-                        self.validation_accuracies_curve[-1]["nodes"],
-                        self.validation_accuracies_curve[-1]["edges"],
-                    )
-                )
+            )
 
             if (epoch + 1) % plot_after_epochs == 0:
                 self.create_plot(plot_name)
@@ -309,7 +344,6 @@ class WAndBModelTrainer(ModelTrainer):
     def __init__(
         self,
         project_name: str,
-        experiment_name: str,
         model_name: str,
         model_configs: dict,
         train_configs: dict,
@@ -318,34 +352,195 @@ class WAndBModelTrainer(ModelTrainer):
         model_save_path: str,
     ):
         super(WAndBModelTrainer, self).__init__(
-            model_name,
             model_configs,
             train_configs,
             dataset_path,
             dataset_configs,
             model_save_path,
         )
+
         self.project_name = project_name
-        self.experiment_name = f"experiment_{model_name}"
         self.wandb_configs = train_configs
 
+        self.loss_data = []
+        self.acc_data = []
+
+        self.epoch_lst = []
+        self.train_nodes_loss = []
+        self.train_edges_loss = []
+        self.train_nodes_acc = []
+        self.train_edges_acc = []
+
+        self.validation_nodes_loss = []
+        self.validation_edges_loss = []
+        self.validation_nodes_acc = []
+        self.validation_edges_acc = []
+
+    def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
+        """
+        Execute training or validating.
+        Args:
+
+            epoch: current epoch
+            total_epoch: the number of total epoch
+            valid_loader:
+            train_loader:
+            loss_func: loss function
+
+        Returns:
+            accuracy
+        """
+        (
+            train_nodes_loss,
+            train_edges_loss,
+            train_nodes_acc,
+            train_edges_acc,
+        ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
+
+        (
+            validation_nodes_loss,
+            validation_edges_loss,
+            validation_nodes_acc,
+            validation_edges_acc,
+        ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
+
+        # simple log
+        train_metrics = {
+            "Train/epoch": epoch + 1,
+            "Train/train_nodes_loss": train_nodes_loss,
+            "Train/train_edges_loss": train_edges_loss,
+            "Train/train_nodes_acc": train_nodes_acc,
+            "Train/train_edges_acc": train_edges_acc,
+        }
+
+        validation_metrics = {
+            "Train/epoch": epoch + 1,
+            "Validation/validation_nodes_loss": validation_nodes_loss,
+            "Validation/validation_edges_loss": validation_edges_loss,
+            "Validation/validation_nodes_acc": validation_nodes_acc,
+            "Validation/validation_edges_acc": validation_edges_acc,
+        }
+
+        wandb.log({**train_metrics, **validation_metrics})
+
+        # line plot
+        self.train_nodes_loss.append(train_nodes_loss)
+        self.train_edges_loss.append(train_edges_loss)
+        self.train_nodes_acc.append(train_nodes_acc)
+        self.train_edges_acc.append(train_edges_acc)
+
+        self.validation_nodes_loss.append(validation_nodes_loss)
+        self.validation_edges_loss.append(validation_edges_loss)
+        self.validation_nodes_acc.append(validation_nodes_acc)
+        self.validation_edges_acc.append(validation_edges_acc)
+
+        wandb.log(
+            {
+                "train_valid_loss": wandb.plot.line_series(
+                    xs=self.epoch_lst,
+                    ys=[
+                        self.train_nodes_loss,
+                        self.train_edges_loss,
+                        self.validation_nodes_loss,
+                        self.validation_edges_loss,
+                    ],
+                    keys=[
+                        "train_nodes_loss",
+                        "train_edges_loss",
+                        "validation_nodes_loss",
+                        "validation_edges_loss",
+                    ],
+                    title="Loss",
+                    xname="epoch",
+                )
+            }
+        )
+
+        wandb.log(
+            {
+                "train_valid_acc": wandb.plot.line_series(
+                    xs=self.epoch_lst,
+                    ys=[
+                        self.train_nodes_acc,
+                        self.train_edges_acc,
+                        self.validation_nodes_acc,
+                        self.validation_edges_acc,
+                    ],
+                    keys=[
+                        "train_nodes_acc",
+                        "train_edges_acc",
+                        "validation_nodes_acc",
+                        "validation_edges_acc",
+                    ],
+                    title="Accuracy",
+                    xname="epoch",
+                )
+            }
+        )
+
+        # table log
+        cur_loss_data = [
+            train_nodes_loss,
+            train_edges_loss,
+            validation_nodes_loss,
+            validation_edges_loss,
+        ]
+        self.loss_data.append(cur_loss_data)
+        wandb.log(
+            {
+                "loss": wandb.Table(
+                    data=self.loss_data,
+                    columns=[
+                        "train_nodes_loss",
+                        "train_edges_loss",
+                        "validation_nodes_loss",
+                        "validation_edges_loss",
+                    ],
+                )
+            }
+        )
+
+        cur_acc_data = [
+            train_nodes_acc,
+            train_edges_acc,
+            validation_nodes_acc,
+            validation_edges_acc,
+        ]
+        self.acc_data.append(cur_acc_data)
+        wandb.log(
+            {
+                "accuracy": wandb.Table(
+                    data=self.acc_data,
+                    columns=[
+                        "train_nodes_acc",
+                        "train_edges_acc",
+                        "validation_nodes_acc",
+                        "validation_edges_acc",
+                    ],
+                )
+            }
+        )
+
+        validation_acc = (validation_nodes_acc + validation_edges_acc) / 2
+
+        return validation_acc
+
     def train(self):
+        date = datetime.now().strftime("%Y-%d-%m-%H-%M-%S")
+        experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
         wandb.init(
             # Set the project where this run will be logged
             project=self.project_name,
-            name=f"{self.experiment_name}",
+            name=f"{experiment_name}",
             # Track hyperparameters and run metadata
             config=self.wandb_configs,
+            job_type="training",
         )
 
         print(f"Using {self.device} device...")
 
-        if not os.path.exists(self.model_save_path):
-            os.makedirs(self.model_save_path)
-
-        if not os.path.exists(self.plots_save_path):
-            os.makedirs(self.plots_save_path)
+        self.construct_model()
 
         train_loader, validation_loader = self.construct_dataloader()
 
@@ -361,37 +556,11 @@ class WAndBModelTrainer(ModelTrainer):
         epochs = self.train_configs["epochs"]
 
         for epoch in range(epochs):
-            (
-                train_nodes_loss,
-                train_edges_loss,
-                train_nodes_acc,
-                train_edges_acc,
-            ) = self.epoch_execute("train", epoch, epochs, train_loader)
+            self.epoch_lst.append(epoch + 1)
 
-            train_metrics = {
-                "train/train_nodes_loss": train_nodes_loss,
-                "train/train_edges_loss": train_edges_loss,
-                "train/train_nodes_acc": train_nodes_acc,
-                "train/train_edges_acc": train_edges_acc,
-            }
-
-            (
-                validation_nodes_loss,
-                validation_edges_loss,
-                validation_nodes_acc,
-                validation_edges_acc,
-            ) = self.epoch_execute("validation", epoch, epochs, validation_loader)
-
-            validation_metrics = {
-                "validation/validation_nodes_loss": validation_nodes_loss,
-                "validation/validation_edges_loss": validation_edges_loss,
-                "validation/validation_nodes_acc": validation_nodes_acc,
-                "validation/validation_edges_acc": validation_edges_acc,
-            }
-
-            wandb.log({{**train_metrics, **validation_metrics}})
-
-            validation_acc = (validation_nodes_acc + validation_edges_acc) / 2
+            validation_acc = self.execute(
+                epoch, epochs, train_loader, validation_loader, hybrid_loss
+            )
 
             if validation_acc > best_acc:
                 best_acc = validation_acc
