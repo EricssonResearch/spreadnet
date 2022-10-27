@@ -148,7 +148,7 @@ def inc_process(
     graphs_folder = "increasing_size_experiment_data/"
     with open(graphs_folder + f"/{graph_name}", "w") as outfile:
         json.dump(all_graphs, outfile, cls=NpEncoder)
-    print("Graph: ", int((i - graph_size_start) / graph_size_increment))
+    print("Dataset: ", int((i - graph_size_start) / graph_size_increment))
 
 
 def increasing_graph_size_generator():
@@ -163,13 +163,13 @@ def increasing_graph_size_generator():
     """
     seed = random.seed()
 
-    graph_size_increment = 50
-    graph_size_gap = 25  # gap between the min and the max
+    graph_size_increment = 10
+    graph_size_gap = 15  # gap between the min and the max
     graph_size_start = 10
-    max_min_graph_size = 200
+    max_min_graph_size = 250
     theta = 20
     path_length_increaser = 3
-    number_of_graphs = 10
+    number_of_graphs = 50
     param_list = []
 
     for i in range(graph_size_start, max_min_graph_size, graph_size_increment):

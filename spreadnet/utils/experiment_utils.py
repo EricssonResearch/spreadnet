@@ -25,6 +25,7 @@ import sys
 import argparse
 import networkx as nx
 
+
 from spreadnet.datasets.data_utils.convertor import graphnx_to_dict_spec
 from torch_geometric.data import Data
 
