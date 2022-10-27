@@ -21,6 +21,12 @@ to ensure all nodes are connected.
 
 This Graph generator is modified from the graph generation part of tensorflow/gnn
     https://github.com/tensorflow/gnn/blob/main/examples/notebooks/graph_network_shortest_path.ipynb
+
+TODO: Code duplicated in the tf_gnn utils also. One copy has to be removed.
+      Do all models require this type of data generation?
+TODO: For the final spreadnet(aka non epxerimental).
+      Get rid of all code that is not written by us so that
+      we do not have to bother with their license.
 """
 
 import collections
@@ -196,7 +202,7 @@ class GraphGenerator:
         # Choose the start and end points.
         i = self.random_state.choice(len(node_pairs), p=probabilities)
         start, end = node_pairs[i]
-        path = nx.shortest_path(graph, source=start, target=end, weight="length")
+        path = nx.shortest_path(graph, source=start, target=end, weight="weight")
 
         # Creates a directed graph, to store the directed path from start to end.
         digraph = graph.to_directed()

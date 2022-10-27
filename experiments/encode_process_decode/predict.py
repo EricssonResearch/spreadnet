@@ -7,14 +7,19 @@ Usage:
 @Author  : Haodong Zhao
 """
 import argparse
-from random import randrange
 from os import path as osp
 import torch
-import webdataset as wds
+import networkx as nx
+import json
+import os
+from glob import glob
+import matplotlib.pyplot as plt
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
-from spreadnet.datasets.data_utils.decoder import pt_decoder
+from spreadnet.pyg_gnn.loss.loss import get_infers
+from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
+from spreadnet.datasets.data_utils.draw import draw_networkx
 
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
@@ -48,7 +53,10 @@ data_configs = dataset_configs.data
 dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
-train_ratio = train_configs["train_ratio"]
+predictions_path = osp.join(osp.dirname(__file__), "predictions").replace("\\", "/")
+
+if not os.path.exists(predictions_path):
+    os.makedirs(predictions_path)
 
 
 def load_model(model_path):
@@ -61,21 +69,40 @@ def load_model(model_path):
     return model
 
 
-def infer(model, graph_data):
-    """do the inference.
+def predict(model, graph):
+    """Make prediction.
 
-    :param model: the model to do the prediction
-    :param graph_data: graph data from dataset
-    :return: the shortest path info
+    :param model: model to be used
+    :param graph: graph to predict
+
+    :return: predictions, infers
     """
-    node_pred, edge_pred = model(
-        graph_data.x, graph_data.edge_index, graph_data.edge_attr
-    )
+    graph = graph.to(device)
 
-    node_infer = torch.argmax(node_pred, dim=-1).type(torch.int64)
-    edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
+    node_true, edge_true = graph.y
 
-    return node_infer, edge_infer
+    # predict
+    (node_pred, edge_pred) = model(graph.x, graph.edge_index, graph.edge_attr)
+    (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
+
+    node_acc = corrects["nodes"] / graph.num_nodes
+    edge_acc = corrects["edges"] / graph.num_edges
+
+    preds = {"nodes": node_pred, "edges": edge_pred}
+
+    # print("--- Node ---")
+    # print("Truth:     ", node_true.tolist())
+    # print("Predicted: ", infers["nodes"].cpu().tolist())
+
+    # print("\n--- Edge ---")
+    # print("Truth:     ", edge_true.tolist())
+    # print("Predicted: ", infers["edges"].cpu().tolist())
+
+    print("\n--- Accuracies ---")
+    print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
+    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
+
+    return preds, infers
 
 
 if __name__ == "__main__":
@@ -97,29 +124,47 @@ if __name__ == "__main__":
 
     model_path = osp.join(weight_base_path, which_model)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+    model.eval()
 
-    dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
-        .decode(pt_decoder)
-        .to_tuple(
-            "pt",
-        )
-    )
+    raw_path = dataset_path + "/raw"
+    raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
 
-    dataset_size = len(list(dataset))
-    train_size = int(train_ratio * dataset_size)
+    for raw_file_path in raw_file_paths:
+        graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
+        for idx, graph_json in enumerate(graphs_json):
+            print("\n\n")
+            print("Graph idx: ", idx + 1)
 
-    graph_idx = randrange(train_size, dataset_size)
-    (graph,) = list(dataset)[graph_idx]
-    node_label, edge_label = graph.y
-    # predict
-    (node_infer, edge_infer) = infer(model, graph.to(device))
+            graph_nx = nx.node_link_graph(graph_json)
+            (preds, infers) = predict(model, process_nx(graph_nx))
+            (pred_graph_nx, truth_total_weight, pred_total_weight) = process_prediction(
+                graph_nx, preds, infers
+            )
 
-    print("Graph idx: ", graph_idx)
-    print("--- Node --- ")
-    print("Truth:     ", node_label.tolist())
-    print("Predicted: ", node_infer.cpu().tolist())
+            print(f"Truth weights: {truth_total_weight}")
+            print(f"Pred weights: {pred_total_weight}")
 
-    print("--- Edge ---\n")
-    print("Truth:     ", edge_label.tolist())
-    print("Predicted: ", edge_infer.cpu().tolist())
+            print("Drawing comparison...")
+            fig = plt.figure(figsize=(80, 40))
+            draw_networkx(
+                f"Truth, total edge weights: {round(truth_total_weight, 2)}",
+                fig,
+                graph_nx,
+                1,
+                2,
+            )
+            draw_networkx(
+                f"Prediction, total edge weights: {round(pred_total_weight, 2)}",
+                fig,
+                pred_graph_nx,
+                2,
+                2,
+                "probability",
+                "probability",
+            )
+            plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}.jpg"
+            plt.savefig(plot_name, pad_inches=0, bbox_inches="tight")
+            plt.clf()
+            print("Image saved at ", plot_name)
+
+            input("Press enter to predict another graph")

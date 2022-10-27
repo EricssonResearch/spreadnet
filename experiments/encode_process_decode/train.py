@@ -17,6 +17,8 @@ from datetime import datetime
 from itertools import islice
 import wandb
 
+from tqdm import tqdm
+
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
@@ -68,7 +70,6 @@ if not os.path.exists(weight_base_path):
 if not os.path.exists(trainings_plots_path):
     os.makedirs(trainings_plots_path)
 
-
 # For plotting learning curves.
 steps_curve = []
 losses_curve = []
@@ -88,15 +89,29 @@ def create_plot(plot_name):
     )
 
 
-def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None):
-    """Execute training or validating.
+def execute(
+    mode,
+    epoch,
+    total_epoch,
+    dataloader,
+    model,
+    loss_func,
+    optimizer: Optional[str] = None,
+):
+    """
 
-    :param mode: train | validation
-    :param dataloader: dataloader
-    :param model: model
-    :param loss_func: loss function
-    :param optimizer: optional optimizer for validation mode
-    :return: accuracy
+    Args:
+        mode: train | validation
+        epoch: current epoch
+        total_epoch: total epochs
+        dataloader: dataloader
+        model: model
+        loss_func: loss function
+        optimizer: optional optimizer for validation mode
+
+    Returns:
+        accuracy
+
     """
     is_training = mode == "train"
 
@@ -110,7 +125,13 @@ def execute(mode, dataloader, model, loss_func, optimizer: Optional[str] = None)
     dataset_nodes_size, dataset_edges_size = 0, 0
 
     with torch.enable_grad() if is_training else torch.no_grad():
-        for batch, (data,) in enumerate(dataloader):
+        for batch, (data,) in tqdm(
+            enumerate(dataloader),
+            unit="batch",
+            total=len(list(dataloader)),
+            desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {mode.capitalize()} ]",
+            leave=False,
+        ):
             data = data.to(device)
 
             if is_training:
@@ -198,15 +219,18 @@ if __name__ == "__main__":
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
+    print("Start training...")
+
     for epoch in range(epochs):
         steps_curve.append(epoch + 1)
 
-        train_acc = execute("train", train_loader, model, hybrid_loss, opt)
-        validation_acc = execute("validation", validation_loader, model, hybrid_loss)
-        cur_acc = (train_acc + validation_acc) / 2
+        execute("train", epoch, epochs, train_loader, model, hybrid_loss, opt)
+        validation_acc = execute(
+            "validation", epoch, epochs, validation_loader, model, hybrid_loss
+        )
 
-        if cur_acc > best_acc:
-            best_acc = cur_acc
+        if validation_acc > best_acc:
+            best_acc = validation_acc
             best_model_wts = copy.deepcopy(model.state_dict())
 
         if weight_base_path is not None:
