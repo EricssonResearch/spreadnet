@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import matplotlib
 import math
 from scipy import signal
@@ -8,18 +9,24 @@ matplotlib.use("Agg")
 
 
 def get_node_color(node):
-    return (
-        "#FFF3B8"
-        if node[1]["is_start"]
-        else "#90EE90"
-        if node[1]["is_end"]
-        else "#C9FFD8"
-        if node[1]["is_in_path"]
-        else "#D3D3D3"
-    )
+    if node[1]["is_start"]:
+        return "#FFF3B8"
+    if node[1]["is_end"]:
+        return "#90EE90"
+    if node[1]["is_in_path"]:
+        return "#C9FFD8"
+    return "#D3D3D3"
 
 
-def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
+def draw_networkx(
+    title,
+    figure,
+    graph,
+    plot_index,
+    num_graphs_to_draw,
+    node_label_key="default",
+    edge_label_key="weight",
+):
     """Draw networkx graph to figure.
 
     Args:
@@ -32,52 +39,97 @@ def draw_networkx(figure, graph, plot_index, num_graphs_to_draw):
         None
     """
 
-    highlight_edges = list()
-    normal_edges = list()
-
-    for (s, e, d) in graph.edges(data=True):
-        if d["is_in_path"]:
-            highlight_edges.append((s, e))
-        elif (e, s) not in highlight_edges:
-            normal_edges.append((s, e))
-
-    pos = nx.get_node_attributes(graph, "pos")
-
-    figure.add_subplot(
+    ax = figure.add_subplot(
         math.ceil(num_graphs_to_draw / 5),
         num_graphs_to_draw if num_graphs_to_draw <= 5 else 5,
         plot_index,
     )
+    ax.set_title(title)
+    info = [
+        Line2D([0], [0], color="#FFF3B8", lw=4),
+        Line2D([0], [0], color="#90EE90", lw=4),
+        Line2D([0], [0], color="#C9FFD8", lw=4),
+        Line2D([0], [0], color="r", lw=4),
+        Line2D([0], [0], color="b", lw=4),
+    ]
+    ax.legend(
+        info,
+        [
+            "Start Node",
+            "Destination Node",
+            "Path Node",
+            "Path Edge",
+            "Discarded prediction probability",
+        ],
+        loc="upper right",
+    )
 
-    values = list(map(lambda node: get_node_color(node), graph.nodes(data=True)))
+    path_edges = list()
+    normal_edges = list()
+
+    highlight_edge_labels = dict()
+    path_edge_labels = dict()
+    normal_edge_labels = dict()
+
+    for (s, e, d) in graph.edges(data=True):
+        label = round(d[edge_label_key], 2)
+
+        if d["is_in_path"]:
+            path_edges.append((s, e))
+            path_edge_labels[(s, e)] = label
+        elif (e, s) not in path_edges:
+            normal_edges.append((s, e))
+
+            if edge_label_key != "weight" and label > 0.00:
+                highlight_edge_labels[(s, e)] = label
+            else:
+                normal_edge_labels[(s, e)] = label
+
+    node_colors = list(map(lambda node: get_node_color(node), graph.nodes(data=True)))
+
+    normal_node_labels = None
+    highlight_node_labels = None
+
+    if node_label_key != "default":
+        normal_node_labels = dict()
+        highlight_node_labels = dict()
+        for n, d in graph.nodes(data=True):
+            label = round(d[node_label_key], 2)
+
+            if d["is_in_path"] is False and label > 0.00:
+                highlight_node_labels[n] = label
+            else:
+                normal_node_labels[n] = label
+
+    pos = nx.get_node_attributes(graph, "pos")
+
     nx.draw_networkx_nodes(
-        graph, pos, cmap=plt.get_cmap("jet"), node_color=values, node_size=500
+        graph, pos, cmap=plt.get_cmap("jet"), node_color=node_colors, node_size=500
     )
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
     nx.draw_networkx_edges(
         graph,
         pos,
-        edgelist=highlight_edges,
+        edgelist=path_edges,
         edge_color="r",
         arrows=True,
-        arrowsize=20,
-        width=1.5,
+        arrowsize=25,
+        width=3,
     )
-    edge_labels = dict(
-        [
-            (
-                (
-                    u,
-                    v,
-                ),
-                round(d["weight"], 2),
-            )
-            for u, v, d in graph.edges(data=True)
-        ]
+
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels=normal_edge_labels)
+    nx.draw_networkx_edge_labels(
+        graph, pos, edge_labels=highlight_edge_labels, font_color="blue"
     )
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
-    nx.draw_networkx_labels(graph, pos)
-    # nx.draw_networkx_labels(graph, pos, labels=pos, font_color="r")
+    nx.draw_networkx_edge_labels(
+        graph, pos, edge_labels=path_edge_labels, font_color="r"
+    )
+    nx.draw_networkx_labels(graph, pos, labels=normal_node_labels, font_color="black")
+
+    if node_label_key != "default":
+        nx.draw_networkx_labels(
+            graph, pos, labels=highlight_node_labels, font_color="blue"
+        )
 
 
 def get_line_color(mode, type):

@@ -208,7 +208,7 @@ class GraphGenerator:
         # Choose the start and end points.
         i = self.random_state.choice(len(node_pairs), p=probabilities)
         start, end = node_pairs[i]
-        path = nx.shortest_path(graph, source=start, target=end, weight="length")
+        path = nx.shortest_path(graph, source=start, target=end, weight="weight")
 
         # Creates a directed graph, to store the directed path from start to end.
         digraph = graph.to_directed()
