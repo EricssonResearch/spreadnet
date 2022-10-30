@@ -3,7 +3,7 @@ train:
   weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 600
+  epochs: 300
   batch_size: 64
   train_ratio: 0.7
   shuffle: True
@@ -13,7 +13,7 @@ train:
   adam_weight_decay: !!float 5e-4
 
 model:
-  num_hidden_layers: 6
+  num_hidden_layers: 5
   in_channels: 64
   hidden_channels: 256
   out_channels: 32
