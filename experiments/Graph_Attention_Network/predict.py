@@ -82,7 +82,12 @@ def predict(model, graph):
     node_true, edge_true = graph.y
 
     # predict
-    (node_pred, edge_pred) = model(graph.x, graph.edge_index, graph.edge_attr)
+    (node_pred, edge_pred) = model(
+        graph.x,
+        graph.edge_index,
+        graph.edge_attr,
+        return_attention_weights=model_configs["return_attention_weights"],
+    )
     (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
 
     node_acc = corrects["nodes"] / graph.num_nodes
