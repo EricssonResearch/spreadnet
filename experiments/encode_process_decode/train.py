@@ -126,7 +126,7 @@ def execute(
             enumerate(dataloader),
             unit="batch",
             total=len(list(dataloader)),
-            desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {mode.capitalize()} ]",
+            desc=f"[Epoch: {epoch:4} / {total_epoch:4} | {mode.capitalize()} ]",
             leave=False,
         ):
             data = data.to(device)
@@ -167,6 +167,37 @@ def execute(
     )
 
     return (nodes_acc + edges_acc) / 2
+
+
+def save_training_state(
+    epoch,
+    model,
+    best_model_wts,
+    best_acc,
+    optimizer,
+    steps_curve,
+    losses_curve,
+    validation_losses_curve,
+    accuracies_curve,
+    validation_accuracies_curve,
+    checkpoint_path,
+):
+    print("Saving state...")
+    torch.save(
+        {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "best_model_state_dict": best_model_wts,
+            "best_acc": best_acc,
+            "optimizer_state_dict": optimizer.state_dict(),
+            "steps_curve": steps_curve,
+            "losses_curve": losses_curve,
+            "validation_losses_curve": validation_losses_curve,
+            "accuracies_curve": accuracies_curve,
+            "validation_accuracies_curve": validation_accuracies_curve,
+        },
+        checkpoint_path,
+    )
 
 
 if __name__ == "__main__":
@@ -213,13 +244,40 @@ if __name__ == "__main__":
         weight_decay=train_configs["adam_weight_decay"],
     )
 
+    epoch = 1
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
+    checkpoint_path = os.path.join(weight_base_path, "train_state.pth")
+
+    try:
+        exists = os.path.exists(checkpoint_path)
+
+        if exists:
+            answer = input(
+                "Previous training state found. Enter y/Y to continue training: "
+            )
+
+            if answer.capitalize() == "Y":
+                checkpoint = torch.load(checkpoint_path)
+                print("Resume training...")
+                epoch = checkpoint["epoch"] + 1
+                model.load_state_dict(checkpoint["model_state_dict"])
+                best_model_wts = checkpoint["best_model_state_dict"]
+                best_acc = checkpoint["best_acc"]
+                opt.load_state_dict(checkpoint["optimizer_state_dict"])
+                steps_curve = checkpoint["steps_curve"]
+                losses_curve = checkpoint["losses_curve"]
+                validation_losses_curve = checkpoint["validation_losses_curve"]
+                accuracies_curve = checkpoint["accuracies_curve"]
+                validation_accuracies_curve = checkpoint["validation_accuracies_curve"]
+    except Exception as exception:
+        print(exception)
+
     print("Start training...")
 
-    for epoch in range(epochs):
-        steps_curve.append(epoch + 1)
+    for epoch in range(epoch, epochs + 1):
+        steps_curve.append(epoch)
 
         execute("train", epoch, epochs, train_loader, model, hybrid_loss, opt)
         validation_acc = execute(
@@ -230,21 +288,14 @@ if __name__ == "__main__":
             best_acc = validation_acc
             best_model_wts = copy.deepcopy(model.state_dict())
 
-        if weight_base_path is not None:
-            if epoch % train_configs["weight_save_freq"] == 0:
-                weight_name = f"model_weights_ep_{epoch}.pth"
-                torch.save(
-                    model.state_dict(), os.path.join(weight_base_path, weight_name)
-                )
-
-        if epoch % 10 == 0:
+        if epoch % 10 == 1:
             print(
                 "\n  Epoch   "
                 + "Train Loss (Node,Edge)     Validation Loss        "
                 + "Train Acc (Node,Edge)      Validation Acc"
             )
 
-        print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
+        print(f"{epoch:4}/{epochs}".ljust(10), end="")
         print(
             "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
                 losses_curve[-1]["nodes"],
@@ -263,10 +314,45 @@ if __name__ == "__main__":
             )
         )
 
-        if (epoch + 1) % plot_after_epochs == 0:
+        if (epoch) % plot_after_epochs == 0:
             create_plot(plot_name)
+
+        if weight_base_path is not None:
+            if epoch > 0 and epoch % train_configs["weight_save_freq"] == 0:
+                save_training_state(
+                    epoch,
+                    model,
+                    best_model_wts,
+                    best_acc,
+                    opt,
+                    steps_curve,
+                    losses_curve,
+                    validation_losses_curve,
+                    accuracies_curve,
+                    validation_accuracies_curve,
+                    checkpoint_path,
+                )
 
     if weight_base_path is not None:
         weight_name = train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(weight_base_path, weight_name))
+        print("Finalizing training plot...")
         create_plot(plot_name)
+
+        answer = input("Enter y/Y to keep training state: ")
+        if answer.capitalize() == "Y":
+            save_training_state(
+                epoch,
+                model,
+                best_model_wts,
+                best_acc,
+                opt,
+                steps_curve,
+                losses_curve,
+                validation_losses_curve,
+                accuracies_curve,
+                validation_accuracies_curve,
+                checkpoint_path,
+            )
+        else:
+            os.remove(checkpoint_path)
