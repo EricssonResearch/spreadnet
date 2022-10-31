@@ -1,10 +1,8 @@
 import sys
 
-# import json
 
 from multiprocessing import Pool, cpu_count
 
-# from spreadnet.utils.experiment_utils import ExperimentUtils
 import json
 
 
@@ -22,7 +20,7 @@ sys.modules["gnn"] = gnn
 
 
 def inc_pred_infer(model, g):
-    """Paralelize the inference calls.
+    """Paralelize the inference calls. Remove if making it work is impossible.
 
     Would it work better to do it in batches? I suspect that the model can not
     fit in the cache anyway.
@@ -47,7 +45,6 @@ def inc_pred(results_dir, model, graphs, ds):
     )
     output_graphs = list()
     for g in graphs:
-
         output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
 
     with open(results_dir + f"/{output_name}", "w") as outfile:
@@ -68,13 +65,14 @@ def increasing_graph_size_experiment():
     ]
     experiments_dir = "increasing_size_experiment_data"
     results_dir = "increasing_size_predictions"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
     datasets = list()
     for path in os.listdir(experiments_dir):
         # check if current path is a file
         if os.path.isfile(os.path.join(experiments_dir, path)):
             datasets.append(path)
 
-    # pool = Pool(processes=3)
     for ds in tqdm(datasets):
 
         raw_data_path = experiments_dir + "/" + ds
@@ -85,8 +83,9 @@ def increasing_graph_size_experiment():
         #     for m in models_trained:
         #         param_list.append([results_dir, m, graphs, ds])
 
-        #     pool.starmap(inc_pred, param_list)
-        #     pool.close()
+        # pool = Pool(processes=3)
+        # pool.starmap(inc_pred, param_list)
+        # pool.close()
 
         # # cpu_count() - 1)
 
@@ -96,7 +95,7 @@ def increasing_graph_size_experiment():
             )
 
             output_graphs = list()
-            # pool = Pool(processes=cpu_count() - 3)
+
             # output_graphs = pool.starmap(inc_pred_infer, [model, graphs])
             # pool.close()
 
@@ -144,6 +143,8 @@ def inc_process(
         + ".json"
     )
     graphs_folder = "increasing_size_experiment_data/"
+    if not os.path.exists(graphs_folder):
+        os.makedirs(graphs_folder)
     with open(graphs_folder + f"/{graph_name}", "w") as outfile:
         json.dump(all_graphs, outfile, cls=NpEncoder)
     print("Dataset: ", int((i - graph_size_start) / graph_size_increment))
@@ -167,14 +168,15 @@ def increasing_graph_size_generator():
     max_min_graph_size = 1000
     theta = 20
     path_length_increaser = 3
-    number_of_graphs = 5
+    number_of_graphs = 20
     param_list = []
 
     for i in range(graph_size_start, max_min_graph_size, graph_size_increment):
         nodes_min_max = (i, i + graph_size_gap)
-        if i % 250 == 0:
+        if i % 200 == 0:
             path_length_increaser += 1
-            theta += 10
+
+        theta += 13
 
         param_list.append(
             [

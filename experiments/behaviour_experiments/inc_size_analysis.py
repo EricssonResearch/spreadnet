@@ -7,7 +7,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from spreadnet.utils.max_prob_path_utils import MaxProbWalk
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 # IDEa: we could save the path length also when we do the accuracy.
 # Currently for each graph we can deduce the minimum path length.
@@ -203,7 +203,7 @@ def max_prob_path_lengths():
 
 
 if __name__ == "__main__":
-    pool = Pool(processes=3)
+    pool = Pool(processes=cpu_count() - 1)
     pool.starmap(
         prob_accuracy, [[False, "all_nodes_acc.csv"], [True, "only_path_nodes_acc.csv"]]
     )
