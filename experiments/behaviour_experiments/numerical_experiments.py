@@ -194,10 +194,13 @@ def increasing_graph_size_generator():
     pool = Pool(
         processes=cpu_count() - 1
     )  # Chose according to the number of processors
-    pool.starmap(inc_process, param_list, chunksize=100)
+    pool.starmap(
+        inc_process,
+        param_list,
+    )
     pool.close()
 
 
 if __name__ == "__main__":
-    # increasing_graph_size_generator()
+    increasing_graph_size_generator()
     increasing_graph_size_experiment()
