@@ -60,7 +60,6 @@ if model == "MPNN":
     model_save_path = os.path.join(
         os.path.dirname(__file__), "encode_process_decode", "weights"
     )
-
 elif model == "GCN":
     yaml_path = os.path.join(
         os.path.dirname(__file__), "co_graph_conv_network", "configs.yaml"

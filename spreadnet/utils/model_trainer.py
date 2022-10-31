@@ -38,6 +38,7 @@ class ModelTrainer:
         self.dataset_configs = dataset_configs
 
         self.model_save_path = model_save_path
+        self.checkpoint_path = os.path.join(model_save_path, "train_state.pth")
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -162,6 +163,29 @@ class ModelTrainer:
         )
         return train_loader, validation_loader
 
+    def save_training_state(
+        self,
+        epoch,
+        best_model_wts,
+        best_acc,
+    ):
+        print("Saving state...")
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": self.model.state_dict(),
+                "best_model_state_dict": best_model_wts,
+                "best_acc": best_acc,
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "steps_curve": self.steps_curve,
+                "losses_curve": self.losses_curve,
+                "validation_losses_curve": self.validation_losses_curve,
+                "accuracies_curve": self.accuracies_curve,
+                "validation_accuracies_curve": self.validation_accuracies_curve,
+            },
+            self.checkpoint_path,
+        )
+
     def sub_execute(self, mode, epoch, total_epoch, dataloader, loss_func):
         """sub execution: train or validation in one epoch.
 
@@ -192,7 +216,7 @@ class ModelTrainer:
                 enumerate(dataloader),
                 unit="batch",
                 total=len(list(dataloader)),
-                desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {pb_str} ]",
+                desc=f"[Epoch: {epoch:4} / {total_epoch:4} | {pb_str} ]",
                 leave=False,
             ):
                 data = data.to(self.device)
@@ -307,6 +331,7 @@ class ModelTrainer:
             weight_decay=self.train_configs["adam_weight_decay"],
         )
 
+        epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
         best_acc = 0.0
 
@@ -316,8 +341,36 @@ class ModelTrainer:
         print(self.model)
         print("\n")
 
-        for epoch in range(epochs):
-            self.steps_curve.append(epoch + 1)
+        try:
+            exists = os.path.exists(self.checkpoint_path)
+
+            if exists:
+                answer = input(
+                    "Previous training state found. Enter y/Y to continue training: "
+                )
+
+                if answer.capitalize() == "Y":
+                    checkpoint = torch.load(self.checkpoint_path)
+                    print("Resume training...")
+                    epoch = checkpoint["epoch"] + 1
+                    self.model.load_state_dict(checkpoint["model_state_dict"])
+                    best_model_wts = checkpoint["best_model_state_dict"]
+                    best_acc = checkpoint["best_acc"]
+                    self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                    self.steps_curve = checkpoint["steps_curve"]
+                    self.losses_curve = checkpoint["losses_curve"]
+                    self.validation_losses_curve = checkpoint["validation_losses_curve"]
+                    self.accuracies_curve = checkpoint["accuracies_curve"]
+                    self.validation_accuracies_curve = checkpoint[
+                        "validation_accuracies_curve"
+                    ]
+        except Exception as exception:
+            print(exception)
+
+        print("Start training...")
+
+        for epoch in range(epoch, epochs + 1):
+            self.steps_curve.append(epoch)
 
             validation_acc = self.execute(
                 epoch, epochs, train_loader, validation_loader, hybrid_loss
@@ -333,6 +386,9 @@ class ModelTrainer:
                     self.model.state_dict(),
                     os.path.join(self.model_save_path, weight_name),
                 )
+                self.save_training_state(
+                    epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+                )
 
             if epoch % 10 == 0:
                 print(
@@ -341,7 +397,7 @@ class ModelTrainer:
                     + "Train Acc (Node,Edge)      Validation Acc"
                 )
 
-            print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
+            print(f"{epoch:4}/{epochs}".ljust(10), end="")
             print(
                 "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
                     self.losses_curve[-1]["nodes"],
@@ -360,12 +416,16 @@ class ModelTrainer:
                 )
             )
 
-            if (epoch + 1) % plot_after_epochs == 0:
+            if epoch % plot_after_epochs == 0:
                 self.create_plot(plot_name)
 
         weight_name = self.train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+        print("Finalizing training plot...")
         self.create_plot(plot_name)
+        self.save_training_state(
+            epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+        )
 
 
 class WAndBModelTrainer(ModelTrainer):
