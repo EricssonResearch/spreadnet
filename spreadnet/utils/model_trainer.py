@@ -612,9 +612,9 @@ class WAndBModelTrainer(ModelTrainer):
 
         return validation_acc
 
-    def wandb_model_log(self, run, weight_name):
+    def wandb_model_log(self, run, artifact_name, weight_name):
         model_artifact = wandb.Artifact(
-            self.model_name,
+            artifact_name,
             type="model",
             description=self.model_name,
             metadata={
@@ -630,9 +630,14 @@ class WAndBModelTrainer(ModelTrainer):
         run.log_artifact(model_artifact)
 
     def train(self):
-        date = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        date = datetime.now().strftime("%H:%M:%S_%d-%m-%Y")
         experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
+
+        # TODO: specify artifact_name.
+        #       Maybe we can extract some features from dataset
+        #       and specify artifact_name like: MPNN_nodes_8-17
+        artifact_name = f"{self.model_name}"
 
         with wandb.init(
             # Set the project where this run will be logged
@@ -645,6 +650,8 @@ class WAndBModelTrainer(ModelTrainer):
 
             print(f"Using {self.device} device...")
 
+            # TODO:
+            #  We can override `construct_model()` after setting the dataset in wandb
             self.construct_model()
 
             train_loader, validation_loader = self.construct_dataloader()
@@ -679,8 +686,8 @@ class WAndBModelTrainer(ModelTrainer):
                         os.path.join(self.model_save_path, weight_name),
                     )
 
-                    self.wandb_model_log(run, weight_name)
+                    self.wandb_model_log(run, artifact_name, weight_name)
 
             weight_name = self.train_configs["best_weight_name"]
             torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
-            self.wandb_model_log(run, weight_name)
+            self.wandb_model_log(run, artifact_name, weight_name)
