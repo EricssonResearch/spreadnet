@@ -15,6 +15,7 @@ import webdataset as wds
 from torch_geometric.loader import DataLoader
 from datetime import datetime
 from itertools import islice
+import wandb
 
 from tqdm import tqdm
 
@@ -24,6 +25,7 @@ from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
 
+wandb.login()
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
@@ -171,8 +173,16 @@ def execute(
 
 
 if __name__ == "__main__":
-    print(f"Using {device} device...")
+
     date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    now = datetime.now().strftime("%H:%M:%S_%d-%m-%y")
+    wandb.init(
+        project="gnn_pytorch_test_exp",
+        name=f"train_{date}",
+        config=configs,  # type: ignore
+    )
+
+    print(f"Using {device} device...")
 
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
