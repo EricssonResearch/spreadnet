@@ -89,7 +89,6 @@ trainer = None
 if use_wandb:
     trainer = WAndBModelTrainer(
         project_name="UU-SpreadNet-Train",
-        model_name=model_configs["model_name"],
         model_configs=model_configs,
         train_configs=train_configs,
         dataset_configs=data_configs,

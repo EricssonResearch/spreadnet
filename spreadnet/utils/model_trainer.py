@@ -58,7 +58,7 @@ class ModelTrainer:
             os.makedirs(self.plots_save_path)
 
     def construct_model(self):
-        if self.model_name == "EncodeProcessDecode":
+        if self.model_name == "MPNN":
             self.model = EncodeProcessDecode(
                 node_in=self.model_configs["node_in"],
                 edge_in=self.model_configs["edge_in"],
@@ -344,7 +344,6 @@ class WAndBModelTrainer(ModelTrainer):
     def __init__(
         self,
         project_name: str,
-        model_name: str,
         model_configs: dict,
         train_configs: dict,
         dataset_path: str,
