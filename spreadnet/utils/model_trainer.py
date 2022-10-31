@@ -18,6 +18,7 @@ from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
+from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 
 
 class ModelTrainer:
@@ -37,6 +38,7 @@ class ModelTrainer:
         self.dataset_configs = dataset_configs
 
         self.model_save_path = model_save_path
+        self.checkpoint_path = os.path.join(model_save_path, "train_state.pth")
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -83,7 +85,24 @@ class ModelTrainer:
                 edge_out=self.model_configs["edge_out"],
             ).to(self.device)
         elif self.model_name == "GAT":
-            self.model = None
+            self.model = SPGATNet(
+                num_hidden_layers=self.model_configs["num_hidden_layers"],
+                in_channels=self.model_configs["in_channels"],
+                hidden_channels=self.model_configs["hidden_channels"],
+                out_channels=self.model_configs["out_channels"],
+                heads=self.model_configs["heads"],
+                # dropout=model_configs[""],
+                add_self_loops=self.model_configs["add_self_loops"],
+                bias=self.model_configs["bias"],
+                edge_hidden_channels=self.model_configs["edge_hidden_channels"],
+                edge_out_channels=self.model_configs["edge_out_channels"],
+                edge_num_layers=self.model_configs["edge_num_layers"],
+                edge_bias=self.model_configs["edge_bias"],
+                encode_node_in=self.model_configs["encode_node_in"],
+                encode_edge_in=self.model_configs["encode_edge_in"],
+                encode_node_out=self.model_configs["encode_node_out"],
+                encode_edge_out=self.model_configs["encode_edge_out"],
+            ).to(self.device)
 
         return self.model
 
@@ -144,6 +163,29 @@ class ModelTrainer:
         )
         return train_loader, validation_loader
 
+    def save_training_state(
+        self,
+        epoch,
+        best_model_wts,
+        best_acc,
+    ):
+        print("Saving state...")
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": self.model.state_dict(),
+                "best_model_state_dict": best_model_wts,
+                "best_acc": best_acc,
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "steps_curve": self.steps_curve,
+                "losses_curve": self.losses_curve,
+                "validation_losses_curve": self.validation_losses_curve,
+                "accuracies_curve": self.accuracies_curve,
+                "validation_accuracies_curve": self.validation_accuracies_curve,
+            },
+            self.checkpoint_path,
+        )
+
     def sub_execute(self, mode, epoch, total_epoch, dataloader, loss_func):
         """sub execution: train or validation in one epoch.
 
@@ -174,7 +216,7 @@ class ModelTrainer:
                 enumerate(dataloader),
                 unit="batch",
                 total=len(list(dataloader)),
-                desc=f"[Epoch: {epoch + 1:4} / {total_epoch:4} | {pb_str} ]",
+                desc=f"[Epoch: {epoch:4} / {total_epoch:4} | {pb_str} ]",
                 leave=False,
             ):
                 data = data.to(self.device)
@@ -186,7 +228,17 @@ class ModelTrainer:
                 if is_training:
                     self.optimizer.zero_grad()
 
-                (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
+                if self.model_name == "GAT":
+                    (node_pred, edge_pred) = self.model(
+                        data.x,
+                        data.edge_index,
+                        data.edge_attr,
+                        return_attention_weights=self.model_configs[
+                            "return_attention_weights"
+                        ],
+                    )
+                else:
+                    (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
 
                 # Losses
                 (losses, corrects) = loss_func(
@@ -279,6 +331,7 @@ class ModelTrainer:
             weight_decay=self.train_configs["adam_weight_decay"],
         )
 
+        epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
         best_acc = 0.0
 
@@ -288,8 +341,36 @@ class ModelTrainer:
         print(self.model)
         print("\n")
 
-        for epoch in range(epochs):
-            self.steps_curve.append(epoch + 1)
+        try:
+            exists = os.path.exists(self.checkpoint_path)
+
+            if exists:
+                answer = input(
+                    "Previous training state found. Enter y/Y to continue training: "
+                )
+
+                if answer.capitalize() == "Y":
+                    checkpoint = torch.load(self.checkpoint_path)
+                    print("Resume training...")
+                    epoch = checkpoint["epoch"] + 1
+                    self.model.load_state_dict(checkpoint["model_state_dict"])
+                    best_model_wts = checkpoint["best_model_state_dict"]
+                    best_acc = checkpoint["best_acc"]
+                    self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                    self.steps_curve = checkpoint["steps_curve"]
+                    self.losses_curve = checkpoint["losses_curve"]
+                    self.validation_losses_curve = checkpoint["validation_losses_curve"]
+                    self.accuracies_curve = checkpoint["accuracies_curve"]
+                    self.validation_accuracies_curve = checkpoint[
+                        "validation_accuracies_curve"
+                    ]
+        except Exception as exception:
+            print(exception)
+
+        print("Start training...")
+
+        for epoch in range(epoch, epochs + 1):
+            self.steps_curve.append(epoch)
 
             validation_acc = self.execute(
                 epoch, epochs, train_loader, validation_loader, hybrid_loss
@@ -305,6 +386,9 @@ class ModelTrainer:
                     self.model.state_dict(),
                     os.path.join(self.model_save_path, weight_name),
                 )
+                self.save_training_state(
+                    epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+                )
 
             if epoch % 10 == 0:
                 print(
@@ -313,7 +397,7 @@ class ModelTrainer:
                     + "Train Acc (Node,Edge)      Validation Acc"
                 )
 
-            print(f"{epoch + 1:4}/{epochs}".ljust(10), end="")
+            print(f"{epoch:4}/{epochs}".ljust(10), end="")
             print(
                 "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
                     self.losses_curve[-1]["nodes"],
@@ -332,12 +416,16 @@ class ModelTrainer:
                 )
             )
 
-            if (epoch + 1) % plot_after_epochs == 0:
+            if epoch % plot_after_epochs == 0:
                 self.create_plot(plot_name)
 
         weight_name = self.train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+        print("Finalizing training plot...")
         self.create_plot(plot_name)
+        self.save_training_state(
+            epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+        )
 
 
 class WAndBModelTrainer(ModelTrainer):
@@ -524,56 +612,75 @@ class WAndBModelTrainer(ModelTrainer):
 
         return validation_acc
 
+    def wandb_model_log(self, run, weight_name):
+        model_artifact = wandb.Artifact(
+            self.model_name,
+            type="model",
+            description=self.model_name,
+            metadata={
+                "train_configs": self.train_configs,
+                "model_configs": self.model_configs,
+            },
+        )
+
+        torch.save(
+            self.model.state_dict(), os.path.join(self.model_save_path, weight_name)
+        )
+        model_artifact.add_file(os.path.join(self.model_save_path, weight_name))
+        run.log_artifact(model_artifact)
+
     def train(self):
-        date = datetime.now().strftime("%Y-%d-%m-%H-%M-%S")
+        date = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
-        wandb.init(
+
+        with wandb.init(
             # Set the project where this run will be logged
             project=self.project_name,
             name=f"{experiment_name}",
             # Track hyperparameters and run metadata
             config=self.wandb_configs,
             job_type="training",
-        )
+        ) as run:
 
-        print(f"Using {self.device} device...")
+            print(f"Using {self.device} device...")
 
-        self.construct_model()
+            self.construct_model()
 
-        train_loader, validation_loader = self.construct_dataloader()
+            train_loader, validation_loader = self.construct_dataloader()
 
-        self.optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=self.train_configs["adam_lr"],
-            weight_decay=self.train_configs["adam_weight_decay"],
-        )
-
-        best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
-
-        epochs = self.train_configs["epochs"]
-
-        for epoch in range(epochs):
-            self.epoch_lst.append(epoch + 1)
-
-            validation_acc = self.execute(
-                epoch, epochs, train_loader, validation_loader, hybrid_loss
+            self.optimizer = torch.optim.Adam(
+                self.model.parameters(),
+                lr=self.train_configs["adam_lr"],
+                weight_decay=self.train_configs["adam_weight_decay"],
             )
 
-            if validation_acc > best_acc:
-                best_acc = validation_acc
-                best_model_wts = copy.deepcopy(self.model.state_dict())
+            epoch = 1
+            best_model_wts = copy.deepcopy(self.model.state_dict())
+            best_acc = 0.0
 
-            if epoch % self.train_configs["weight_save_freq"] == 0:
-                weight_name = f"model_weights_ep_{epoch}.pth"
-                torch.save(
-                    self.model.state_dict(),
-                    os.path.join(self.model_save_path, weight_name),
+            epochs = self.train_configs["epochs"]
+
+            for epoch in range(epoch, epochs + 1):
+                self.epoch_lst.append(epoch)
+
+                validation_acc = self.execute(
+                    epoch, epochs, train_loader, validation_loader, hybrid_loss
                 )
 
-        weight_name = self.train_configs["best_weight_name"]
-        torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+                if validation_acc > best_acc:
+                    best_acc = validation_acc
+                    best_model_wts = copy.deepcopy(self.model.state_dict())
 
-        # Mark the run as finished
-        wandb.finish()
+                if epoch % self.train_configs["weight_save_freq"] == 0:
+                    weight_name = f"model_weights_ep_{epoch}.pth"
+                    torch.save(
+                        self.model.state_dict(),
+                        os.path.join(self.model_save_path, weight_name),
+                    )
+
+                    self.wandb_model_log(run, weight_name)
+
+            weight_name = self.train_configs["best_weight_name"]
+            torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+            self.wandb_model_log(run, weight_name)
