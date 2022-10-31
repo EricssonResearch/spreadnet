@@ -3,7 +3,7 @@ networkx~=2.6
 numpy>=1.21.4
 pre-commit
 pyyaml>=6.0
-scipy~=1.9.1
+scipy~=1.7.3
 setuptools~=63.4.1
 
 spreadnet~=0.0.1
