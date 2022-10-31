@@ -12,14 +12,12 @@ from spreadnet.tf_gnn.model import gnn
 import random
 import networkx as nx
 from tqdm import tqdm
-from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.datasets.graph_generator import GraphGenerator
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.utils.experiment_utils import ExperimentUtils
 import os
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
+
 sys.modules["gnn"] = gnn
 
 
@@ -202,5 +200,5 @@ def increasing_graph_size_generator():
 
 
 if __name__ == "__main__":
-    increasing_graph_size_generator()
+    # increasing_graph_size_generator()
     increasing_graph_size_experiment()
