@@ -217,14 +217,20 @@ if __name__ == "__main__":
 
     plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
 
-    if bool(train_configs["shuffle"]):
-        dataset.shuffle(dataset_size * 10)
+    # if bool(train_configs["shuffle"]):
+    #     dataset.shuffle(dataset_size * 10)
 
     train_dataset = list(islice(dataset, 0, train_size))
     validation_dataset = list(islice(dataset, train_size, dataset_size + 1))
-    train_loader = DataLoader(train_dataset, batch_size=train_configs["batch_size"])
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=train_configs["batch_size"],
+        shuffle=train_configs["shuffle"],
+    )
     validation_loader = DataLoader(
-        validation_dataset, batch_size=train_configs["batch_size"]
+        validation_dataset,
+        batch_size=train_configs["batch_size"],
+        shuffle=train_configs["shuffle"],
     )
 
     model = EncodeProcessDecode(
