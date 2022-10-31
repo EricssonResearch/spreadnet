@@ -1,6 +1,6 @@
 matplotlib>=3.5.1
 networkx~=2.6
-numpy>=1.23.0
+numpy>=1.21.4
 pre-commit
 pyyaml>=6.0
 scipy~=1.9.1
