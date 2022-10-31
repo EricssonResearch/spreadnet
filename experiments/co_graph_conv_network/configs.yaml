@@ -3,8 +3,8 @@ train:
   weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 100
-  batch_size: 64
+  epochs: 500
+  batch_size: 128
   train_ratio: 0.7
   shuffle: True
   plot_after_epochs: 100
@@ -13,12 +13,12 @@ train:
   adam_weight_decay: !!float 5e-4
 
 model:
-  model_name: MPNN
+  model_name: DeepCoGCN
   node_in: 3
   edge_in: 1
+  mlp_hidden_channels: 128
+  mlp_hidden_layers: 2
+  gcn_hidden_channels: 64
+  gcn_num_layers: 16
   node_out: 2
   edge_out: 2
-  latent_size: 128
-  num_message_passing_steps: 12
-  num_mlp_hidden_layers: 2
-  mlp_hidden_size: 128
