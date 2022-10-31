@@ -18,6 +18,7 @@ from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
 from spreadnet.pyg_gnn.loss import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
+from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 
 
 class ModelTrainer:
@@ -83,7 +84,24 @@ class ModelTrainer:
                 edge_out=self.model_configs["edge_out"],
             ).to(self.device)
         elif self.model_name == "GAT":
-            self.model = None
+            self.model = SPGATNet(
+                num_hidden_layers=self.model_configs["num_hidden_layers"],
+                in_channels=self.model_configs["in_channels"],
+                hidden_channels=self.model_configs["hidden_channels"],
+                out_channels=self.model_configs["out_channels"],
+                heads=self.model_configs["heads"],
+                # dropout=model_configs[""],
+                add_self_loops=self.model_configs["add_self_loops"],
+                bias=self.model_configs["bias"],
+                edge_hidden_channels=self.model_configs["edge_hidden_channels"],
+                edge_out_channels=self.model_configs["edge_out_channels"],
+                edge_num_layers=self.model_configs["edge_num_layers"],
+                edge_bias=self.model_configs["edge_bias"],
+                encode_node_in=self.model_configs["encode_node_in"],
+                encode_edge_in=self.model_configs["encode_edge_in"],
+                encode_node_out=self.model_configs["encode_node_out"],
+                encode_edge_out=self.model_configs["encode_edge_out"],
+            ).to(self.device)
 
         return self.model
 
@@ -186,7 +204,17 @@ class ModelTrainer:
                 if is_training:
                     self.optimizer.zero_grad()
 
-                (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
+                if self.model_name == "GAT":
+                    (node_pred, edge_pred) = self.model(
+                        data.x,
+                        data.edge_index,
+                        data.edge_attr,
+                        return_attention_weights=self.model_configs[
+                            "return_attention_weights"
+                        ],
+                    )
+                else:
+                    (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
 
                 # Losses
                 (losses, corrects) = loss_func(

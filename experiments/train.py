@@ -10,6 +10,7 @@ Usage:
 Example:
     python train.py --model="MPNN" --wandb
     python train.py --model="GCN" --wandb
+    python train.py --model="GAT" --wandb
 
 @Time    : 10/27/2022 8:45 PM
 @Author  : Haodong Zhao
@@ -66,6 +67,13 @@ elif model == "GCN":
     )
     model_save_path = os.path.join(
         os.path.dirname(__file__), "co_graph_conv_network", "weights"
+    )
+elif model == "GAT":
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "graph_attention_network", "configs.yaml"
+    )
+    model_save_path = os.path.join(
+        os.path.dirname(__file__), "graph_attention_network", "weights"
     )
 else:
     print("Please check the model name. -h for more details.")
