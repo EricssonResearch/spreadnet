@@ -612,56 +612,75 @@ class WAndBModelTrainer(ModelTrainer):
 
         return validation_acc
 
+    def wandb_model_log(self, run, weight_name):
+        model_artifact = wandb.Artifact(
+            self.model_name,
+            type="model",
+            description=self.model_name,
+            metadata={
+                "train_configs": self.train_configs,
+                "model_configs": self.model_configs,
+            },
+        )
+
+        torch.save(
+            self.model.state_dict(), os.path.join(self.model_save_path, weight_name)
+        )
+        model_artifact.add_file(os.path.join(self.model_save_path, weight_name))
+        run.log_artifact(model_artifact)
+
     def train(self):
-        date = datetime.now().strftime("%Y-%d-%m-%H-%M-%S")
+        date = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
-        wandb.init(
+
+        with wandb.init(
             # Set the project where this run will be logged
             project=self.project_name,
             name=f"{experiment_name}",
             # Track hyperparameters and run metadata
             config=self.wandb_configs,
             job_type="training",
-        )
+        ) as run:
 
-        print(f"Using {self.device} device...")
+            print(f"Using {self.device} device...")
 
-        self.construct_model()
+            self.construct_model()
 
-        train_loader, validation_loader = self.construct_dataloader()
+            train_loader, validation_loader = self.construct_dataloader()
 
-        self.optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=self.train_configs["adam_lr"],
-            weight_decay=self.train_configs["adam_weight_decay"],
-        )
-
-        best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
-
-        epochs = self.train_configs["epochs"]
-
-        for epoch in range(epochs):
-            self.epoch_lst.append(epoch + 1)
-
-            validation_acc = self.execute(
-                epoch, epochs, train_loader, validation_loader, hybrid_loss
+            self.optimizer = torch.optim.Adam(
+                self.model.parameters(),
+                lr=self.train_configs["adam_lr"],
+                weight_decay=self.train_configs["adam_weight_decay"],
             )
 
-            if validation_acc > best_acc:
-                best_acc = validation_acc
-                best_model_wts = copy.deepcopy(self.model.state_dict())
+            epoch = 1
+            best_model_wts = copy.deepcopy(self.model.state_dict())
+            best_acc = 0.0
 
-            if epoch % self.train_configs["weight_save_freq"] == 0:
-                weight_name = f"model_weights_ep_{epoch}.pth"
-                torch.save(
-                    self.model.state_dict(),
-                    os.path.join(self.model_save_path, weight_name),
+            epochs = self.train_configs["epochs"]
+
+            for epoch in range(epoch, epochs + 1):
+                self.epoch_lst.append(epoch)
+
+                validation_acc = self.execute(
+                    epoch, epochs, train_loader, validation_loader, hybrid_loss
                 )
 
-        weight_name = self.train_configs["best_weight_name"]
-        torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+                if validation_acc > best_acc:
+                    best_acc = validation_acc
+                    best_model_wts = copy.deepcopy(self.model.state_dict())
 
-        # Mark the run as finished
-        wandb.finish()
+                if epoch % self.train_configs["weight_save_freq"] == 0:
+                    weight_name = f"model_weights_ep_{epoch}.pth"
+                    torch.save(
+                        self.model.state_dict(),
+                        os.path.join(self.model_save_path, weight_name),
+                    )
+
+                    self.wandb_model_log(run, weight_name)
+
+            weight_name = self.train_configs["best_weight_name"]
+            torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+            self.wandb_model_log(run, weight_name)
