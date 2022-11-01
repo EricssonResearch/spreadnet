@@ -431,6 +431,7 @@ class ModelTrainer:
 class WAndBModelTrainer(ModelTrainer):
     def __init__(
         self,
+        entity_name: str,
         project_name: str,
         model_configs: dict,
         train_configs: dict,
@@ -446,6 +447,7 @@ class WAndBModelTrainer(ModelTrainer):
             model_save_path,
         )
 
+        self.entity_name = entity_name
         self.project_name = project_name
         self.wandb_configs = train_configs
 
@@ -630,57 +632,65 @@ class WAndBModelTrainer(ModelTrainer):
         run.log_artifact(model_artifact)
 
     def train(self):
-        date = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
+        date = datetime.now().strftime("%H:%M:%S_%d-%m-%y")
         experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
 
-        with wandb.init(
-            # Set the project where this run will be logged
-            project=self.project_name,
-            name=f"{experiment_name}",
-            # Track hyperparameters and run metadata
-            config=self.wandb_configs,
-            job_type="training",
-        ) as run:
+        try:
+            with wandb.init(
+                # Set the project where this run will be logged
+                entity=self.entity_name,
+                project=self.project_name,
+                name=f"{experiment_name}",
+                # Track hyperparameters and run metadata
+                config=self.wandb_configs,
+                job_type="training",
+            ) as run:
 
-            print(f"Using {self.device} device...")
+                print(f"Using {self.device} device...")
 
-            self.construct_model()
+                self.construct_model()
 
-            train_loader, validation_loader = self.construct_dataloader()
+                train_loader, validation_loader = self.construct_dataloader()
 
-            self.optimizer = torch.optim.Adam(
-                self.model.parameters(),
-                lr=self.train_configs["adam_lr"],
-                weight_decay=self.train_configs["adam_weight_decay"],
-            )
-
-            epoch = 1
-            best_model_wts = copy.deepcopy(self.model.state_dict())
-            best_acc = 0.0
-
-            epochs = self.train_configs["epochs"]
-
-            for epoch in range(epoch, epochs + 1):
-                self.epoch_lst.append(epoch)
-
-                validation_acc = self.execute(
-                    epoch, epochs, train_loader, validation_loader, hybrid_loss
+                self.optimizer = torch.optim.Adam(
+                    self.model.parameters(),
+                    lr=self.train_configs["adam_lr"],
+                    weight_decay=self.train_configs["adam_weight_decay"],
                 )
 
-                if validation_acc > best_acc:
-                    best_acc = validation_acc
-                    best_model_wts = copy.deepcopy(self.model.state_dict())
+                epoch = 1
+                best_model_wts = copy.deepcopy(self.model.state_dict())
+                best_acc = 0.0
 
-                if epoch % self.train_configs["weight_save_freq"] == 0:
-                    weight_name = f"model_weights_ep_{epoch}.pth"
-                    torch.save(
-                        self.model.state_dict(),
-                        os.path.join(self.model_save_path, weight_name),
+                epochs = self.train_configs["epochs"]
+
+                for epoch in range(epoch, epochs + 1):
+                    self.epoch_lst.append(epoch)
+
+                    validation_acc = self.execute(
+                        epoch, epochs, train_loader, validation_loader, hybrid_loss
                     )
 
-                    self.wandb_model_log(run, weight_name)
+                    if validation_acc > best_acc:
+                        best_acc = validation_acc
+                        best_model_wts = copy.deepcopy(self.model.state_dict())
 
-            weight_name = self.train_configs["best_weight_name"]
-            torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
-            self.wandb_model_log(run, weight_name)
+                    if epoch % self.train_configs["weight_save_freq"] == 0:
+                        weight_name = f"model_weights_ep_{epoch}.pth"
+                        torch.save(
+                            self.model.state_dict(),
+                            os.path.join(self.model_save_path, weight_name),
+                        )
+
+                        self.wandb_model_log(run, weight_name)
+
+                weight_name = self.train_configs["best_weight_name"]
+                torch.save(
+                    best_model_wts, os.path.join(self.model_save_path, weight_name)
+                )
+                self.wandb_model_log(run, weight_name)
+
+        except Exception as exception:
+            print(exception)

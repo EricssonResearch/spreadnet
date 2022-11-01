@@ -95,7 +95,8 @@ print("use_wandb: ", use_wandb)
 trainer = None
 if use_wandb:
     trainer = WAndBModelTrainer(
-        project_name="UU-SpreadNet-Train",
+        entity_name="uu-spreadnet",
+        project_name="Train",
         model_configs=model_configs,
         train_configs=train_configs,
         dataset_configs=data_configs,
