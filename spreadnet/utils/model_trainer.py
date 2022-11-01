@@ -10,6 +10,7 @@ from itertools import islice
 
 import torch
 import wandb
+import shutil
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import webdataset as wds
@@ -446,10 +447,11 @@ class WAndBModelTrainer(ModelTrainer):
             dataset_configs,
             model_save_path,
         )
-
-        self.entity_name = entity_name
+        self.checkpoint_path = os.path.join(model_save_path, "wandb_train_state.pth")
+        self.wandb_id = 0
         self.project_name = project_name
         self.wandb_configs = train_configs
+        self.wandb_checkpoint_name = "wandb_train_state.pth"
 
         self.loss_data = []
         self.acc_data = []
@@ -464,6 +466,35 @@ class WAndBModelTrainer(ModelTrainer):
         self.validation_edges_loss = []
         self.validation_nodes_acc = []
         self.validation_edges_acc = []
+
+    def save_training_state(
+        self,
+        epoch,
+        best_model_wts,
+        best_acc,
+    ):
+        torch.save(
+            {
+                "wandb_id": self.wandb_id,
+                "epoch": epoch,
+                "model_state_dict": self.model.state_dict(),
+                "best_model_state_dict": best_model_wts,
+                "best_acc": best_acc,
+                "optimizer_state_dict": self.optimizer.state_dict(),
+                "epoch_lst": self.epoch_lst,
+                "loss_data": self.loss_data,
+                "acc_data": self.acc_data,
+                "train_nodes_loss": self.train_nodes_loss,
+                "train_edges_loss": self.train_edges_loss,
+                "train_nodes_acc": self.train_nodes_acc,
+                "train_edges_acc": self.train_edges_acc,
+                "validation_nodes_loss": self.validation_nodes_loss,
+                "validation_edges_loss": self.validation_edges_loss,
+                "validation_nodes_acc": self.validation_nodes_acc,
+                "validation_edges_acc": self.validation_edges_acc,
+            },
+            self.checkpoint_path,
+        )
 
     def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
         """
@@ -495,7 +526,7 @@ class WAndBModelTrainer(ModelTrainer):
 
         # simple log
         train_metrics = {
-            "Train/epoch": epoch + 1,
+            "Train/epoch": epoch,
             "Train/train_nodes_loss": train_nodes_loss,
             "Train/train_edges_loss": train_edges_loss,
             "Train/train_nodes_acc": train_nodes_acc,
@@ -503,7 +534,7 @@ class WAndBModelTrainer(ModelTrainer):
         }
 
         validation_metrics = {
-            "Train/epoch": epoch + 1,
+            "Train/epoch": epoch,
             "Validation/validation_nodes_loss": validation_nodes_loss,
             "Validation/validation_edges_loss": validation_edges_loss,
             "Validation/validation_nodes_acc": validation_nodes_acc,
@@ -614,9 +645,9 @@ class WAndBModelTrainer(ModelTrainer):
 
         return validation_acc
 
-    def wandb_model_log(self, run, weight_name):
+    def wandb_model_log(self, run, artifact_name, weight_name):
         model_artifact = wandb.Artifact(
-            self.model_name,
+            artifact_name,
             type="model",
             description=self.model_name,
             metadata={
@@ -632,65 +663,132 @@ class WAndBModelTrainer(ModelTrainer):
         run.log_artifact(model_artifact)
 
     def train(self):
-
-        date = datetime.now().strftime("%H:%M:%S_%d-%m-%y")
+        date = datetime.now().strftime("%H:%M:%S_%d-%m-%Y")
         experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
 
-        try:
-            with wandb.init(
+        # TODO: specify artifact_name.
+        #       Maybe we can extract some features from dataset
+        #       and specify artifact_name like: MPNN_nodes_8-17
+        artifact_name = f"{self.model_name}"
+
+        self.construct_model()
+
+        # TODO:
+        #  We can override `construct_dataloader()` after setting the dataset in wandb
+        train_loader, validation_loader = self.construct_dataloader()
+
+        self.optimizer = torch.optim.Adam(
+            self.model.parameters(),
+            lr=self.train_configs["adam_lr"],
+            weight_decay=self.train_configs["adam_weight_decay"],
+        )
+
+        epoch = 1
+        best_model_wts = copy.deepcopy(self.model.state_dict())
+        best_acc = 0.0
+
+        epochs = self.train_configs["epochs"]
+
+        exists = os.path.exists(self.checkpoint_path)
+
+        if exists:
+            answer = input(
+                "Previous wandb training state found. Enter y/Y to continue training: "
+            )
+
+            if answer.capitalize() == "Y":
+                checkpoint = torch.load(self.checkpoint_path)
+                print("Resume training...")
+
+                self.wandb_id = checkpoint["wandb_id"]
+
+                run = wandb.init(
+                    project=self.project_name, id=self.wandb_id, resume=True
+                )
+
+                epoch = checkpoint["epoch"] + 1
+                self.model.load_state_dict(checkpoint["model_state_dict"])
+                best_model_wts = checkpoint["best_model_state_dict"]
+                best_acc = checkpoint["best_acc"]
+                self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+                self.loss_data = checkpoint["loss_data"]
+                self.acc_data = checkpoint["acc_data"]
+                self.epoch_lst = checkpoint["epoch_lst"]
+                self.train_nodes_loss = checkpoint["train_nodes_loss"]
+                self.train_edges_loss = checkpoint["train_edges_loss"]
+                self.train_nodes_acc = checkpoint["train_nodes_acc"]
+                self.train_edges_acc = checkpoint["train_edges_acc"]
+
+                self.validation_nodes_loss = checkpoint["validation_nodes_loss"]
+                self.validation_edges_loss = checkpoint["validation_edges_loss"]
+                self.validation_nodes_acc = checkpoint["validation_nodes_acc"]
+                self.validation_edges_acc = checkpoint["validation_edges_acc"]
+            else:
+                self.wandb_id = wandb.util.generate_id()
+                run = wandb.init(
+                    # Set the project where this run will be logged
+                    project=self.project_name,
+                    name=f"{experiment_name}",
+                    id=self.wandb_id,
+                    # Track hyperparameters and run metadata
+                    config=self.wandb_configs,
+                    job_type="training",
+                )
+        else:
+            self.wandb_id = wandb.util.generate_id()
+            run = wandb.init(
                 # Set the project where this run will be logged
-                entity=self.entity_name,
                 project=self.project_name,
                 name=f"{experiment_name}",
+                id=self.wandb_id,
                 # Track hyperparameters and run metadata
                 config=self.wandb_configs,
                 job_type="training",
-            ) as run:
+            )
 
-                print(f"Using {self.device} device...")
+        print(f"Using {self.device} device...")
 
-                self.construct_model()
+        for epoch in range(epoch, epochs + 1):
+            self.epoch_lst.append(epoch)
 
-                train_loader, validation_loader = self.construct_dataloader()
+            validation_acc = self.execute(
+                epoch, epochs, train_loader, validation_loader, hybrid_loss
+            )
 
-                self.optimizer = torch.optim.Adam(
-                    self.model.parameters(),
-                    lr=self.train_configs["adam_lr"],
-                    weight_decay=self.train_configs["adam_weight_decay"],
-                )
-
-                epoch = 1
+            if validation_acc > best_acc:
+                best_acc = validation_acc
                 best_model_wts = copy.deepcopy(self.model.state_dict())
-                best_acc = 0.0
 
-                epochs = self.train_configs["epochs"]
-
-                for epoch in range(epoch, epochs + 1):
-                    self.epoch_lst.append(epoch)
-
-                    validation_acc = self.execute(
-                        epoch, epochs, train_loader, validation_loader, hybrid_loss
-                    )
-
-                    if validation_acc > best_acc:
-                        best_acc = validation_acc
-                        best_model_wts = copy.deepcopy(self.model.state_dict())
-
-                    if epoch % self.train_configs["weight_save_freq"] == 0:
-                        weight_name = f"model_weights_ep_{epoch}.pth"
-                        torch.save(
-                            self.model.state_dict(),
-                            os.path.join(self.model_save_path, weight_name),
-                        )
-
-                        self.wandb_model_log(run, weight_name)
-
-                weight_name = self.train_configs["best_weight_name"]
+            if epoch % self.train_configs["weight_save_freq"] == 0:
+                weight_name = f"model_weights_ep_{epoch}.pth"
                 torch.save(
-                    best_model_wts, os.path.join(self.model_save_path, weight_name)
+                    self.model.state_dict(),
+                    os.path.join(self.model_save_path, weight_name),
                 )
-                self.wandb_model_log(run, weight_name)
+                # log weights
+                self.wandb_model_log(run, artifact_name, weight_name)
 
-        except Exception as exception:
-            print(exception)
+            # log states each epoch
+            self.save_training_state(
+                epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+            )
+            # wandb.save(self.wandb_checkpoint_path)
+            #   symlink error on Windows, copy manually
+            shutil.copy(
+                self.checkpoint_path,
+                os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
+            )
+
+        weight_name = self.train_configs["best_weight_name"]
+        torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+        self.wandb_model_log(run, artifact_name, weight_name)
+        self.save_training_state(
+            epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+        )
+        # wandb.save(self.wandb_checkpoint_path)
+        #   symlink error on Windows, copy manually
+        shutil.copy(
+            self.checkpoint_path,
+            os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
+        )
