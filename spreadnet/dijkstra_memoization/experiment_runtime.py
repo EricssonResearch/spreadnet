@@ -77,6 +77,22 @@ def main():
     # print("all_graphs", all_graphs.source)
     print("total_time for ", f)
 
+    dijkstra_runner.clear_memo_table()
+    print("hashing graphs only")
+
+    for i in range(5):
+        t1_start = process_time()
+        for g in all_graphs:
+            dijkstra_runner.hash_graph(g["nxdata"])
+            # print(dijkstra_runner.memoTable)
+        # print( "Graph start:", g["start"], " End:", g["end"])
+        t1_stop = process_time()
+        # print("starttime", t1_start)
+        # print("stop time", t1_stop)
+        total_time = t1_stop - t1_start
+        print(total_time)
+
+    dijkstra_runner.clear_memo_table()
     print("dijkstra minimum spanning tree with memoization only one path saved")
 
     for i in range(5):
@@ -94,7 +110,7 @@ def main():
     dijkstra_runner.clear_memo_table()
     print("single source dijkstra")
 
-    for i in range(3):
+    for i in range(5):
         t1_start = process_time()
         for g in all_graphs:
             nx.single_source_dijkstra(g["nxdata"], g["start"], g["end"])
@@ -108,7 +124,7 @@ def main():
     dijkstra_runner.clear_memo_table()
     print("astar")
 
-    for i in range(3):
+    for i in range(5):
         t1_start = process_time()
         for g in all_graphs:
             nx.astar_path(g["nxdata"], g["start"], g["end"])

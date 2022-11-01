@@ -153,6 +153,11 @@ def shortest_path(G, start_node, end_node, weight="weight"):
         return all_paths_from_source[end_node]
 
 
+def hash_graph(graph):
+    hashed_graph = weisfeiler_lehman_graph_hash(graph)
+    return hashed_graph
+
+
 def shortest_path_single(G, start_node, end_node, weight="weight"):
     """Runs the shortest path dijkstra algorithm, brings back lengths for all
     (unused at this point) and all paths which is printed and then added to the
