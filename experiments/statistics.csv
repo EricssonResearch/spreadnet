@@ -1,4 +1,0 @@
-time,random_seed,num_node_min,num_node_max,num_nodes,theta,max_edges_per_node,avg_edges_per_node,dataset_size,dataset_path,raw_path,weighted_(nodes),weighted_(edges),weight_save_freq,weight_base_path,best_weight_name,epochs,batch_size,shuffle,avg_hops,min_hops,max_hops,node_in,edge_in,node_out,edge_out,latent_size,num_of_message_passing_steps,num_of_mlp_hidden_layers,mlp_hidden_size,adam_learning_rate,adam_weight_decay,visualize_graph,train_ratio,adam_lr,num_message_passing_steps,num_mlp_hidden_layers
-13/10/2022 02:25:17,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-13/10/2022 11:37:58,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-13/10/2022 11:39:01,0.0,8.0,17.0,,20.0,,,5120.0,dataset,,,,10.0,./weights,model_weights_best.pth,300.0,64.0,True,,,,3.0,1.0,2.0,2.0,128.0,,,128.0,,0.0005,25.0,0.8,0.0001,12.0,2.0
