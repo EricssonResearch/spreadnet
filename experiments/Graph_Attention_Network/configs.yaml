@@ -1,0 +1,32 @@
+train:
+  weight_base_path: "./weights"
+  weight_save_freq: 10
+  best_weight_name: "model_weights_best.pth"
+
+  epochs: 500
+  batch_size: 64
+  train_ratio: 0.7
+  shuffle: True
+  plot_after_epochs: 100
+
+  adam_lr: !!float 1e-3
+  adam_weight_decay: !!float 5e-4
+
+model:
+  num_hidden_layers: 5
+  in_channels: 64
+  hidden_channels: 256
+  out_channels: 32
+  heads: 8
+  #dropout: 0.5
+  add_self_loops: False
+  return_attention_weights: True
+  bias: True
+  edge_hidden_channels: 256
+  edge_out_channels: 2
+  edge_num_layers: 2
+  edge_bias: True
+  encode_node_in: 3
+  encode_edge_in: 1
+  encode_node_out: 64
+  encode_edge_out: 64
