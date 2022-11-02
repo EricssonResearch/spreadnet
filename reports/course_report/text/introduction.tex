@@ -1,7 +1,6 @@
 \documentclass{article}
 
 % Language setting
-% Replace `english' with e.g. `spanish' to change the document language
 \usepackage[english]{babel}
 
 % Set page size and margins
@@ -12,19 +11,24 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
-
+\usepackage{natbib}
+\bibliographystyle{ksfh_nat}
 \usepackage[
 backend=biber,
 style=alphabetic,
 sorting=ynt
-]{biblatex}
+]
+{biblatex}
 
-\addbibresource{sample.bib}
+\usepackage{hyperref,url}
+\newcounter{bibcount}
+
+\addbibresource{sources.bib}
+
 \begin{document}
 
 \section{Introduction}
-
-In computer science, the shortest-path problem is one of the extensive research area, speciﬁcally in graph theory. An ideal shortest path is one that meets the least length requirements between an origin and a destination. The topic has many varied applications, leading to a boom in research on shortest-path algorithms. These applications include network routing protocols, route planning, traﬃc control, path ﬁnding in social networks, computer games, transportation systems, and many more. \cite{DBLP:journals/corr/MadkourARRB17}
+In computer science, the shortest-path problem is one of the extensive research areas, speciﬁcally in graph theory. An ideal shortest path is one that meets the least length requirements between an origin and a destination. The topic has many varied applications, leading to a boom in research on shortest-path algorithms. These applications include network routing protocols, route planning, traﬃc control, path ﬁnding in social networks, computer games, transportation systems, and many more. \cite{DBLP:journals/corr/MadkourARRB17}
 
 Many classical algorithms like Dijkstra, A*, and bellman Ford can solve shortest Path problems using their own strengths and weaknesses. 
 
@@ -35,13 +39,11 @@ In this kind of unstructured problem Graph Neural Networks (GNN) can outperform 
 A graph neural network is proposed to collect and summarize the information from the graph Structure. \cite{DBLP:journals/corr/abs-1812-04202}
 Graph Neural Networks (GNNs)  are deep learning models for graph structured data, which achieve state-of-the-art results for many graph-related tasks.\cite{data7010010}
 GNNs can be classified into different categories depending upon their model architecture. \cite{DBLP:journals/corr/abs-1901-00596}
-Such as Recurrent GNNs[], convolutional GNNs \cite{DBLP:journals/corr/HamiltonYL17}
+Such as Recurrent GNNs \cite{inproceedings}, convolutional GNNs \cite{DBLP:journals/corr/HamiltonYL17}
 \cite{DBLP:journals/corr/KipfW16}
 Graph Auto-Encoders \cite{https://doi.org/10.48550/arxiv.1611.07308}
 and Spatial-Temporal GNNs. \cite{Yan_Xiong_Lin_2018}.
-
-
 \printbibliography
-
-
 \end{document}
+
+
