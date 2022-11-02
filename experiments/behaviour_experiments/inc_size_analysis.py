@@ -15,6 +15,7 @@ def prob_accuracy_calls():
 
 
 if __name__ == "__main__":
+    vis = VisualUtils()
     # pool = Pool(processes=cpu_count() - 1)
     # pool.starmap(
     #     prob_accuracy, [[False, "all_nodes_acc.csv"],
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     # prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
     # max_prob_path_lengths()
     # prob_accuracy_calls()
-    vis = VisualUtils()
+
     # vis.prob_plot("acc_prob_walk.csv", "Max Prob Walk")
     vis.prob_plot("all_nodes_acc.csv", "All Nodes")
     # vis.prob_plot("only_path_nodes_acc.csv", "Only Path Nodes")
