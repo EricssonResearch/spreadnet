@@ -1,16 +1,16 @@
-%                                                           ,,           ,,       
-% `7MN.   `7MF'MMP""MM""YMM `7MN.   `7MF'`7MMF'   `7MF'   `7MM          *MM       
-%   MMN.    M  P'   MM   `7   MMN.    M    MM       M       MM           MM       
-%   M YMb   M       MM        M YMb   M    MM       M       MM   ,6"Yb.  MM,dMMb. 
+%                                                           ,,           ,,
+% `7MN.   `7MF'MMP""MM""YMM `7MN.   `7MF'`7MMF'   `7MF'   `7MM          *MM
+%   MMN.    M  P'   MM   `7   MMN.    M    MM       M       MM           MM
+%   M YMb   M       MM        M YMb   M    MM       M       MM   ,6"Yb.  MM,dMMb.
 %   M  `MN. M       MM        M  `MN. M    MM       M       MM  8)   MM  MM    `Mb
 %   M   `MM.M       MM        M   `MM.M    MM       M mmmmm MM   ,pm9MM  MM     M8
 %   M     YMM       MM        M     YMM    YM.     ,M       MM  8M   MM  MM.   ,M9
-% .JML.    YM     .JMML.    .JML.    YM     `bmmmmd"'     .JMML.`Moo9^Yo.P^YbmdP' 
+% .JML.    YM     .JMML.    .JML.    YM     `bmmmmd"'     .JMML.`Moo9^Yo.P^YbmdP'
 %
 %---------------------------------------------------------------------------------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% *** LaTeX-template for Laboratory reports in physics, 
+% *** LaTeX-template for Laboratory reports in physics,
 %
 %                           V.01.1 // Version 01, with 1 update(s) or patch(es)
 %
@@ -58,26 +58,26 @@
 \RequirePackage{hologo}                                                 % For TeX engine logos (pdfTEX, LuaTEX, TEX, etc.)
 %................................................................
 %
-%        Colours // U.01 
+%        Colours // U.01
 %_______________________________________________________________
 \RequirePackage[table]{xcolor}
 \definecolor{NTNU_blue}{HTML}{2E5AAC}
 %................................................................
 %
-%        Package that must be loaded after colours // U.01 
+%        Package that must be loaded after colours // U.01
 %_______________________________________________________________
 \RequirePackage[siunitx]{circuitikz}                                    % Tikz + draw circuits w/ SI unit labels
 \usetikzlibrary{decorations.pathreplacing}
 %................................................................
 %
-%        Environment for python code // U.01 
+%        Environment for python code // U.01
 %_______________________________________________________________
 \RequirePackage{minted}
 \usemintedstyle{colorful}
 \definecolor{LightGray}{rgb}{0.95,0.95,0.95}
 %................................................................
 %
-%        Date fix (to show date in frontmatter) // U.01 
+%        Date fix (to show date in frontmatter) // U.01
 %_______________________________________________________________
 \RequirePackage{datetime}
 \RequirePackage{etoolbox}
@@ -101,7 +101,7 @@
 \ProcessOptions\relax
 %................................................................
 %
-%                    Abstract environment  
+%                    Abstract environment
 %_______________________________________________________________
 \newcommand{\NameOfAbstract}[1]{\renewcommand{\abstractname}{#1}} % U.01 Defined a macro for naming abstract.
 \renewenvironment{abstract}{\global\setbox\absbox=\vbox\bgroup
@@ -150,7 +150,7 @@
 %       Defining some useful math commands // U.01
 %_______________________________________________________________
 %
-% Differential operator d, for integrals and derivatives: 
+% Differential operator d, for integrals and derivatives:
 \makeatletter
 \DeclareRobustCommand{\dd}{\relax\ifmmode\daux\relax\fi}
 \newcommand*{\daux}{\mathop{}\!{\operator@font d}}
@@ -167,7 +167,7 @@
 % = with normal '^' (\hateq)
 \DeclareRobustCommand{\hateq}{\relax\ifmmode\mathrel{\mathpalette\hateqaux\relax}\fi}
 \newcommand*{\hateqaux}{\hat{=}}
-% 
+%
 % := command
 \DeclareRobustCommand{\coleq}{\relax\ifmmode\mathrel{\mathpalette\coleqaux\relax}\fi}
 \newcommand*{\coleqaux}{\vcentcolon=}
@@ -176,7 +176,7 @@
 \DeclareRobustCommand{\meq}{\relax\ifmmode\mathrel{\mathpalette\meqaux\relax}\fi}
 \newcommand*{\meqaux}{\overset{\text{m}}{=}}
 %
-% = with '?' on top, denotes uncertainty 
+% = with '?' on top, denotes uncertainty
 \DeclareRobustCommand{\qmeq}{\relax\ifmmode\mathrel{\mathpalette\qmeqaux\relax}\fi}
 \newcommand*{\qmeqaux}{\overset{\text{?}}{=}}
 %
@@ -247,9 +247,9 @@
 %---------------------------------------------------------------------------------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%                           Appendix 
+%                           Appendix
 %_______________________________________________________________
-% ASCII-art created with ASCII art generator (name of style used: Georgia11) 
+% ASCII-art created with ASCII art generator (name of style used: Georgia11)
 % Link to ASCII art generator: https://www.kammerl.de/ascii/AsciiSignature.php
 %
 %       File history:
@@ -258,7 +258,7 @@
 % -- U.01 Update by Vebjørn:
 %       - removed the original comments (in norwegian)
 %       + made the code into a .sty file
-%       + added more useful packages 
+%       + added more useful packages
 %       + added environment for displaying python code
 %       + added option to display date at start of document
 %       + fixed margins in document (standard 2.5cm margins)
