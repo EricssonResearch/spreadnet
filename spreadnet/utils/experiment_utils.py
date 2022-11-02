@@ -25,6 +25,7 @@ import sys
 import argparse
 import networkx as nx
 
+
 from spreadnet.datasets.data_utils.convertor import graphnx_to_dict_spec
 from torch_geometric.data import Data
 
@@ -91,7 +92,7 @@ class ExperimentUtils:
             print("Models Implemented: ", self.implemented_models)
             return self.implemented_models
 
-    def show_model_used(self, ret=False):
+    def show_model_used(self, ret=False, wh_w=False):
         """Print or/and return the name of the model the class instance is
         using.
 
@@ -102,6 +103,8 @@ class ExperimentUtils:
             str: String with the model used for this class instance.
         """
         if ret:
+            if wh_w:
+                return self.model_type
             return (self.model_type, self.model_weights)
         else:
             print(self.model_type, self.model_weights)
@@ -286,3 +289,7 @@ class ExperimentUtils:
         )
 
         return data
+
+    def generate_data_increasing_size():
+        """Gradually increasing size."""
+        pass
