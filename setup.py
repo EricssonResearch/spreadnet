@@ -11,6 +11,7 @@ requirements = [
     "tqdm",
     "tensorflow_gnn",
     "tensorflow",
+    "pandas",
 ]
 setup(
     name="spreadnet",
