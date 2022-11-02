@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
+import pandas as pd
 
 
 class VisualUtils:
@@ -266,3 +267,44 @@ class VisualUtils:
                 current_node = chosen_edge[1]
 
         return max_prob_walk_nodes, max_prob_walk_edges
+
+    def plot_graph(self, df, pb_treshold, model_name, title):
+        df.drop(
+            [
+                "Model Type",
+            ],
+            axis=1,
+            inplace=True,
+        )
+
+        for pb in pb_treshold:
+            df_tr = df[df["Probabiltiy Threshold"] == pb]
+            plt.scatter(df_tr["Graph Size"], df_tr["Accuracy"])
+        plt.yticks(np.arange(0, df_tr["Accuracy"].max() + 0.1, 0.05))
+        plt.legend(df["Probabiltiy Threshold"], title="Probability Threshold")
+        plt.xlabel("Graph Size")
+        plt.ylabel("Accuracy Nodes")
+        plt.title(title + model_name)
+        plt.grid(visible=True)
+        plt.show()
+
+    def prob_plot(self, file_name, title):
+        """Plot the accuracies for each prob threshold."""
+        df = pd.read_csv(file_name, index_col=False)
+
+        df = df.sort_values(["Graph Size", "Model Type"])
+        pd.set_option("display.max_rows", None)
+        # print(df)
+        # pb_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
+        pb_treshold = [0.5, 0.25, 0.01]
+        df_pyg = df[df["Model Type"] == "pyg"]
+        df_tf = df[df["Model Type"] == "tf"]
+        self.plot_graph(
+            df_pyg, pb_treshold=pb_treshold, model_name=" Pyg Original", title=title
+        )
+        self.plot_graph(
+            df_tf,
+            pb_treshold=pb_treshold,
+            model_name=" Tensorflow Original",
+            title=title,
+        )

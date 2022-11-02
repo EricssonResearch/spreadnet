@@ -9,7 +9,8 @@ import json
 from spreadnet.tf_gnn.model import gnn
 import random
 import networkx as nx
-from tqdm import tqdm
+import numpy as np
+
 from spreadnet.datasets.graph_generator import GraphGenerator
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.utils.experiment_utils import ExperimentUtils
@@ -54,7 +55,7 @@ def inc_pred(results_dir, model, graphs, ds):
 
 
 # @profile
-def increasing_graph_size_experiment():
+def increasing_graph_size_experiment(datasets):
     """Predict for files in the increasing_size_experiment_data folder.
 
     Saves the results in the same folder as the
@@ -63,17 +64,13 @@ def increasing_graph_size_experiment():
         ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
         ExperimentUtils(model_type="pyg_gnn", weights_model="model_weights_best.pth"),
     ]
-    experiments_dir = "increasing_size_experiment_data"
+
     results_dir = "increasing_size_predictions"
+    experiments_dir = "increasing_size_experiment_data"
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
-    datasets = list()
-    for path in os.listdir(experiments_dir):
-        # check if current path is a file
-        if os.path.isfile(os.path.join(experiments_dir, path)):
-            datasets.append(path)
 
-    for ds in tqdm(datasets):
+    for ds in datasets:
 
         raw_data_path = experiments_dir + "/" + ds
         file_raw = open(raw_data_path)
@@ -104,6 +101,8 @@ def increasing_graph_size_experiment():
 
             with open(results_dir + f"/{output_name}", "w") as outfile:
                 json.dump(output_graphs, outfile, cls=NpEncoder)
+
+            print(os.getpid(), ": ", output_name, "Written ")
 
 
 def inc_process(
@@ -201,6 +200,45 @@ def increasing_graph_size_generator():
     pool.close()
 
 
+def divide_datasets(no_process=cpu_count() - 1):
+    experiments_dir = "increasing_size_experiment_data"
+    datasets = list()
+    for path in os.listdir(experiments_dir):
+        # check if current path is a file
+        if os.path.isfile(os.path.join(experiments_dir, path)):
+            datasets.append(path)
+    return np.array_split(datasets, no_process)
+
+
 if __name__ == "__main__":
-    # increasing_graph_size_generator()
-    increasing_graph_size_experiment()
+
+    increasing_graph_size_generator()
+
+    ds_split = divide_datasets()
+    ds_split_l = []
+    for d in ds_split:
+        ds_split_l.append([d.tolist()])
+    print(ds_split_l[0])
+
+    pool = Pool(processes=cpu_count() - 1)
+    pool.starmap(increasing_graph_size_experiment, ds_split_l)
+    pool.close()
+
+    # p = Process(target=increasing_graph_size_experiment)
+
+    # p.start()
+    # p1 = Process(target=increasing_graph_size_experiment)
+
+    # p1.start()
+    # p2 = Process(target=increasing_graph_size_experiment)
+    # p2.start()
+
+    # p.join()
+    # p1.join()
+    # p2.join()
+
+    # pool = Pool(processes=3)
+    # pool.map(target=increasing_graph_size_experiment, args=())
+    # pool.close()
+
+    # increasing_graph_size_experiment()
