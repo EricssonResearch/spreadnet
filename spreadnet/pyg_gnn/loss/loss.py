@@ -89,7 +89,7 @@ def corrects_in_path(node_pred, edge_pred, node_true, edge_true):
     edge_infer = torch.argmax(edge_pred, dim=-1).type(torch.int64)
 
     node_true_mask = node_true.type(torch.int64) == 1  # node_true_in_path
-    node_in_path_total = torch.sum(node_true_mask == 1)
+    node_in_path_total = torch.sum(node_true_mask.type(torch.int64) == 1)
     # extract the values who have some index of ground-truth values that in the path
     node_infer_in_path = (
         node_infer[node_true_mask]
@@ -102,7 +102,7 @@ def corrects_in_path(node_pred, edge_pred, node_true, edge_true):
     node_corrects_in_path = torch.sum(node_infer_in_path == 1)
 
     edge_true_mask = edge_true.type(torch.int64) == 1  # edge_true_in_path
-    edge_in_path_total = torch.sum(edge_true_mask == 1)
+    edge_in_path_total = torch.sum(edge_true_mask.type(torch.int64) == 1)
     edge_infer_in_path = (
         edge_infer[edge_true_mask]
         .clone()
@@ -114,5 +114,7 @@ def corrects_in_path(node_pred, edge_pred, node_true, edge_true):
 
     node_in_path = {"in_path": node_corrects_in_path, "total": node_in_path_total}
     edge_in_path = {"in_path": edge_corrects_in_path, "total": edge_in_path_total}
+    # print(node_in_path)
+    # print(edge_in_path)
 
     return node_in_path, edge_in_path

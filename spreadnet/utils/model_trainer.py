@@ -288,10 +288,10 @@ class ModelTrainer:
         edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy().item()
 
         node_in_path_acc = (
-            (node_correct_in_path / dataset_nodes_in_path_size).cpu().numpy().item()
+            (nodes_in_path_corrects / dataset_nodes_in_path_size).cpu().numpy().item()
         )
         edge_in_path_acc = (
-            (edge_correct_in_path / dataset_edges_in_path_size).cpu().numpy().item()
+            (edges_in_path_corrects / dataset_edges_in_path_size).cpu().numpy().item()
         )
         return (
             nodes_loss,
