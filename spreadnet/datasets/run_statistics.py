@@ -4,6 +4,7 @@ import glob
 import pandas as pd
 from datetime import datetime
 import os
+from itertools import groupby
 
 from spreadnet.utils import yaml_parser
 
@@ -14,9 +15,7 @@ class RunStatistics:
     def __init__(self):
         """Initializes and checks for the file for statistics and headers."""
         self.statistics_file = "statistics.csv"
-        project_folder = os.path.sep.join(
-            os.path.abspath(os.path.realpath(__file__)).split(os.path.sep)[:-3]
-        )
+        project_folder = self.get_project_folder_path()
         open(self.statistics_file, "a")
         self.add_headers()
         self.add_time()
@@ -26,7 +25,12 @@ class RunStatistics:
                 project_folder + "/experiments/encode_process_decode/configs.yaml",
             ]
         )
-        self.check_nodes_and_edges()
+
+        json_file_paths = self.get_dataset_path()
+        self.check_nodes_and_edges(json_file_paths)
+        self.check_hops_in_dataset(json_file_paths)
+        self.check_avg_num_nodes(json_file_paths)
+        self.check_number_of_edges_per_node(json_file_paths)
 
     def add_headers(self):
         """Adds and checks for headers in the statistics file."""
@@ -40,55 +44,45 @@ class RunStatistics:
                     "random_seed",
                     "num_node_min",
                     "num_node_max",
-                    "num_nodes",
-                    "theta",
-                    "max_edges_per_node",
-                    "avg_edges_per_node",
+                    "starting_theta",
                     "dataset_size",
                     "dataset_path",
                     "raw_path",
-                    "weighted_(nodes)",
-                    "weighted_(edges)",
                     "weight_save_freq",
                     "weight_base_path",
                     "best_weight_name",
                     "epochs",
                     "batch_size",
                     "shuffle",
-                    "avg_hops",
-                    "min_hops",
-                    "max_hops",
                     "node_in",
                     "edge_in",
                     "node_out",
                     "edge_out",
                     "latent_size",
-                    "num_of_message_passing_steps",
-                    "num_of_mlp_hidden_layers",
+                    "num_message_passing_steps",
+                    "num_mlp_hidden_layers",
                     "mlp_hidden_size",
                     "adam_lr",
                     "adam_weight_decay",
                 ]
                 writer.writerow(header_list)
 
-    def check_nodes_and_edges(self):
-        """Checks if the nodes and edges are weighted."""
-        project_folder = os.path.sep.join(
+    def get_project_folder_path(self):
+        """Get the project folder's path."""
+        return os.path.sep.join(
             os.path.abspath(os.path.realpath(__file__)).split(os.path.sep)[:-3]
         )
+
+    def get_dataset_path(self):
+        """Get a list of path of datasets."""
+        project_folder = self.get_project_folder_path()
         json_dataset_path = os.path.join(project_folder, "experiments/dataset/raw")
-        json_file_path = list(
+        json_file_paths = list(
             map(os.path.basename, glob.glob(json_dataset_path + "/*.json"))
         )
-        json_file_path = os.path.join(json_dataset_path, json_file_path[0])
-        with open(json_file_path, "r") as json_file:
-            json_data = json.load(json_file)
-            self.add_data("weighted_(nodes)", "True") if json_data[0]["nodes"][0][
-                "weight"
-            ] != "" else self.add_data("weighted_(nodes)", "False")
-            self.add_data("weighted_(edges)", "True") if json_data[0]["links"][0][
-                "weight"
-            ] != "" else self.add_data("weighted_(edges)", "False")
+        for idx, file_path in enumerate(json_file_paths):
+            json_file_paths[idx] = os.path.join(json_dataset_path, file_path)
+        return json_file_paths
 
     def add_time(self):
         """Creates a new row and initializes current time onto it."""
@@ -152,3 +146,91 @@ class RunStatistics:
 
         except TypeError:
             print("Contents of the config file are not iterable.")
+
+    def check_nodes_and_edges(self, json_file_paths):
+        """Checks if the nodes and edges are weighted.
+
+        Args:
+            json_file_paths: A list of file paths of the datasets you
+            want to check the nodes and edges for.
+        """
+        json_file_paths = self.get_dataset_path()
+        for idx, json_file_path in enumerate(json_file_paths):
+            with open(json_file_path, "r") as json_file:
+                json_data = json.load(json_file)
+                self.add_data(f"weighted_(nodes)_{idx+1}", "True") if json_data[0][
+                    "nodes"
+                ][0]["weight"] != "" else self.add_data("weighted_(nodes)", "False")
+                self.add_data(f"weighted_(edges)_{idx+1}", "True") if json_data[0][
+                    "links"
+                ][0]["weight"] != "" else self.add_data("weighted_(edges)", "False")
+            json_file.close()
+
+    def check_hops_in_dataset(self, json_file_paths):
+        """Checks the number of hops in the dataset.
+
+        Args:
+            json_file_paths: A list of file paths of the datasets you
+            want to check the shortest path distance for.
+        """
+        json_file_paths = self.get_dataset_path()
+        hops = []
+        hop = 0
+        for idx, json_file_path in enumerate(json_file_paths):
+            with open(json_file_path, "r") as json_file:
+                json_data = json.load(json_file)
+                for graphs in range(0, len(json_data)):
+                    for link in json_data[graphs]["links"]:
+                        if link["is_in_path"] is True:
+                            hop += 1
+                    hops.append(hop)
+                    hop = 0
+            json_file.close()
+            self.add_data(f"avg_hops_{idx+1}", round(sum(hops) / len(hops), 3))
+            self.add_data(f"min_hops_{idx+1}", min(hops))
+            self.add_data(f"max_hops_{idx+1}", max(hops))
+
+    def check_avg_num_nodes(self, json_file_paths):
+        """Checks the average number of nodes in the dataset.
+
+        Args:
+            json_file_paths: A list of file paths of the datasets you
+            want to check the average number of nodes for.
+        """
+        json_file_paths = self.get_dataset_path()
+        nodes = []
+        for idx, json_file_path in enumerate(json_file_paths):
+            with open(json_file_path, "r") as json_file:
+                json_data = json.load(json_file)
+                for graphs in range(0, len(json_data)):
+                    nodes.append(len(json_data[graphs]["nodes"]))
+            json_file.close()
+            self.add_data(f"avg_nodes_{idx+1}", round(sum(nodes) / len(nodes), 3))
+
+    def check_number_of_edges_per_node(self, json_file_paths):
+        """Checks the average and the max number of edges per node in the
+        dataset.
+
+        Args:
+            json_file_paths: A list of file paths of the datasets you
+            want to check the average number of edges per node for.
+        """
+        edges = []
+        source = []
+        max_edge = 0
+        for idx, json_file_path in enumerate(json_file_paths):
+            with open(json_file_path, "r") as json_file:
+                json_data = json.load(json_file)
+                for graphs in range(0, len(json_data)):
+                    for link in json_data[graphs]["links"]:
+                        source.append(link["source"])
+                    graph_edges = [len(list(group)) for key, group in groupby(source)]
+                    edges.append(round(sum(graph_edges) / len(graph_edges), 3))
+                    if max(source) > max_edge:
+                        max_edge = max(source)
+                    source = []
+            json_file.close()
+            self.add_data(
+                f"avg_edges_per_node_{idx+1}", round(sum(edges) / len(edges), 3)
+            )
+            self.add_data(f"max_edges_per_node_{idx+1}", max_edge)

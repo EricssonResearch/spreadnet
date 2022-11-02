@@ -9,6 +9,9 @@ requirements = [
     "webdataset",
     "matplotlib",
     "tqdm",
+    "tensorflow_gnn",
+    "tensorflow",
+    "pandas",
 ]
 setup(
     name="spreadnet",
