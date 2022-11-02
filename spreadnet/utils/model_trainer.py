@@ -658,24 +658,38 @@ class WAndBModelTrainer(ModelTrainer):
                     ys=[
                         self.train_nodes_acc,
                         self.train_edges_acc,
-                        self.train_nodes_in_path_acc,
-                        self.train_edges_in_path_acc,
                         self.validation_nodes_acc,
                         self.validation_edges_acc,
-                        self.validation_nodes_in_path_acc,
-                        self.validation_edges_in_path_acc,
                     ],
                     keys=[
                         "train_nodes_acc",
                         "train_edges_acc",
-                        "train_nodes_in_path_acc",
-                        "train_edges_in_path_acc",
                         "validation_nodes_acc",
                         "validation_edges_acc",
+                    ],
+                    title="Accuracy",
+                    xname="epoch",
+                )
+            }
+        )
+
+        wandb.log(
+            {
+                "train_valid_in_path_acc": wandb.plot.line_series(
+                    xs=self.epoch_lst,
+                    ys=[
+                        self.train_nodes_in_path_acc,
+                        self.train_edges_in_path_acc,
+                        self.validation_nodes_in_path_acc,
+                        self.validation_edges_in_path_acc,
+                    ],
+                    keys=[
+                        "train_nodes_in_path_acc",
+                        "train_edges_in_path_acc",
                         "validation_nodes_in_path_acc",
                         "validation_edges_in_path_acc",
                     ],
-                    title="Accuracy",
+                    title="In-path Accuracy",
                     xname="epoch",
                 )
             }
