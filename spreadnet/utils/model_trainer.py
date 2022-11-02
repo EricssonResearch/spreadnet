@@ -18,6 +18,7 @@ import webdataset as wds
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
 from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.loss.loss import corrects_in_path
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 
@@ -53,6 +54,9 @@ class ModelTrainer:
         self.validation_losses_curve = []
         self.accuracies_curve = []
         self.validation_accuracies_curve = []
+
+        self.in_path_accuracies_curve = []
+        self.in_path_validation_accuracies_curve = []
 
         if not os.path.exists(self.model_save_path):
             os.makedirs(self.model_save_path)
@@ -211,6 +215,8 @@ class ModelTrainer:
         nodes_loss, edges_loss = 0.0, 0.0
         nodes_corrects, edges_corrects = 0, 0
         dataset_nodes_size, dataset_edges_size = 0, 0
+        nodes_in_path_corrects, edges_in_path_corrects = 0, 0
+        dataset_nodes_in_path_size, dataset_edges_in_path_size = 0, 0
 
         with torch.enable_grad() if is_training else torch.no_grad():
             for batch, (data,) in tqdm(
@@ -248,6 +254,18 @@ class ModelTrainer:
                 nodes_loss += losses["nodes"].item() * data.num_graphs
                 edges_loss += losses["edges"].item() * data.num_graphs
 
+                node_in_path, edge_in_path = corrects_in_path(
+                    node_pred, edge_pred, node_true, edge_true
+                )
+                node_correct_in_path, total_node_in_path = (
+                    node_in_path["in_path"],
+                    node_in_path["total"],
+                )
+                edge_correct_in_path, total_edge_in_path = (
+                    edge_in_path["in_path"],
+                    edge_in_path["total"],
+                )
+
                 if is_training:
                     losses["nodes"].backward(retain_graph=True)
                     losses["edges"].backward()
@@ -259,11 +277,30 @@ class ModelTrainer:
                 dataset_nodes_size += data.num_nodes
                 dataset_edges_size += data.num_edges
 
+                nodes_in_path_corrects += node_correct_in_path
+                edges_in_path_corrects += edge_correct_in_path
+                dataset_nodes_in_path_size += total_node_in_path
+                dataset_edges_in_path_size += total_edge_in_path
+
         nodes_loss /= len(dataloader.dataset)
         edges_loss /= len(dataloader.dataset)
         nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy().item()
         edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy().item()
-        return nodes_loss, edges_loss, nodes_acc, edges_acc
+
+        node_in_path_acc = (
+            (node_correct_in_path / dataset_nodes_in_path_size).cpu().numpy().item()
+        )
+        edge_in_path_acc = (
+            (edge_correct_in_path / dataset_edges_in_path_size).cpu().numpy().item()
+        )
+        return (
+            nodes_loss,
+            edges_loss,
+            nodes_acc,
+            edges_acc,
+            node_in_path_acc,
+            edge_in_path_acc,
+        )
 
     def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
         """
@@ -284,6 +321,8 @@ class ModelTrainer:
             train_edges_loss,
             train_nodes_acc,
             train_edges_acc,
+            train_node_in_path_acc,
+            train_edge_in_path_acc,
         ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
 
         (
@@ -291,6 +330,8 @@ class ModelTrainer:
             validation_edges_loss,
             validation_nodes_acc,
             validation_edges_acc,
+            validation_node_in_path_acc,
+            validation_edge_in_path_acc,
         ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
 
         self.losses_curve.append({"nodes": train_nodes_loss, "edges": train_edges_loss})
@@ -303,6 +344,14 @@ class ModelTrainer:
         )
         self.validation_accuracies_curve.append(
             {"nodes": validation_nodes_acc, "edges": validation_edges_acc}
+        )
+
+        self.in_path_accuracies_curve.append(
+            {"nodes": train_node_in_path_acc, "edges": train_edge_in_path_acc}
+        )
+
+        self.in_path_validation_accuracies_curve.append(
+            {"nodes": validation_node_in_path_acc, "edges": validation_edge_in_path_acc}
         )
 
         validation_acc = (validation_nodes_acc + validation_edges_acc) / 2
@@ -391,11 +440,13 @@ class ModelTrainer:
                     epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
                 )
 
-            if epoch % 10 == 0:
+            if epoch % 10 == 1:
                 print(
                     "\n  Epoch   "
-                    + "Train Loss (Node,Edge)     Validation Loss        "
-                    + "Train Acc (Node,Edge)      Validation Acc"
+                    + "Train Loss (Node,Edge)     "
+                    + "Validation Loss        "
+                    + "Train Acc (Node,Edge,NodeInPath,EdgeInPath)          "
+                    + "Validation Acc"
                 )
 
             print(f"{epoch:4}/{epochs}".ljust(10), end="")
@@ -409,11 +460,16 @@ class ModelTrainer:
                 end="",
             )
             print(
-                "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
+                "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}     "
+                "{:2.8f}, {:2.8f} {:2.8f}, {:2.8f}".format(
                     self.accuracies_curve[-1]["nodes"],
                     self.accuracies_curve[-1]["edges"],
+                    self.in_path_accuracies_curve[-1]["nodes"],
+                    self.in_path_accuracies_curve[-1]["edges"],
                     self.validation_accuracies_curve[-1]["nodes"],
                     self.validation_accuracies_curve[-1]["edges"],
+                    self.in_path_validation_accuracies_curve[-1]["nodes"],
+                    self.in_path_validation_accuracies_curve[-1]["edges"],
                 )
             )
 
@@ -460,11 +516,15 @@ class WAndBModelTrainer(ModelTrainer):
         self.train_edges_loss = []
         self.train_nodes_acc = []
         self.train_edges_acc = []
+        self.train_nodes_in_path_acc = []
+        self.train_edges_in_path_acc = []
 
         self.validation_nodes_loss = []
         self.validation_edges_loss = []
         self.validation_nodes_acc = []
         self.validation_edges_acc = []
+        self.validation_nodes_in_path_acc = []
+        self.validation_edges_in_path_acc = []
 
     def save_training_state(
         self,
@@ -491,6 +551,10 @@ class WAndBModelTrainer(ModelTrainer):
                 "validation_edges_loss": self.validation_edges_loss,
                 "validation_nodes_acc": self.validation_nodes_acc,
                 "validation_edges_acc": self.validation_edges_acc,
+                "train_nodes_in_path_acc": self.train_nodes_in_path_acc,
+                "train_edges_in_path_acc": self.train_edges_in_path_acc,
+                "validation_nodes_in_path_acc": self.validation_nodes_in_path_acc,
+                "validation_edges_in_path_acc": self.validation_edges_in_path_acc,
             },
             self.checkpoint_path,
         )
@@ -514,6 +578,8 @@ class WAndBModelTrainer(ModelTrainer):
             train_edges_loss,
             train_nodes_acc,
             train_edges_acc,
+            train_node_in_path_acc,
+            train_edge_in_path_acc,
         ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
 
         (
@@ -521,6 +587,8 @@ class WAndBModelTrainer(ModelTrainer):
             validation_edges_loss,
             validation_nodes_acc,
             validation_edges_acc,
+            validation_node_in_path_acc,
+            validation_edge_in_path_acc,
         ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
 
         # simple log
@@ -530,6 +598,8 @@ class WAndBModelTrainer(ModelTrainer):
             "Train/train_edges_loss": train_edges_loss,
             "Train/train_nodes_acc": train_nodes_acc,
             "Train/train_edges_acc": train_edges_acc,
+            "Train/train_nodes_in_path_acc": train_node_in_path_acc,
+            "Train/train_edges_in_path_acc": train_edge_in_path_acc,
         }
 
         validation_metrics = {
@@ -538,6 +608,8 @@ class WAndBModelTrainer(ModelTrainer):
             "Validation/validation_edges_loss": validation_edges_loss,
             "Validation/validation_nodes_acc": validation_nodes_acc,
             "Validation/validation_edges_acc": validation_edges_acc,
+            "Validation/validation_nodes_in_path_acc": validation_node_in_path_acc,
+            "Validation/validation_edges_in_path_acc": validation_edge_in_path_acc,
         }
 
         wandb.log({**train_metrics, **validation_metrics})
@@ -547,11 +619,15 @@ class WAndBModelTrainer(ModelTrainer):
         self.train_edges_loss.append(train_edges_loss)
         self.train_nodes_acc.append(train_nodes_acc)
         self.train_edges_acc.append(train_edges_acc)
+        self.train_nodes_in_path_acc.append(train_node_in_path_acc)
+        self.train_edges_in_path_acc.append(train_edge_in_path_acc)
 
         self.validation_nodes_loss.append(validation_nodes_loss)
         self.validation_edges_loss.append(validation_edges_loss)
         self.validation_nodes_acc.append(validation_nodes_acc)
         self.validation_edges_acc.append(validation_edges_acc)
+        self.validation_nodes_in_path_acc.append(validation_node_in_path_acc)
+        self.validation_edges_in_path_acc.append(validation_edge_in_path_acc)
 
         wandb.log(
             {
@@ -582,14 +658,22 @@ class WAndBModelTrainer(ModelTrainer):
                     ys=[
                         self.train_nodes_acc,
                         self.train_edges_acc,
+                        self.train_nodes_in_path_acc,
+                        self.train_edges_in_path_acc,
                         self.validation_nodes_acc,
                         self.validation_edges_acc,
+                        self.validation_nodes_in_path_acc,
+                        self.validation_edges_in_path_acc,
                     ],
                     keys=[
                         "train_nodes_acc",
                         "train_edges_acc",
+                        "train_nodes_in_path_acc",
+                        "train_edges_in_path_acc",
                         "validation_nodes_acc",
                         "validation_edges_acc",
+                        "validation_nodes_in_path_acc",
+                        "validation_edges_in_path_acc",
                     ],
                     title="Accuracy",
                     xname="epoch",
@@ -622,8 +706,12 @@ class WAndBModelTrainer(ModelTrainer):
         cur_acc_data = [
             train_nodes_acc,
             train_edges_acc,
+            train_node_in_path_acc,
+            train_edge_in_path_acc,
             validation_nodes_acc,
             validation_edges_acc,
+            validation_node_in_path_acc,
+            validation_edge_in_path_acc,
         ]
         self.acc_data.append(cur_acc_data)
         wandb.log(
@@ -633,8 +721,12 @@ class WAndBModelTrainer(ModelTrainer):
                     columns=[
                         "train_nodes_acc",
                         "train_edges_acc",
+                        "train_nodes_in_path_acc",
+                        "train_edges_in_path_acc",
                         "validation_nodes_acc",
                         "validation_edges_acc",
+                        "validation_nodes_in_path_acc",
+                        "validation_edges_in_path_acc",
                     ],
                 )
             }
@@ -723,6 +815,16 @@ class WAndBModelTrainer(ModelTrainer):
                 self.validation_edges_loss = checkpoint["validation_edges_loss"]
                 self.validation_nodes_acc = checkpoint["validation_nodes_acc"]
                 self.validation_edges_acc = checkpoint["validation_edges_acc"]
+
+                self.train_nodes_in_path_acc = checkpoint["train_nodes_in_path_acc"]
+                self.train_edges_in_path_acc = checkpoint["train_edges_in_path_acc"]
+                self.validation_nodes_in_path_acc = checkpoint[
+                    "validation_nodes_in_path_acc"
+                ]
+                self.validation_edges_in_path_acc = checkpoint[
+                    "validation_edges_in_path_acc"
+                ]
+
             else:
                 self.wandb_id = wandb.util.generate_id()
                 run = wandb.init(
