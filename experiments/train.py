@@ -89,7 +89,6 @@ train_console_logger = log_utils.init_console_only_logger(
     logger_name="train_console_logger"
 )
 
-train_console_logger.info("Working?")
 
 configs = yaml_parser(yaml_path)
 dataset_configs = yaml_parser(dataset_yaml_path)
@@ -113,7 +112,7 @@ if use_wandb:
         model_save_path=model_save_path,
     )
 else:
-    train_local_logger = log_utils.init_file_only_logger(
+    train_local_logger = log_utils.init_file_console_logger(
         logger_name="train_local_logger", log_save_path=log_save_path, exp_type="train"
     )
     trainer = ModelTrainer(

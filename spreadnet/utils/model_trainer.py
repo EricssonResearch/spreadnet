@@ -15,6 +15,7 @@ from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import webdataset as wds
 import logging
+import time
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -360,9 +361,12 @@ class ModelTrainer:
         return validation_acc
 
     def train(self):
+
         train_local_logger = logging.getLogger("train_local_logger")
         train_local_logger.info(f"Using {self.device} device...")
         date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+
+        start_time = time.time()
 
         if not os.path.exists(self.model_save_path):
             os.makedirs(self.model_save_path)
@@ -391,7 +395,6 @@ class ModelTrainer:
         plot_after_epochs = self.train_configs["plot_after_epochs"]
 
         train_local_logger.info(self.model)
-        print("\n")
 
         try:
             exists = os.path.exists(self.checkpoint_path)
@@ -420,68 +423,68 @@ class ModelTrainer:
             train_local_logger.exception(exception)
 
         train_local_logger.info("Start training...")
+        try:
+            for epoch in range(epoch, epochs + 1):
+                self.steps_curve.append(epoch)
 
-        for epoch in range(epoch, epochs + 1):
-            self.steps_curve.append(epoch)
-
-            validation_acc = self.execute(
-                epoch, epochs, train_loader, validation_loader, hybrid_loss
-            )
-
-            if validation_acc > best_acc:
-                best_acc = validation_acc
-                best_model_wts = copy.deepcopy(self.model.state_dict())
-
-            if epoch % self.train_configs["weight_save_freq"] == 0:
-                weight_name = f"model_weights_ep_{epoch}.pth"
-                torch.save(
-                    self.model.state_dict(),
-                    os.path.join(self.model_save_path, weight_name),
-                )
-                self.save_training_state(
-                    epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+                validation_acc = self.execute(
+                    epoch, epochs, train_loader, validation_loader, hybrid_loss
                 )
 
-            if epoch % 10 == 0:
+                if validation_acc > best_acc:
+                    best_acc = validation_acc
+                    best_model_wts = copy.deepcopy(self.model.state_dict())
+
+                if epoch % self.train_configs["weight_save_freq"] == 0:
+                    weight_name = f"model_weights_ep_{epoch}.pth"
+                    torch.save(
+                        self.model.state_dict(),
+                        os.path.join(self.model_save_path, weight_name),
+                    )
+                    self.save_training_state(
+                        epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+                    )
+
+                if epoch % 10 == 1:
+                    train_local_logger.info(
+                        f'Epoch  | Train Loss (Node,Edge)|\tValidation \
+                        Loss\t|Train Acc (Node,Edge,NodeInPath,EdgeInPath)\t \
+                        |\tValidation Acc\t \n {"="*176}'
+                    )
+                lcn = self.losses_curve[-1]["nodes"]
+                lce = self.losses_curve[-1]["edges"]
+                vlcn = self.validation_losses_curve[-1]["nodes"]
+                vlce = self.validation_losses_curve[-1]["edges"]
+                accn = self.accuracies_curve[-1]["nodes"]
+                ace = self.accuracies_curve[-1]["edges"]
+                ipacn = self.in_path_accuracies_curve[-1]["nodes"]
+                ipace = self.in_path_accuracies_curve[-1]["edges"]
+                vacn = self.validation_accuracies_curve[-1]["nodes"]
+                vace = self.validation_accuracies_curve[-1]["edges"]
+                ipvacn = self.in_path_validation_accuracies_curve[-1]["nodes"]
+                ipvace = self.in_path_validation_accuracies_curve[-1]["edges"]
                 train_local_logger.info(
-                    "\n  Epoch   "
-                    + "Train Loss (Node,Edge)     "
-                    + "Validation Loss        "
-                    + "Train Acc (Node,Edge,NodeInPath,EdgeInPath)          "
-                    + "Validation Acc"
+                    f"{epoch:3}/{epochs}|"
+                    f"{lcn:2.8f},{lce:2.8f} |"
+                    f"{vlcn:2.8f},{vlce:2.8f} |"
+                    f"{accn:2.8f}, {ace:2.8f} {ipacn:2.8f},{ipace:2.8f} |"
+                    f"{vacn:2.8f}, {vace:2.8f} {ipvacn:2.8f},{ipvace:2.8f}"
                 )
+                if epoch % plot_after_epochs == 0:
+                    self.create_plot(plot_name)
 
-            train_local_logger.info(f"{epoch:4}/{epochs}".ljust(10))
-            # train_local_logger.info(
-            #     "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
-            #         self.losses_curve[-1]["nodes"],
-            #         self.losses_curve[-1]["edges"],
-            #         self.validation_losses_curve[-1]["nodes"],
-            #         self.validation_losses_curve[-1]["edges"],
-            #     )
-            # )
-            # train_local_logger.info(
-            #     "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
-            #         self.accuracies_curve[-1]["nodes"],
-            #         self.accuracies_curve[-1]["edges"],
-            #         self.in_path_accuracies_curve[-1]["nodes"],
-            #         self.in_path_accuracies_curve[-1]["edges"],
-            #         self.validation_accuracies_curve[-1]["nodes"],
-            #         self.validation_accuracies_curve[-1]["edges"],
-            #         self.in_path_validation_accuracies_curve[-1]["nodes"],
-            #         self.in_path_validation_accuracies_curve[-1]["edges"],
-            #     )
-            # )
+            weight_name = self.train_configs["best_weight_name"]
+            torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
+            train_local_logger.info("Finalizing training plot...")
+            self.create_plot(plot_name)
+            self.save_training_state(
+                epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+            )
+        except Exception as exception:
+            train_local_logger.exception(exception)
 
-            if epoch % plot_after_epochs == 0:
-                self.create_plot(plot_name)
-
-        weight_name = self.train_configs["best_weight_name"]
-        torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
-        train_local_logger.info("Finalizing training plot...")
-        self.create_plot(plot_name)
-        self.save_training_state(
-            epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
+        train_local_logger.info(
+            f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}'
         )
 
 
@@ -768,10 +771,12 @@ class WAndBModelTrainer(ModelTrainer):
     def train(self):
         date = datetime.now().strftime("%H:%M:%S_%d-%m-%Y")
         experiment_name = f"train_{self.model_name}_{date}"
+
         wandb.login()
 
         train_console_logger = logging.getLogger("train_console_logger")
-        train_console_logger.info("hi from train!")
+
+        start_time = time.time()
 
         # TODO: specify artifact_name.
         #       Maybe we can extract some features from dataset
@@ -869,7 +874,7 @@ class WAndBModelTrainer(ModelTrainer):
             )
 
         train_console_logger.info(f"Using {self.device} device...")
-
+        train_console_logger.info("Start training")
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)
 
@@ -912,4 +917,7 @@ class WAndBModelTrainer(ModelTrainer):
         shutil.copy(
             self.checkpoint_path,
             os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
+        )
+        train_console_logger.info(
+            f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}'
         )
