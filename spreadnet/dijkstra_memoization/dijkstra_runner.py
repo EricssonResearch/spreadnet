@@ -3,6 +3,9 @@
 from spreadnet.dijkstra_memoization import dijkstra_algorithm
 
 # import networkx as nx
+# import hashlib
+# from spreadnet.datasets.data_utils.encoder import NpEncoder
+
 
 from networkx import weisfeiler_lehman_graph_hash
 
@@ -106,7 +109,7 @@ def search_memo_table(graph_hash, start_node, end_node):
     #    return -1
 
 
-def shortest_path(G, start_node, end_node, weight="weight"):
+def shortest_path(G, hashed_graph, start_node, end_node, weight="weight"):
     """Runs the shortest path dijkstra algorithm, brings back lengths for all
     (unused at this point) and all paths which is printed and then added to the
     memoization table.
@@ -133,7 +136,9 @@ def shortest_path(G, start_node, end_node, weight="weight"):
     Returns:
       The shortest path from the memoization table or from running Dijkstra algorithm.
     """
-    hashed_graph = weisfeiler_lehman_graph_hash(G)
+    if hashed_graph == 0:
+        hashed_graph = hash_graph_weisfeiler(G)
+    # hashed_graph = weisfeiler_lehman_graph_hash(G)
     # TODO make sure to implement that it is with unique hash
     #  (add edge features to graph function call)
 
@@ -153,12 +158,17 @@ def shortest_path(G, start_node, end_node, weight="weight"):
         return all_paths_from_source[end_node]
 
 
-def hash_graph(graph):
+def hash_graph_weisfeiler(graph):
     hashed_graph = weisfeiler_lehman_graph_hash(graph)
     return hashed_graph
 
 
-def shortest_path_single(G, start_node, end_node, weight="weight"):
+# def hash_graph_md(graph):
+#    hash = hashlib.md5(graph.encode())
+#    print(hash)
+
+
+def shortest_path_single(G, hashed_graph, start_node, end_node, weight="weight"):
     """Runs the shortest path dijkstra algorithm, brings back lengths for all
     (unused at this point) and all paths which is printed and then added to the
     memoization table.
@@ -185,7 +195,8 @@ def shortest_path_single(G, start_node, end_node, weight="weight"):
     Returns:
       The shortest path from the memoization table or from running Dijkstra algorithm.
     """
-    hashed_graph = weisfeiler_lehman_graph_hash(G)
+    if hashed_graph == 0:
+        hashed_graph = hash_graph_weisfeiler(G)
     # TODO make sure to implement that it is with unique hash
     #  (add edge features to graph function call)
 

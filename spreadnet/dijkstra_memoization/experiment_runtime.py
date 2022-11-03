@@ -67,6 +67,7 @@ def main():
     for d in dataset:
         g = {}
         g["nxdata"] = nx.node_link_graph(d)
+        g["hashed_graph"] = dijkstra_runner.hash_graph_weisfeiler(g["nxdata"])
         for n in d["nodes"]:
             if n["is_start"]:
                 g["start"] = n["id"]
@@ -83,7 +84,7 @@ def main():
     for i in range(5):
         t1_start = process_time()
         for g in all_graphs:
-            dijkstra_runner.hash_graph(g["nxdata"])
+            dijkstra_runner.hash_graph_weisfeiler(g["nxdata"])
             # print(dijkstra_runner.memoTable)
         # print( "Graph start:", g["start"], " End:", g["end"])
         t1_stop = process_time()
@@ -98,7 +99,9 @@ def main():
     for i in range(5):
         t1_start = process_time()
         for g in all_graphs:
-            dijkstra_runner.shortest_path_single(g["nxdata"], g["start"], g["end"])
+            dijkstra_runner.shortest_path_single(
+                g["nxdata"], g["hashed_graph"], g["start"], g["end"]
+            )
             # print(dijkstra_runner.memoTable)
         # print( "Graph start:", g["start"], " End:", g["end"])
         t1_stop = process_time()
@@ -141,7 +144,9 @@ def main():
     for i in range(5):
         t1_start = process_time()
         for g in all_graphs:
-            dijkstra_runner.shortest_path(g["nxdata"], g["start"], g["end"])
+            dijkstra_runner.shortest_path(
+                g["nxdata"], g["hashed_graph"], g["start"], g["end"]
+            )
         # print( "Graph start:", g["start"], " End:", g["end"])
         t1_stop = process_time()
         # print("starttime", t1_start)
