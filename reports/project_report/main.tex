@@ -19,87 +19,51 @@
 
 \documentclass[12pt]{article}
 \usepackage[english]{babel}
-\usepackage[utf8x]{inputenc}
+%\usepackage[utf8x]{inputenc}
+\usepackage{textcomp}
+
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage[colorinlistoftodos]{todonotes}
 
-\begin{document}
-
-\begin{titlepage}
-
-\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
-
-\center % Center everything on the page
-
-%----------------------------------------------------------------------------------------
-%	HEADING SECTIONS
-%----------------------------------------------------------------------------------------
-
-\textsc{\LARGE Uppsala University}\\[1.5cm] % Name of your university/college
-\includegraphics[scale=.1]{Uppsala_University_seal_svg.png}\\[1cm] % Include a department/university logo - this will require the graphicx package
-\textsc{\Large Course name}\\[0.5cm] % Major heading such as course name
-\textsc{\large Course code}\\[0.5cm] % Minor heading such as course title
-
-%----------------------------------------------------------------------------------------
-%	TITLE SECTION
-%----------------------------------------------------------------------------------------
-
-\HRule \\[0.4cm]
-{ \huge \bfseries Title}\\[0.4cm] % Title of your document
-\HRule \\[1.5cm]
-
-%----------------------------------------------------------------------------------------
-%	AUTHOR SECTION
-%----------------------------------------------------------------------------------------
-
-\begin{minipage}{0.4\textwidth}
-\begin{flushleft} \large
-\emph{Author:}\\
-First name \textsc{Last name}\\ % Your name
-\end{flushleft}
-
-\end{minipage}\\[2cm]
-
-% If you don't want a supervisor, uncomment the two lines below and remove the section above
-%\Large \emph{Author:}\\
-%John \textsc{Smith}\\[3cm] % Your name
-
-%----------------------------------------------------------------------------------------
-%	DATE SECTION
-%----------------------------------------------------------------------------------------
-
-{\large \today}\\[2cm] % Date, change the \today to a set date if you want to be precise
-
-\vfill % Fill the rest of the page with whitespace
-
-\end{titlepage}
-% \addbibresource{Bibliography/Sources.bib}        % Selects the Bibliography file.
-
-
 
 \begin{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{reports/project_report/text/title_page}
+\input{reports/project_report/text/introduction.tex}
+\input{reports/project_report/text/background}
+\input{reports/project_report/text/data_structure_and_implementation}
+\input{reports/project_report/text/non_gnn_implementations}
+\input{reports/project_report/text/gnn_implementations}
+\input{reports/project_report/text/system_architecture}
 
-\input{Text/0-frontmatter}
-\input{Text/1-Introduction}
+\input{reports/project_report/text/discussion}
+\input{reports/project_report/text/conclusion}
+\input{reports/project_report/text/future_work}
+\input{reports/project_report/text/acknowledgements}
+\clearpage                                     
+
+
+%\input{Text/0-frontmatter}
+%\input{Text/1-Introduction}
 %\input{Text/0.1-Big_Figures}                    % Change this to another line to move big figures.
-\input{Text/2-Background}
-\input{Text/3-Experiment}
-\input{Text/4-Related Work}
-\input{Text/5-Conclusion}
+%\input{Text/3-Experiment}
+%\input{Text/4-Related Work}
+%\input{Text/5-Conclusion}
 
 %\clearpage                                     % Sometimes you want the rest on separate pages.
-\input{Text/Acknowledgements}                   % Comment out to exclude the Acknowledgements section
+%\input{Text/Acknowledgements}                   % Comment out to exclude the Acknowledgements section
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 % Bibliography
 %--------------------
+\bibliographystyle{ieeetr}
 \bibliography{reports/bibliography/sources}
-\printbibliography
+
+\clearpage
+\input{reports/project_report/text/appendix}
 
 %\clearpage                                     % Sometimes it is useful to have appendix on separate page.
 %\onecolumn                                     % If you want 1 column for appendix.
@@ -107,4 +71,4 @@ First name \textsc{Last name}\\ % Your name
 
 \end{document}
 
-\end{document}
+
