@@ -1,6 +1,10 @@
 name: style
 
-on: [push, pull_request]
+on: 
+  pull_request:
+    branches: [ main ]
+    paths: 
+       - 'spreadnet/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
