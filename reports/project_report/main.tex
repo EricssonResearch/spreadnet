@@ -75,6 +75,36 @@ First name \textsc{Last name}\\ % Your name
 \vfill % Fill the rest of the page with whitespace
 
 \end{titlepage}
+% \addbibresource{Bibliography/Sources.bib}        % Selects the Bibliography file.
 
+
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{Text/0-frontmatter}
+\input{Text/1-Introduction}
+%\input{Text/0.1-Big_Figures}                    % Change this to another line to move big figures.
+\input{Text/2-Background}
+\input{Text/3-Experiment}
+\input{Text/4-Related Work}
+\input{Text/5-Conclusion}
+
+%\clearpage                                     % Sometimes you want the rest on separate pages.
+\input{Text/Acknowledgements}                   % Comment out to exclude the Acknowledgements section
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Bibliography
+%--------------------
+\bibliography{reports/bibliography/sources}
+\printbibliography
+
+%\clearpage                                     % Sometimes it is useful to have appendix on separate page.
+%\onecolumn                                     % If you want 1 column for appendix.
+%\input{Text/Appendix}                           % Comment out to exclude appendix
+
+\end{document}
 
 \end{document}

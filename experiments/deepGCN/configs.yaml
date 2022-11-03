@@ -1,0 +1,21 @@
+train:
+  weight_base_path: "./weights"
+  weight_save_freq: 50
+  best_weight_name: "model_weights_best.pth"
+
+  epochs: 500
+  batch_size: 128
+  shuffle: True
+
+  adam_lr: !!float 1e-2
+  adam_weight_decay: !!float 5e-4
+
+model:
+  node_in: 3
+  edge_in: 1
+  encoder_hidden_channels: 128
+  encoder_layers: 2
+  gcn_hidden_channels: 64
+  gcn_layers: 6
+  decoder_hidden_channels: 128
+  decoder_layers: 2

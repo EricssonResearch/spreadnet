@@ -186,9 +186,11 @@ experiments/encode_process_decode/predictions/*.jpg
 *.fls
 *.synctex.gz
 
-#wandb local run files
-experiments/encode_process_decode/wandb/
-experiments/wandb/
+experiments/behaviour_experiments/*.png
+
+# experiments data json
+experiments/behaviour_experiments/increasing_size_experiment_data/*.json
+experiments/behaviour_experiments/increasing_size_predictions/*.json
 
 #wandb local run files
 experiments/encode_process_decode/wandb/
