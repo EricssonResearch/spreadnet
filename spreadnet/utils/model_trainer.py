@@ -14,6 +14,7 @@ import shutil
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import webdataset as wds
+import logging
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -310,7 +311,8 @@ class ModelTrainer:
         return validation_acc
 
     def train(self):
-        print(f"Using {self.device} device...")
+        train_local_logger = logging.getLogger("train_local_logger")
+        train_local_logger.info(f"Using {self.device} device...")
         date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
         if not os.path.exists(self.model_save_path):
@@ -339,7 +341,7 @@ class ModelTrainer:
         epochs = self.train_configs["epochs"]
         plot_after_epochs = self.train_configs["plot_after_epochs"]
 
-        print(self.model)
+        train_local_logger.info(self.model)
         print("\n")
 
         try:
@@ -366,9 +368,9 @@ class ModelTrainer:
                         "validation_accuracies_curve"
                     ]
         except Exception as exception:
-            print(exception)
+            train_local_logger.exception(exception)
 
-        print("Start training...")
+        train_local_logger.info("Start training...")
 
         for epoch in range(epoch, epochs + 1):
             self.steps_curve.append(epoch)
@@ -392,23 +394,22 @@ class ModelTrainer:
                 )
 
             if epoch % 10 == 0:
-                print(
+                train_local_logger.info(
                     "\n  Epoch   "
                     + "Train Loss (Node,Edge)     Validation Loss        "
                     + "Train Acc (Node,Edge)      Validation Acc"
                 )
 
-            print(f"{epoch:4}/{epochs}".ljust(10), end="")
-            print(
+            train_local_logger.info(f"{epoch:4}/{epochs}".ljust(10))
+            train_local_logger.info(
                 "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}    ".format(
                     self.losses_curve[-1]["nodes"],
                     self.losses_curve[-1]["edges"],
                     self.validation_losses_curve[-1]["nodes"],
                     self.validation_losses_curve[-1]["edges"],
                 ),
-                end="",
             )
-            print(
+            train_local_logger.info(
                 "{:2.8f}, {:2.8f}  {:2.8f}, {:2.8f}".format(
                     self.accuracies_curve[-1]["nodes"],
                     self.accuracies_curve[-1]["edges"],
@@ -422,7 +423,7 @@ class ModelTrainer:
 
         weight_name = self.train_configs["best_weight_name"]
         torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
-        print("Finalizing training plot...")
+        train_local_logger.info("Finalizing training plot...")
         self.create_plot(plot_name)
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
@@ -441,14 +442,11 @@ class WAndBModelTrainer(ModelTrainer):
         model_save_path: str,
     ):
         super(WAndBModelTrainer, self).__init__(
-            model_configs,
-            train_configs,
-            dataset_path,
-            dataset_configs,
-            model_save_path,
+            model_configs, train_configs, dataset_path, dataset_configs, model_save_path
         )
         self.checkpoint_path = os.path.join(model_save_path, "wandb_train_state.pth")
         self.wandb_id = 0
+        self.entity_name = entity_name
         self.project_name = project_name
         self.wandb_configs = train_configs
         self.wandb_checkpoint_name = "wandb_train_state.pth"
@@ -667,6 +665,9 @@ class WAndBModelTrainer(ModelTrainer):
         experiment_name = f"train_{self.model_name}_{date}"
         wandb.login()
 
+        train_console_logger = logging.getLogger("train_console_logger")
+        train_console_logger.info("hi from train!")
+
         # TODO: specify artifact_name.
         #       Maybe we can extract some features from dataset
         #       and specify artifact_name like: MPNN_nodes_8-17
@@ -704,7 +705,10 @@ class WAndBModelTrainer(ModelTrainer):
                 self.wandb_id = checkpoint["wandb_id"]
 
                 run = wandb.init(
-                    project=self.project_name, id=self.wandb_id, resume=True
+                    entity=self.entity_name,
+                    project=self.project_name,
+                    id=self.wandb_id,
+                    resume=True,
                 )
 
                 epoch = checkpoint["epoch"] + 1
@@ -728,6 +732,7 @@ class WAndBModelTrainer(ModelTrainer):
                 self.wandb_id = wandb.util.generate_id()
                 run = wandb.init(
                     # Set the project where this run will be logged
+                    entity=self.entity_name,
                     project=self.project_name,
                     name=f"{experiment_name}",
                     id=self.wandb_id,
@@ -739,6 +744,7 @@ class WAndBModelTrainer(ModelTrainer):
             self.wandb_id = wandb.util.generate_id()
             run = wandb.init(
                 # Set the project where this run will be logged
+                entity=self.entity_name,
                 project=self.project_name,
                 name=f"{experiment_name}",
                 id=self.wandb_id,
@@ -747,7 +753,7 @@ class WAndBModelTrainer(ModelTrainer):
                 job_type="training",
             )
 
-        print(f"Using {self.device} device...")
+        train_console_logger.info(f"Using {self.device} device...")
 
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)

@@ -20,12 +20,15 @@ import os
 
 from spreadnet.utils import yaml_parser
 from spreadnet.utils.model_trainer import ModelTrainer, WAndBModelTrainer
+import spreadnet.utils.log_utils as log_utils
 
 default_dataset_yaml_path = os.path.join(
     os.path.dirname(__file__), "dataset_configs.yaml"
 )
 
 default_dataset_path = os.path.join(os.path.dirname(__file__), "dataset")
+
+log_save_path = os.path.join(os.path.dirname(__file__), "logs")
 
 parser = argparse.ArgumentParser(description="Train the model.")
 
@@ -82,6 +85,12 @@ dataset_yaml_path = args.dataset_config
 dataset_path = args.dataset_path
 dataset_path = dataset_path.replace("\\", "/")
 
+train_console_logger = log_utils.init_console_only_logger(
+    logger_name="train_console_logger"
+)
+
+train_console_logger.info("Working?")
+
 configs = yaml_parser(yaml_path)
 dataset_configs = yaml_parser(dataset_yaml_path)
 
@@ -90,7 +99,7 @@ model_configs = configs.model
 data_configs = dataset_configs.data
 
 use_wandb = args.wandb
-print("use_wandb: ", use_wandb)
+train_console_logger.info(f"use_wandb:{use_wandb}")
 
 trainer = None
 if use_wandb:
@@ -104,6 +113,9 @@ if use_wandb:
         model_save_path=model_save_path,
     )
 else:
+    train_local_logger = log_utils.init_file_only_logger(
+        logger_name="train_local_logger", log_save_path=log_save_path, exp_type="train"
+    )
     trainer = ModelTrainer(
         model_configs=model_configs,
         train_configs=train_configs,
