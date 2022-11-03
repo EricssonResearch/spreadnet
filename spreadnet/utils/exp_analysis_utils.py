@@ -193,10 +193,10 @@ class AccuracyMetrics:
             if os.path.isfile(os.path.join(pred_dir, path)):
                 datasets.append(path)
 
-            accuracy_path_length = []
-            for ds in tqdm(datasets):
-                raw_data_path = pred_dir + "/" + ds
-                file_raw = open(raw_data_path)
+        accuracy_path_length = []
+        for ds in tqdm(datasets):
+            raw_data_path = pred_dir + "/" + ds
+            file_raw = open(raw_data_path)
 
             graphs = json.load(file_raw)
 
@@ -241,6 +241,83 @@ class AccuracyMetrics:
             prob_threshold=prob_threshold,
             accuracy=accuracy_path_length,
             name="acc_prob_walk.csv",
+        )
+
+    def path_length_as_accuracy(self, file_name):
+        """Compares the path length found by djikstra to the path length found
+        by the GNN if it finds it. The metric is applied on the whole graph so
+        the distance Can be computed as a percentage.
+
+        This function should also return the percentage of incomplete paths.
+        Also the Percentage over how much bigger is the path
+        """
+        pred_dir = "increasing_size_predictions"
+        datasets = list()
+
+        # prob_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
+
+        for path in os.listdir(pred_dir):
+            # check if current path is a file
+            if os.path.isfile(os.path.join(pred_dir, path)):
+                datasets.append(path)
+        prob_threshold = [0.5, 0.25, 0.01]
+        percentage_paths = []  # for each set of graphs in the dataset
+        path_length_accuracy = []
+
+        for ds in datasets:
+            raw_data_path = pred_dir + "/" + ds
+            file_raw = open(raw_data_path)
+
+            graphs = json.load(file_raw)
+            graphs_in_ds = len(graphs)
+
+            for pt in prob_threshold:
+                paths_found = 0
+                graph_ratios = []
+                for g in graphs:
+                    g_edge_weights_gt = 0
+                    g_edge_weights_pred = 0
+                    g = nx.node_link_graph(g)
+
+                    (
+                        max_prob_walk_nodes,
+                        max_prob_walk_edges,
+                    ) = self.max_probability_walk(g, pt)
+                    start_node, end_node = self.get_start_end_nodes(g)
+                    if end_node == max_prob_walk_nodes[len(max_prob_walk_nodes) - 1]:
+                        paths_found += 1
+
+                        edges_list = list(g.edges(data=True))
+
+                        for e in edges_list:
+                            if e[2]["is_in_path"]:
+                                g_edge_weights_gt += e[2]["weight"]
+
+                        for e_mw in max_prob_walk_edges:
+                            for e in edges_list:
+                                if e[0] == e_mw[0] and e[1] == e_mw[1]:
+                                    g_edge_weights_pred += e[2]["weight"]
+
+                        graph_ratios.append(g_edge_weights_gt / g_edge_weights_pred)
+                percentage_paths.append(paths_found / graphs_in_ds)
+
+                if paths_found == 0:
+                    path_length_accuracy.append(0)
+                else:
+                    path_length_accuracy.append(np.mean(graph_ratios))
+
+        self.to_df_format(
+            datasets,
+            prob_threshold,
+            percentage_paths,
+            file_name.replace(".csv", "_percentage_paths.csv"),
+        )
+
+        self.to_df_format(
+            datasets,
+            prob_threshold,
+            path_length_accuracy,
+            file_name.replace(".csv", "_path_length_accuracy.csv"),
         )
 
     def to_df_format(self, datasets, prob_threshold, accuracy, name):

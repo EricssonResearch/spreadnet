@@ -9,9 +9,11 @@ from spreadnet.utils.visualization_utils import VisualUtils
 
 def prob_accuracy_calls():
     accmet = AccuracyMetrics()
-    accmet.prob_accuracy(only_path=False, file_name="all_nodes_acc.csv", use_edges=True)
-    accmet.prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
-    accmet.max_prob_path_lengths()
+    # accmet.prob_accuracy(only_path=False, file_name="all_nodes_acc.csv",
+    # use_edges=True)
+    # accmet.prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
+    accmet.path_length_as_accuracy(file_name="path_length.csv")
+    # accmet.max_prob_path_lengths()
 
 
 if __name__ == "__main__":
@@ -25,8 +27,9 @@ if __name__ == "__main__":
     # prob_accuracy(only_path=False, file_name="all_nodes_acc.csv")
     # prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
     # max_prob_path_lengths()
-    # prob_accuracy_calls()
+    prob_accuracy_calls()
 
     # vis.prob_plot("acc_prob_walk.csv", "Max Prob Walk")
-    vis.prob_plot("all_nodes_acc.csv", "All Nodes")
+    vis.prob_plot("path_length_path_length_accuracy.csv", "Path Length Ratio")
+    vis.prob_plot("path_length_percentage_paths.csv", "Percentage paths found")
     # vis.prob_plot("only_path_nodes_acc.csv", "Only Path Nodes")
