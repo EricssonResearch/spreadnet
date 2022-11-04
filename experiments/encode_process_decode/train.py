@@ -15,7 +15,6 @@ import webdataset as wds
 from torch_geometric.loader import DataLoader
 from datetime import datetime
 from itertools import islice
-import wandb
 
 from tqdm import tqdm
 
@@ -29,7 +28,6 @@ from spreadnet.pyg_gnn.utils.metrics import (
     get_precise_corrects,
 )
 
-wandb.login()
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
@@ -221,11 +219,6 @@ if __name__ == "__main__":
 
     date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
     now = datetime.now().strftime("%H:%M:%S_%d-%m-%y")
-    wandb.init(
-        project="gnn_pytorch_test_exp",
-        name=f"train_{date}",
-        config=configs,  # type: ignore
-    )
 
     print(f"Using {device} device...")
 
