@@ -1,8 +1,7 @@
+# sudo singularity build spreadnet-runner-py3-pyg-cu116.sif spreadnet-runner-py3-pyg-cu116.def
+
 BootStrap: docker
 From: nvidia/cuda:11.6.2-runtime-ubuntu18.04
-
-# remove spreadnet from requirements.txt before running this build
-# sudo singularity build spreadnet-runner-py3-pyg-cu116.sif spreadnet-runner-py3-pyg-cu116.def
 
 %files
   ./requirements.txt /
@@ -21,7 +20,7 @@ From: nvidia/cuda:11.6.2-runtime-ubuntu18.04
   cd "$(dirname $(which python3))" && ln -s pip3 pip
   python --version
   python -m pip install --upgrade pip
-
+  grep -v "spreadnet" /requirements.txt > tmpfile && mv tmpfile /requirements.txt
 
   pip install torch==1.12 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cu116.html
