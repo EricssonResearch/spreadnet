@@ -1,10 +1,10 @@
 name: style
 
-on: 
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
-    paths: 
-       - 'spreadnet/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
