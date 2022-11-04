@@ -17,30 +17,40 @@
 %	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
 
-
 \documentclass[12pt]{article}
 \usepackage[english]{babel}
-\usepackage[utf8x]{inputenc}
+%\usepackage[utf8x]{inputenc}
+\usepackage{textcomp}
+
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{biblatex}
-\usepackage[backend=bibtex]{biblatex}
 \usepackage[colorinlistoftodos]{todonotes}
-%\addbibresources{reports}        % Selects the Bibliography file.
+
 
 \begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{reports/course_report/text/title_page}
 \input{reports/course_report/text/introduction}
-%\bibliographystyle{plain}
-%\bibliography{reports/bibliography/sources}
-% \addbibresource{reports/bibliography/sources.bib}
-%\bibliography{}
+\input{reports/course_report/text/project_organization}
+\input{reports/course_report/text/akanksha_contribution}
+\input{reports/course_report/text/boli_contribution}
+\input{reports/course_report/text/chanvuth_contribution}
+\input{reports/course_report/text/gaurav_contribution}
+\input{reports/course_report/text/george_contribution}
+\input{reports/course_report/text/haodong_contribution}
+\input{reports/course_report/text/haoyan_contribution}
+\input{reports/course_report/text/ishita_contribution}
+\input{reports/course_report/text/jenn_contribution}
+\input{reports/course_report/text/mishkaut_contribution}
+\input{reports/course_report/text/paarth_contribution}
+\input{reports/course_report/text/sofia_contribution}
+\input{reports/course_report/text/conclusion}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\input{reports/course_report/text/introduction.tex}{Introduction}
-%\input{introduction}
-%\subfile{text/introduction}
+
+
+
+%\input{Text/0-frontmatter}
 %\input{Text/1-Introduction}
 %\input{Text/0.1-Big_Figures}                    % Change this to another line to move big figures.
 %\input{Text/2-Background}
@@ -55,12 +65,13 @@
 
 % Bibliography
 %--------------------
-\bibliographystyle{plain}
-
-\bibliography{sources}
+\bibliographystyle{ieeetr}
+\bibliography{reports/bibliography/sources}
 %\printbibliography
+
 %\clearpage                                     % Sometimes it is useful to have appendix on separate page.
 %\onecolumn                                     % If you want 1 column for appendix.
 %\input{Text/Appendix}                           % Comment out to exclude appendix
 
 \end{document}
+
