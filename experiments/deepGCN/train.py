@@ -10,11 +10,11 @@ from torch_geometric.loader import DataLoader
 from typing import Optional
 
 from spreadnet.datasets.data_utils.draw import plot_training_graph
-from spreadnet.pyg_gnn.loss.loss import hybrid_loss
+from spreadnet.pyg_gnn.utils.loss import hybrid_loss
 from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
-from spreadnet.utils.metrics import get_correct_predictions
+from spreadnet.pyg_gnn.utils.metrics import get_correct_predictions
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 

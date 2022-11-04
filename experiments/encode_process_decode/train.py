@@ -19,12 +19,15 @@ import wandb
 
 from tqdm import tqdm
 
-from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
-from spreadnet.utils.metrics import get_correct_predictions, get_precise_corrects
+from spreadnet.pyg_gnn.utils.metrics import (
+    get_correct_predictions,
+    get_precise_corrects,
+)
 
 wandb.login()
 
@@ -107,7 +110,7 @@ def execute(
         total_epoch: total epochs
         dataloader: dataloader
         model: model
-        loss_func: loss function
+        loss_func: utils function
         optimizer: optional optimizer for validation mode
 
     Returns:

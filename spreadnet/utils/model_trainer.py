@@ -19,10 +19,10 @@ import time
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
-from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
-from spreadnet.utils.metrics import (
+from spreadnet.pyg_gnn.utils.metrics import (
     get_precise_corrects,
     get_corrects_in_path,
     get_correct_predictions,
@@ -329,7 +329,7 @@ class ModelTrainer:
             total_epoch: the number of total epoch
             valid_loader:
             train_loader:
-            loss_func: loss function
+            loss_func: utils function
 
         Returns:
             accuracy
@@ -592,7 +592,7 @@ class WAndBModelTrainer(ModelTrainer):
             total_epoch: the number of total epoch
             valid_loader:
             train_loader:
-            loss_func: loss function
+            loss_func: utils function
 
         Returns:
             accuracy
@@ -754,7 +754,7 @@ class WAndBModelTrainer(ModelTrainer):
         self.loss_data.append(cur_loss_data)
         wandb.log(
             {
-                "loss": wandb.Table(
+                "utils": wandb.Table(
                     data=self.loss_data,
                     columns=[
                         "train_nodes_loss",
