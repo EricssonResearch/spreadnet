@@ -131,7 +131,7 @@ class ModelTrainer:
         """Preprocess the data from dataset.
 
         Args:
-            data: Pytorch Geometric data
+            data: PyTorch Geometric data
 
         Returns:
             1. the inputs for the GCN model
@@ -161,16 +161,20 @@ class ModelTrainer:
         dataset_size = len(list(dataset))
         train_size = int(self.train_configs["train_ratio"] * dataset_size)
 
-        if bool(self.train_configs["shuffle"]):
-            dataset.shuffle(dataset_size * 10)
-
         train_dataset = list(islice(dataset, 0, train_size))
         validation_dataset = list(islice(dataset, train_size, dataset_size + 1))
+
         train_loader = DataLoader(
-            train_dataset, batch_size=self.train_configs["batch_size"]
+            train_dataset,
+            batch_size=self.train_configs["batch_size"],
+            shuffle=self.train_configs["shuffle"],
+            pin_memory=True,
         )
         validation_loader = DataLoader(
-            validation_dataset, batch_size=self.train_configs["batch_size"]
+            validation_dataset,
+            batch_size=self.train_configs["batch_size"],
+            shuffle=self.train_configs["shuffle"],
+            pin_memory=True,
         )
         return train_loader, validation_loader
 
@@ -205,7 +209,7 @@ class ModelTrainer:
             epoch: the current epoch
             total_epoch: the total epoch
             dataloader: dataloader
-            loss_func: loass function
+            loss_func: loss function
 
         Returns:
             nodes_loss, edges_loss, nodes_acc, edges_acc
@@ -327,8 +331,8 @@ class ModelTrainer:
 
             epoch: current epoch
             total_epoch: the number of total epoch
-            valid_loader:
-            train_loader:
+            valid_loader: validation set dataloader
+            train_loader: train set dataloader
             loss_func: utils function
 
         Returns:
@@ -590,8 +594,8 @@ class WAndBModelTrainer(ModelTrainer):
 
             epoch: current epoch
             total_epoch: the number of total epoch
-            valid_loader:
-            train_loader:
+            valid_loader: validation set data_loader
+            train_loader: train set data_loader
             loss_func: utils function
 
         Returns:
