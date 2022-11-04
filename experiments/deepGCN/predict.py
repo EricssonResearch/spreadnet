@@ -7,10 +7,9 @@ import os
 from glob import glob
 import matplotlib.pyplot as plt
 from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
-
+from spreadnet.pyg_gnn.utils import get_correct_predictions
 
 from spreadnet.utils import yaml_parser
-from spreadnet.pyg_gnn.loss.loss import get_infers
 from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
 from spreadnet.datasets.data_utils.draw import draw_networkx
 
@@ -76,7 +75,9 @@ def predict(model, graph):
 
     # predict
     (node_pred, edge_pred) = model(graph.x, graph.edge_index, graph.edge_attr)
-    (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
+    (infers, corrects) = get_correct_predictions(
+        node_pred, edge_pred, node_true, edge_true
+    )
 
     node_acc = corrects["nodes"] / graph.num_nodes
     edge_acc = corrects["edges"] / graph.num_edges

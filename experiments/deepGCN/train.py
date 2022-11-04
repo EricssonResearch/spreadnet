@@ -10,10 +10,11 @@ from torch_geometric.loader import DataLoader
 from typing import Optional
 
 from spreadnet.datasets.data_utils.draw import plot_training_graph
-from spreadnet.pyg_gnn.loss.loss import hybrid_loss
+from spreadnet.pyg_gnn.utils.loss import hybrid_loss
 from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
+from spreadnet.pyg_gnn.utils.metrics import get_correct_predictions
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 
@@ -78,7 +79,10 @@ def train(
             edge_index = data.edge_index
             node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
             # losses, corrects = loss_func(data, trainable_model)
-            losses, corrects = loss_func(node_pred, edge_pred, node_true, edge_true)
+            losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+            _, corrects = get_correct_predictions(
+                node_pred, edge_pred, node_true, edge_true
+            )
             optimizer.zero_grad()
             losses["nodes"].backward(retain_graph=True)
             losses["edges"].backward()

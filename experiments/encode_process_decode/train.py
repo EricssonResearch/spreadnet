@@ -18,11 +18,16 @@ from itertools import islice
 
 from tqdm import tqdm
 
-from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
+from spreadnet.pyg_gnn.utils.metrics import (
+    get_correct_predictions,
+    get_precise_corrects,
+)
+
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
@@ -103,7 +108,7 @@ def execute(
         total_epoch: total epochs
         dataloader: dataloader
         model: model
-        loss_func: loss function
+        loss_func: utils function
         optimizer: optional optimizer for validation mode
 
     Returns:
@@ -120,6 +125,7 @@ def execute(
     nodes_loss, edges_loss = 0.0, 0.0
     nodes_corrects, edges_corrects = 0, 0
     dataset_nodes_size, dataset_edges_size = 0, 0
+    precise_corrects = 0.0
 
     with torch.enable_grad() if is_training else torch.no_grad():
         for batch, (data,) in tqdm(
@@ -138,7 +144,10 @@ def execute(
             (node_pred, edge_pred) = model(data.x, data.edge_index, data.edge_attr)
 
             # Losses
-            (losses, corrects) = loss_func(node_pred, edge_pred, node_true, edge_true)
+            losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+            _, corrects = get_correct_predictions(
+                node_pred, edge_pred, node_true, edge_true
+            )
             nodes_loss += losses["nodes"].item() * data.num_graphs
             edges_loss += losses["edges"].item() * data.num_graphs
 
@@ -153,6 +162,10 @@ def execute(
             dataset_nodes_size += data.num_nodes
             dataset_edges_size += data.num_edges
 
+            precise_corrects += get_precise_corrects(
+                corrects, (data.num_nodes, data.num_edges)
+            )
+
     nodes_loss /= len(dataloader.dataset)
     edges_loss /= len(dataloader.dataset)
 
@@ -162,8 +175,10 @@ def execute(
 
     nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy()
     edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy()
+    precise_acc = precise_corrects / dataset_size
+    print(precise_acc)
     (accuracies_curve if is_training else validation_accuracies_curve).append(
-        {"nodes": nodes_acc, "edges": edges_acc}
+        {"nodes": nodes_acc, "edges": edges_acc, "precise": precise_acc}
     )
 
     return (nodes_acc + edges_acc) / 2
@@ -201,8 +216,11 @@ def save_training_state(
 
 
 if __name__ == "__main__":
-    print(f"Using {device} device...")
+
     date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
+    now = datetime.now().strftime("%H:%M:%S_%d-%m-%y")
+
+    print(f"Using {device} device...")
 
     dataset = (
         wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")

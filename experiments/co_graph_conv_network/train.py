@@ -18,11 +18,12 @@ from itertools import islice
 
 from tqdm import tqdm
 
-from spreadnet.pyg_gnn.loss import hybrid_loss
+from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
+from spreadnet.pyg_gnn.utils.metrics import get_correct_predictions
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
@@ -125,7 +126,7 @@ def execute(
         dataloader: dataloader
         preprocessor: preprocess
         model: model
-        loss_func: loss function
+        loss_func: utils function
         optimizer: optional optimizer for validation mode
 
     Returns:
@@ -160,7 +161,10 @@ def execute(
             (node_pred, edge_pred) = model(x, edge_index, edge_attr)
 
             # Losses
-            (losses, corrects) = loss_func(node_pred, edge_pred, node_true, edge_true)
+            losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+            _, corrects = get_correct_predictions(
+                node_pred, edge_pred, node_true, edge_true
+            )
             nodes_loss += losses["nodes"].item() * data.num_graphs
             edges_loss += losses["edges"].item() * data.num_graphs
 
