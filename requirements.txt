@@ -5,10 +5,11 @@ pre-commit
 pyyaml>=6.0
 scipy~=1.7.3
 setuptools~=63.4.1
-
-spreadnet~=0.0.1
-tensorflow==2.10.0
-
-tensorflow-gnn==0.2.1
 tqdm~=4.64.1
 webdataset>=0.2.26
+pandas~=1.3.5
+
+spreadnet~=0.0.1
+
+tensorflow==2.10.0
+tensorflow-gnn==0.2.1

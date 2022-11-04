@@ -1,0 +1,31 @@
+BootStrap: docker
+From: nvidia/cuda:11.6.2-runtime-ubuntu18.04
+
+# remove spreadnet from requirements.txt before running this build
+# sudo singularity build spreadnet-runner-py3-cu116-pyg.sif spreadnet-runner-py3-cu116-pyg.def
+
+%files
+  ./requirements.txt /
+
+%post
+  apt-get update -y
+  apt-get install -y software-properties-common git
+
+  add-apt-repository -y ppa:deadsnakes/ppa
+  apt-get update -y
+  apt-get install -y python3.7 python3-pip
+
+  update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+  update-alternatives --set python /usr/bin/python3.7
+
+  cd "$(dirname $(which python3))" && ln -s pip3 pip
+  python --version
+  python -m pip install --upgrade pip
+
+
+  pip install torch==1.12 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
+  pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.12.0+cu116.html
+  pip install -r /requirements.txt
+
+%runscript
+  python -c "import torch; print('Torch Version:', torch.__version__); print('CUDA Version:', torch.version.cuda); print('CUDA Available:', torch.cuda.is_available());"
