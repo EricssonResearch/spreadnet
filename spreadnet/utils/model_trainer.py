@@ -20,9 +20,13 @@ import time
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
 from spreadnet.pyg_gnn.loss import hybrid_loss
-from spreadnet.pyg_gnn.loss.loss import corrects_in_path
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
+from spreadnet.utils.metrics import (
+    get_precise_corrects,
+    get_corrects_in_path,
+    get_correct_predictions,
+)
 
 
 class ModelTrainer:
@@ -220,6 +224,9 @@ class ModelTrainer:
         nodes_in_path_corrects, edges_in_path_corrects = 0, 0
         dataset_nodes_in_path_size, dataset_edges_in_path_size = 0, 0
 
+        dataset_size = len(list(dataloader))
+        precise_corrects = 0.0
+
         with torch.enable_grad() if is_training else torch.no_grad():
             for batch, (data,) in tqdm(
                 enumerate(dataloader),
@@ -250,13 +257,14 @@ class ModelTrainer:
                     (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
 
                 # Losses
-                (losses, corrects) = loss_func(
+                losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+                _, corrects = get_correct_predictions(
                     node_pred, edge_pred, node_true, edge_true
                 )
                 nodes_loss += losses["nodes"].item() * data.num_graphs
                 edges_loss += losses["edges"].item() * data.num_graphs
 
-                node_in_path, edge_in_path = corrects_in_path(
+                node_in_path, edge_in_path = get_corrects_in_path(
                     node_pred, edge_pred, node_true, edge_true
                 )
                 node_correct_in_path, total_node_in_path = (
@@ -279,6 +287,10 @@ class ModelTrainer:
                 dataset_nodes_size += data.num_nodes
                 dataset_edges_size += data.num_edges
 
+                precise_corrects += get_precise_corrects(
+                    corrects, (data.num_nodes, data.num_edges)
+                )
+
                 nodes_in_path_corrects += node_correct_in_path
                 edges_in_path_corrects += edge_correct_in_path
                 dataset_nodes_in_path_size += total_node_in_path
@@ -295,6 +307,9 @@ class ModelTrainer:
         edge_in_path_acc = (
             (edges_in_path_corrects / dataset_edges_in_path_size).cpu().numpy().item()
         )
+
+        precise_acc = precise_corrects / dataset_size
+
         return (
             nodes_loss,
             edges_loss,
@@ -302,6 +317,7 @@ class ModelTrainer:
             edges_acc,
             node_in_path_acc,
             edge_in_path_acc,
+            precise_acc,
         )
 
     def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
@@ -325,6 +341,7 @@ class ModelTrainer:
             train_edges_acc,
             train_node_in_path_acc,
             train_edge_in_path_acc,
+            train_precise_acc,
         ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
 
         (
@@ -334,6 +351,7 @@ class ModelTrainer:
             validation_edges_acc,
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
+            validation_precise_acc,
         ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
 
         self.losses_curve.append({"nodes": train_nodes_loss, "edges": train_edges_loss})
@@ -449,7 +467,7 @@ class ModelTrainer:
                     train_local_logger.info(
                         f'Epoch  | Train Loss (Node,Edge)|\tValidation \
                         Loss\t|Train Acc (Node,Edge,NodeInPath,EdgeInPath)\t \
-                        |\tValidation Acc\t \n {"="*176}'
+                        |\tValidation Acc\t \n {"=" * 176}'
                     )
                 lcn = self.losses_curve[-1]["nodes"]
                 lce = self.losses_curve[-1]["edges"]
@@ -484,7 +502,7 @@ class ModelTrainer:
             train_local_logger.exception(exception)
 
         train_local_logger.info(
-            f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}'
+            f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )
 
 
@@ -527,6 +545,9 @@ class WAndBModelTrainer(ModelTrainer):
         self.validation_nodes_in_path_acc = []
         self.validation_edges_in_path_acc = []
 
+        self.train_precise_acc = []
+        self.validation_precise_acc = []
+
     def save_training_state(
         self,
         epoch,
@@ -556,6 +577,8 @@ class WAndBModelTrainer(ModelTrainer):
                 "train_edges_in_path_acc": self.train_edges_in_path_acc,
                 "validation_nodes_in_path_acc": self.validation_nodes_in_path_acc,
                 "validation_edges_in_path_acc": self.validation_edges_in_path_acc,
+                "train_precise_acc": self.train_precise_acc,
+                "validation_precise_acc ": self.validation_precise_acc,
             },
             self.checkpoint_path,
         )
@@ -581,6 +604,7 @@ class WAndBModelTrainer(ModelTrainer):
             train_edges_acc,
             train_node_in_path_acc,
             train_edge_in_path_acc,
+            train_precise_acc,
         ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
 
         (
@@ -590,6 +614,7 @@ class WAndBModelTrainer(ModelTrainer):
             validation_edges_acc,
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
+            validation_precise_acc,
         ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
 
         # simple log
@@ -601,6 +626,7 @@ class WAndBModelTrainer(ModelTrainer):
             "Train/train_edges_acc": train_edges_acc,
             "Train/train_nodes_in_path_acc": train_node_in_path_acc,
             "Train/train_edges_in_path_acc": train_edge_in_path_acc,
+            "Train/train_precise_acc": train_precise_acc,
         }
 
         validation_metrics = {
@@ -611,6 +637,7 @@ class WAndBModelTrainer(ModelTrainer):
             "Validation/validation_edges_acc": validation_edges_acc,
             "Validation/validation_nodes_in_path_acc": validation_node_in_path_acc,
             "Validation/validation_edges_in_path_acc": validation_edge_in_path_acc,
+            "Validation/validation_precise_acc": validation_precise_acc,
         }
 
         wandb.log({**train_metrics, **validation_metrics})
@@ -629,6 +656,9 @@ class WAndBModelTrainer(ModelTrainer):
         self.validation_edges_acc.append(validation_edges_acc)
         self.validation_nodes_in_path_acc.append(validation_node_in_path_acc)
         self.validation_edges_in_path_acc.append(validation_edge_in_path_acc)
+
+        self.train_precise_acc.append(train_precise_acc)
+        self.validation_precise_acc.append(validation_precise_acc)
 
         wandb.log(
             {
@@ -696,6 +726,24 @@ class WAndBModelTrainer(ModelTrainer):
             }
         )
 
+        wandb.log(
+            {
+                "train_valid_precise_acc": wandb.plot.line_series(
+                    xs=self.epoch_lst,
+                    ys=[
+                        self.train_precise_acc,
+                        self.validation_precise_acc,
+                    ],
+                    keys=[
+                        "train_precise_acc",
+                        "validation_precise_acc",
+                    ],
+                    title="Precise Accuracy",
+                    xname="epoch",
+                )
+            }
+        )
+
         # table log
         cur_loss_data = [
             train_nodes_loss,
@@ -727,6 +775,8 @@ class WAndBModelTrainer(ModelTrainer):
             validation_edges_acc,
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
+            train_precise_acc,
+            validation_precise_acc,
         ]
         self.acc_data.append(cur_acc_data)
         wandb.log(
@@ -742,6 +792,8 @@ class WAndBModelTrainer(ModelTrainer):
                         "validation_edges_acc",
                         "validation_nodes_in_path_acc",
                         "validation_edges_in_path_acc",
+                        "train_precise_acc",
+                        "validation_precise_acc",
                     ],
                 )
             }
@@ -919,5 +971,5 @@ class WAndBModelTrainer(ModelTrainer):
             os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
         )
         train_console_logger.info(
-            f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}'
+            f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )

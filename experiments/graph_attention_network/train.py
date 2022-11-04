@@ -23,6 +23,7 @@ from spreadnet.pyg_gnn.models import SPGATNet
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
+from spreadnet.utils.metrics import get_correct_predictions
 
 default_yaml_path = os.path.join(os.path.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
@@ -143,7 +144,10 @@ def execute(
             )
 
             # Losses
-            (losses, corrects) = loss_func(node_pred, edge_pred, node_true, edge_true)
+            losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+            _, corrects = get_correct_predictions(
+                node_pred, edge_pred, node_true, edge_true
+            )
             nodes_loss += losses["nodes"].item() * data.num_graphs
             edges_loss += losses["edges"].item() * data.num_graphs
 
