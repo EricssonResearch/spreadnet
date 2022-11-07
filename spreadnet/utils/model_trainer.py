@@ -186,6 +186,7 @@ class ModelTrainer:
         best_acc,
     ):
         print("Saving state...")
+        ipvac = self.in_path_validation_accuracies_curve
         torch.save(
             {
                 "epoch": epoch,
@@ -199,7 +200,7 @@ class ModelTrainer:
                 "accuracies_curve": self.accuracies_curve,
                 "validation_accuracies_curve": self.validation_accuracies_curve,
                 "in_path_accuracies_curve": self.in_path_accuracies_curve,
-                "in_path_validation_accuracies_curve": self.in_path_validation_accuracies_curve,
+                "in_path_validation_accuracies_curve": ipvac,
             },
             self.checkpoint_path,
         )
@@ -452,7 +453,9 @@ class ModelTrainer:
                     self.validation_accuracies_curve = checkpoint[
                         "validation_accuracies_curve"
                     ]
-                    self.in_path_accuracies_curve = checkpoint["in_path_accuracies_curve"]
+                    self.in_path_accuracies_curve = checkpoint[
+                        "in_path_accuracies_curve"
+                    ]
                     self.in_path_validation_accuracies_curve = checkpoint[
                         "in_path_validation_accuracies_curve"
                     ]
