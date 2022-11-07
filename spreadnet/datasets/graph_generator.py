@@ -29,7 +29,6 @@ TODO: For the final spreadnet(aka non epxerimental).
       we do not have to bother with their license.
 """
 
-import collections
 import itertools
 from typing import Tuple
 
@@ -167,7 +166,7 @@ class GraphGenerator:
             combined_graph.get_edge_data(i, j).setdefault("weight", distances[i, j])
         return combined_graph
 
-    def add_shortest_path(self, graph, min_length=1):
+    def add_shortest_path(self, graph: nx.DiGraph, min_length=1):
         """
             Sample the shortest path in the graph
         Args:
@@ -178,37 +177,22 @@ class GraphGenerator:
             A directed graph with the shortest path data.
 
         """
-        # Map from node pairs to the length of their shortest path.
-        pair_to_length_dict = {}
-        lengths = list(nx.all_pairs_shortest_path_length(graph))
-        for x, yy in lengths:
-            for y, length in yy.items():
-                if length >= min_length:
-                    pair_to_length_dict[x, y] = length
-
-        if len(pair_to_length_dict.values()) == 0:
-            return (
-                self._generate_task_graph()
-            )  # returns digraph, calls for new graph generation and adds sp path
-
-        if max(pair_to_length_dict.values()) < min_length:
-            raise ValueError("All shortest paths are below the minimum length")
-        # The node pairs which exceed the minimum length.
-        node_pairs = list(pair_to_length_dict)
-
-        # Computes probabilities per pair, to enforce uniform sampling of each
-        # shortest path lengths.
-        # The counts of pairs per length.
-        counts = collections.Counter(pair_to_length_dict.values())
-        prob_per_length = 1.0 / len(counts)
-        probabilities = [
-            prob_per_length / counts[pair_to_length_dict[x]] for x in node_pairs
-        ]
-
         # Choose the start and end points.
-        i = self.random_state.choice(len(node_pairs), p=probabilities)
-        start, end = node_pairs[i]
-        path = nx.shortest_path(graph, source=start, target=end, weight="weight")
+        num_nodes = graph.number_of_nodes()
+        nodes_set = set(graph.nodes())
+
+        start = self.random_state.choice(num_nodes)
+        nodes_set = nodes_set - set([start])
+
+        path_len = 0
+        while path_len < min_length:
+            if len(nodes_set) == 0:
+                return self._generate_task_graph()
+
+            end = self.random_state.choice(list(nodes_set))
+            nodes_set = nodes_set - set([end])
+            path = nx.shortest_path(graph, source=start, target=end, weight="weight")
+            path_len = len(path)
 
         # Creates a directed graph, to store the directed path from start to end.
         digraph = graph.to_directed()
