@@ -141,6 +141,10 @@ def get_line_color(mode, type):
         return "#99D8F2"
     if type == "edges" and mode == "validation":  # Light red
         return "#FF8A8F"
+    if type == "precise" and mode == "training":  # Light green
+        return "#9FCF80"
+    if type == "precise" and mode == "validation":  # Dark green
+        return "#568203"
 
 
 def plot_training_graph(
@@ -149,6 +153,8 @@ def plot_training_graph(
     validation_losses_curve,
     accuracies_curve,
     validation_accuracies_curve,
+    in_path_accuracies_curve,
+    in_path_validation_accuracies_curve,
     save_path,
     separate_training_testing=False,
     smoooth_window_half_width=3,
@@ -170,23 +176,44 @@ def plot_training_graph(
     """
 
     if separate_training_testing:
-        fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+        fig, axes = plt.subplots(2, 4, figsize=(20, 10))
         for ax, metric, data_list in zip(
-            [axes[0][0], axes[0][1], axes[1][0], axes[1][1]],
+            [
+                axes[0][0],
+                axes[0][1],
+                axes[0][2],
+                axes[0][3],
+                axes[1][0],
+                axes[1][1],
+                axes[1][2],
+                axes[1][3],
+            ],
             [
                 "Training Loss",
                 "Training Accuracy",
+                "Training In-path Accuracy",
+                "Training Precise",
                 "Validation Loss",
                 "Validation Accuracy",
+                "Validation In-path Accuracy",
+                "Validation Precise",
             ],
             [
                 losses_curve,
                 accuracies_curve,
+                in_path_accuracies_curve,
+                accuracies_curve,
                 validation_losses_curve,
+                validation_accuracies_curve,
+                in_path_validation_accuracies_curve,
                 validation_accuracies_curve,
             ],
         ):
-            for k in ["edges", "nodes"]:
+            legends = (
+                ["edges", "nodes"] if not metric.endswith("Precise") else ["precise"]
+            )
+
+            for k in legends:
                 x = steps_curve
                 y = [d[k] for d in data_list]
 
@@ -201,28 +228,33 @@ def plot_training_graph(
                 )
 
             ax.set_title(metric)
-            ax.set_ylabel(metric)
+            # ax.set_ylabel(metric)
             ax.set_xlabel("Training Iteration")
             ax.legend()
 
-            axes[0][0].set_yscale("log")
-            axes[1][0].set_yscale("log")
-            axes[0][1].margins(0.02, 0.02)
-            axes[1][1].margins(0.02, 0.02)
+        axes[0][0].set_yscale("log")
+        axes[1][0].set_yscale("log")
+        axes[0][1].margins(0.02, 0.02)
+        axes[1][1].margins(0.02, 0.02)
+        axes[0][2].margins(0.02, 0.02)
+        axes[1][2].margins(0.02, 0.02)
+        axes[0][3].set_ylim(-0.005)
+        axes[1][3].set_ylim(-0.005)
     else:
-        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
         for ax, metric, data_list in zip(
             axes,
-            [
-                "Loss",
-                "Accuracy",
-            ],
+            ["Loss", "Accuracy", "In-path Accuracy", "Precise"],
             [
                 [losses_curve, validation_losses_curve],
                 [accuracies_curve, validation_accuracies_curve],
+                [in_path_accuracies_curve, in_path_validation_accuracies_curve],
+                [accuracies_curve, validation_accuracies_curve],
             ],
         ):
-            for k in ["edges", "nodes"]:
+            legends = ["edges", "nodes"] if metric != "Precise" else ["precise"]
+
+            for k in legends:
                 x = steps_curve
                 y0 = [d[k] for d in data_list[0]]
                 y1 = [d[k] for d in data_list[1]]
@@ -243,12 +275,14 @@ def plot_training_graph(
                 )
 
             ax.set_title(metric)
-            ax.set_ylabel(metric)
+            # ax.set_ylabel(metric)
             ax.set_xlabel("Training Iteration")
             ax.legend()
 
-            axes[0].set_yscale("log")
-            axes[1].margins(0.02, 0.02)
+        axes[0].set_yscale("log")
+        axes[1].margins(0.02, 0.02)
+        axes[2].margins(0.02, 0.02)
+        axes[3].set_ylim(-0.005)
 
     plt.subplots_adjust(hspace=0.4)
     plt.savefig(save_path)

@@ -60,7 +60,6 @@ class ModelTrainer:
         self.validation_losses_curve = []
         self.accuracies_curve = []
         self.validation_accuracies_curve = []
-
         self.in_path_accuracies_curve = []
         self.in_path_validation_accuracies_curve = []
 
@@ -124,6 +123,8 @@ class ModelTrainer:
             self.validation_losses_curve,
             self.accuracies_curve,
             self.validation_accuracies_curve,
+            self.in_path_accuracies_curve,
+            self.in_path_validation_accuracies_curve,
             os.path.join(self.plots_save_path, f"{plot_name}"),
         )
 
@@ -185,6 +186,7 @@ class ModelTrainer:
         best_acc,
     ):
         print("Saving state...")
+        ipvac = self.in_path_validation_accuracies_curve
         torch.save(
             {
                 "epoch": epoch,
@@ -197,6 +199,8 @@ class ModelTrainer:
                 "validation_losses_curve": self.validation_losses_curve,
                 "accuracies_curve": self.accuracies_curve,
                 "validation_accuracies_curve": self.validation_accuracies_curve,
+                "in_path_accuracies_curve": self.in_path_accuracies_curve,
+                "in_path_validation_accuracies_curve": ipvac,
             },
             self.checkpoint_path,
         )
@@ -364,10 +368,18 @@ class ModelTrainer:
         )
 
         self.accuracies_curve.append(
-            {"nodes": train_nodes_acc, "edges": train_edges_acc}
+            {
+                "nodes": train_nodes_acc,
+                "edges": train_edges_acc,
+                "precise": train_precise_acc,
+            }
         )
         self.validation_accuracies_curve.append(
-            {"nodes": validation_nodes_acc, "edges": validation_edges_acc}
+            {
+                "nodes": validation_nodes_acc,
+                "edges": validation_edges_acc,
+                "precise": validation_precise_acc,
+            }
         )
 
         self.in_path_accuracies_curve.append(
@@ -440,6 +452,12 @@ class ModelTrainer:
                     self.accuracies_curve = checkpoint["accuracies_curve"]
                     self.validation_accuracies_curve = checkpoint[
                         "validation_accuracies_curve"
+                    ]
+                    self.in_path_accuracies_curve = checkpoint[
+                        "in_path_accuracies_curve"
+                    ]
+                    self.in_path_validation_accuracies_curve = checkpoint[
+                        "in_path_validation_accuracies_curve"
                     ]
         except Exception as exception:
             train_local_logger.exception(exception)
