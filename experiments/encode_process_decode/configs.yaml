@@ -3,7 +3,7 @@ train:
   weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 300
+  epochs: 100
   batch_size: 64
   train_ratio: 0.7
   shuffle: True
@@ -13,6 +13,7 @@ train:
   adam_weight_decay: !!float 5e-4
 
 model:
+  model_name: MPNN
   node_in: 3
   edge_in: 1
   node_out: 2

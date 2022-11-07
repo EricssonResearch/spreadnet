@@ -16,11 +16,10 @@ from glob import glob
 import matplotlib.pyplot as plt
 
 from spreadnet.pyg_gnn.models import SPGATNet
+from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
-from spreadnet.pyg_gnn.loss.loss import get_infers
 from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
 from spreadnet.datasets.data_utils.draw import draw_networkx
-
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
@@ -88,7 +87,9 @@ def predict(model, graph):
         graph.edge_attr,
         return_attention_weights=model_configs["return_attention_weights"],
     )
-    (infers, corrects) = get_infers(node_pred, edge_pred, node_true, edge_true)
+    (infers, corrects) = get_correct_predictions(
+        node_pred, edge_pred, node_true, edge_true
+    )
 
     node_acc = corrects["nodes"] / graph.num_nodes
     edge_acc = corrects["edges"] / graph.num_edges

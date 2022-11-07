@@ -30,14 +30,6 @@ sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
 sys.modules["gnn"] = gnn
 
 
-"""
-    The following is boilerplate code and should be dealt with.
-    It is ugly and keeps being reproduced in different formats
-    all over the placed.
-
-"""
-
-
 def single_graph_implementation_test_helper():
     """Temporary test to make sure that the visualization integration works.
 
@@ -87,34 +79,5 @@ def single_graph_implementation_test_helper():
         )
 
 
-def single_graph_vis_pyg_test0(trained_gnn):
-    pass
-
-
-def single_graph_vis_test1():
-    """Unseen Graphs.
-
-    Pass a new unsen graph to the trainable GNN and see if it finds the correct
-    shortest path.
-    """
-
-
-def single_graph_vis_test2():
-    """Take a graph that has been seen before and check the behaviour if you
-    have different start and end nodes."""
-    pass
-
-
-def single_graph_vis_test3():
-    """The demo report only shows accuracy and loss on the graphs that the
-    network has been trained on.
-
-    What about the accuracy on graphs that the network has not been trained on?
-    """
-
-    pass
-
-
 if __name__ == "__main__":
-
     single_graph_implementation_test_helper()
