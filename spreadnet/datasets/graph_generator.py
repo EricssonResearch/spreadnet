@@ -184,15 +184,14 @@ class GraphGenerator:
         start = self.random_state.choice(num_nodes)
         nodes_set = nodes_set - set([start])
 
-        path_len = 0
-        while path_len < min_length:
+        path = []
+        while len(path) < min_length:
             if len(nodes_set) == 0:
                 return self._generate_task_graph()
 
             end = self.random_state.choice(list(nodes_set))
             nodes_set = nodes_set - set([end])
             path = nx.shortest_path(graph, source=start, target=end, weight="weight")
-            path_len = len(path)
 
         # Creates a directed graph, to store the directed path from start to end.
         digraph = graph.to_directed()
