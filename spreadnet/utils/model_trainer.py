@@ -19,6 +19,7 @@ import time
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
+from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
@@ -112,6 +113,17 @@ class ModelTrainer:
                 encode_edge_in=self.model_configs["encode_edge_in"],
                 encode_node_out=self.model_configs["encode_node_out"],
                 encode_edge_out=self.model_configs["encode_edge_out"],
+            ).to(self.device)
+        elif self.model_name == "DeepGCN":
+            self.model = SPDeepGCN(
+                node_in=self.model_configs["node_in"],
+                edge_in=self.model_configs["edge_in"],
+                encoder_hidden_channels=self.model_configs["encoder_hidden_channels"],
+                encoder_layers=self.model_configs["encoder_layers"],
+                gcn_hidden_channels=self.model_configs["gcn_hidden_channels"],
+                gcn_layers=self.model_configs["gcn_layers"],
+                decoder_hidden_channels=self.model_configs["decoder_hidden_channels"],
+                decoder_layers=self.model_configs["decoder_layers"],
             ).to(self.device)
 
         return self.model
