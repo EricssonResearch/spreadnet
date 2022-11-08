@@ -27,6 +27,7 @@ num_nodes_min_max_test = (
     data_configs["num_node_min_test"],
     data_configs["num_node_max_test"],
 )
+theta_cap = float(data_configs["theta_cap"])
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
@@ -56,7 +57,6 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
 
     theta = starting_theta
     increase_theta_after = (nodes_min_max[1] - nodes_min_max[0]) * increase_theta_rate
-    cap_theta = 60
 
     generator = GraphGenerator(
         random_seed=seed,
@@ -86,7 +86,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             draw_networkx(str(idx + 1), fig, g, idx + 1, visualize_graph)
             graphs_to_be_drawn -= 1
 
-        if theta < cap_theta and (idx + 1) % increase_theta_after == 0:
+        if theta < theta_cap and (idx + 1) % increase_theta_after == 0:
             theta += 1
             generator.set_theta(theta)
 
