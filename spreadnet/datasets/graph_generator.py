@@ -138,16 +138,14 @@ class GraphGenerator:
 
         # 3. Connect sub graphs
         components = sorted(nx.connected_components(geo_graph), key=len)
-        max_connection = 3
-        for idx, c in enumerate(components):
-            connect_from_choices = list(c)
-            connections = 1
 
-            while connections <= max_connection and idx + connections < len(components):
-                connect_from = self.random_state.choice(connect_from_choices)
+        while len(components) > 1:
+            for c in components:
+                connect_from_choices = set(c)
+                connect_from = self.random_state.choice(list(connect_from_choices))
                 connect_from_pos = pos[connect_from]
 
-                connect_to_nodes = list(components[idx + connections])
+                connect_to_nodes = list(set(geo_graph.nodes()) - connect_from_choices)
                 closest_node = connect_to_nodes[0]
                 closest_node_pos = pos[closest_node]
                 closest_distance = self._geo_diff(
@@ -158,9 +156,6 @@ class GraphGenerator:
                 )
 
                 for node in connect_to_nodes:
-                    if connect_from == node:
-                        continue
-
                     npos = pos[node]
                     distance = self._geo_diff(
                         connect_from_pos[0], connect_from_pos[1], npos[0], npos[1]
@@ -172,7 +167,8 @@ class GraphGenerator:
                         closest_distance = distance
 
                 geo_graph.add_edge(connect_from, closest_node)
-                connections += 1
+
+            components = sorted(nx.connected_components(geo_graph), key=len)
 
         # pdist: Pairwise distances between observations in n-dimensional space.
         # squareform: Convert a vector-form distance vector to a square-form distance
