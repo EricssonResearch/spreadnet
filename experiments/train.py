@@ -115,6 +115,7 @@ data_configs = dataset_configs.data
 
 use_wandb = args.wandb
 train_console_logger.info(f"use_wandb:{use_wandb}")
+train_console_logger.info(f"Training {model}...")
 
 trainer = None
 if use_wandb:
@@ -129,7 +130,9 @@ if use_wandb:
     )
 else:
     train_local_logger = log_utils.init_file_console_logger(
-        logger_name="train_local_logger", log_save_path=log_save_path, exp_type="train"
+        logger_name="train_local_logger",
+        log_save_path=log_save_path,
+        exp_type=f"train_{model}",
     )
     trainer = ModelTrainer(
         model_configs=model_configs,
