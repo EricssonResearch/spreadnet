@@ -9,12 +9,13 @@ matplotlib.use("Agg")
 
 
 def get_node_color(node):
-    if node[1]["is_start"]:
-        return "#FFF3B8"
-    if node[1]["is_end"]:
-        return "#90EE90"
-    if node[1]["is_in_path"]:
-        return "#C9FFD8"
+    if "is_start" in node[1]:
+        if node[1]["is_start"]:
+            return "#FFF3B8"
+        if node[1]["is_end"]:
+            return "#90EE90"
+        if node[1]["is_in_path"]:
+            return "#C9FFD8"
     return "#D3D3D3"
 
 
@@ -72,18 +73,22 @@ def draw_networkx(
     normal_edge_labels = dict()
 
     for (s, e, d) in graph.edges(data=True):
-        label = round(d[edge_label_key], 2)
+        if edge_label_key in d:
+            label = round(d[edge_label_key], 2)
 
-        if d["is_in_path"]:
-            path_edges.append((s, e))
-            path_edge_labels[(s, e)] = label
-        elif (e, s) not in path_edges:
+            if "is_in_path" in d and d["is_in_path"]:
+                path_edges.append((s, e))
+                path_edge_labels[(s, e)] = label
+            elif (e, s) not in path_edges:
+                normal_edges.append((s, e))
+
+                if edge_label_key != "weight" and label > 0.00:
+                    highlight_edge_labels[(s, e)] = label
+                else:
+                    normal_edge_labels[(s, e)] = label
+        else:
             normal_edges.append((s, e))
-
-            if edge_label_key != "weight" and label > 0.00:
-                highlight_edge_labels[(s, e)] = label
-            else:
-                normal_edge_labels[(s, e)] = label
+            normal_edge_labels[(s, e)] = 1
 
     node_colors = list(map(lambda node: get_node_color(node), graph.nodes(data=True)))
 
@@ -103,9 +108,7 @@ def draw_networkx(
 
     pos = nx.get_node_attributes(graph, "pos")
 
-    nx.draw_networkx_nodes(
-        graph, pos, cmap=plt.get_cmap("jet"), node_color=node_colors, node_size=500
-    )
+    nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=500)
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
     nx.draw_networkx_edges(
         graph,
