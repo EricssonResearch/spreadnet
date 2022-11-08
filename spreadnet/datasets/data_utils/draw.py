@@ -108,9 +108,7 @@ def draw_networkx(
 
     pos = nx.get_node_attributes(graph, "pos")
 
-    nx.draw_networkx_nodes(
-        graph, pos, cmap=plt.get_cmap("jet"), node_color=node_colors, node_size=500
-    )
+    nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=500)
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
     nx.draw_networkx_edges(
         graph,
