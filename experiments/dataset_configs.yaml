@@ -2,7 +2,7 @@ data:
   # graph generator
   random_seed: 0
   min_path_length: 1
-  visualize_graph: 25 # less than or equal to dataset_size
+  visualize_graph: 0 # less than or equal to dataset_size
 
   num_node_min: 8
   num_node_max: 50
