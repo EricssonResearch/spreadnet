@@ -166,6 +166,17 @@ class GraphGenerator:
                         closest_node_pos = npos
                         closest_distance = distance
 
+                for node in list(connect_from_choices):
+                    npos = pos[node]
+                    distance = self._geo_diff(
+                        npos[0], npos[1], closest_node_pos[0], closest_node_pos[1]
+                    )
+
+                    if distance < closest_distance:
+                        connect_from = node
+                        connect_from_pos = npos
+                        closest_distance = distance
+
                 geo_graph.add_edge(connect_from, closest_node)
 
             components = sorted(nx.connected_components(geo_graph), key=len)
