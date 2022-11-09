@@ -21,6 +21,7 @@ data_configs = yaml_parser(yaml_path).data
 
 visualize_graph = int(data_configs["visualize_graph"])
 random_seed = data_configs["random_seed"]
+random_seed_test = data_configs["random_seed_test"]
 min_path_length = int(data_configs["min_path_length"])
 num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
 num_nodes_min_max_test = (
@@ -124,7 +125,7 @@ if __name__ == "__main__":
         dataset_logger.info("Generating test set...")
         generate(
             "test.random",
-            random_seed,
+            random_seed_test,
             data_configs["dataset_size_test"],
             num_nodes_min_max_test,
             data_configs["starting_theta_test"],
