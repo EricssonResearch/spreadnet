@@ -20,11 +20,11 @@ def get_node_color(node):
 
 
 def draw_networkx(
-    title,
-    figure,
-    graph,
-    plot_index,
-    num_graphs_to_draw,
+    title: str,
+    figure: plt.figure,
+    graph: nx.DiGraph,
+    plot_index: int,
+    num_graphs_to_draw: int,
     node_label_key="default",
     edge_label_key="weight",
 ):
@@ -109,25 +109,41 @@ def draw_networkx(
     pos = nx.get_node_attributes(graph, "pos")
 
     nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=500)
-    nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
+    nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True, width=0.2)
     nx.draw_networkx_edges(
         graph,
         pos,
         edgelist=path_edges,
         edge_color="r",
         arrows=True,
-        arrowsize=25,
-        width=3,
+        arrowsize=20,
+        width=2,
     )
 
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=normal_edge_labels)
+    if graph.number_of_nodes() < 400:
+        nx.draw_networkx_edge_labels(
+            graph, pos, edge_labels=normal_edge_labels, font_size=8
+        )
+
     nx.draw_networkx_edge_labels(
-        graph, pos, edge_labels=highlight_edge_labels, font_color="blue"
+        graph,
+        pos,
+        edge_labels=highlight_edge_labels,
+        font_color="blue",
+        bbox=dict(alpha=0.8, boxstyle="round", ec=(0, 0, 1.0), fc=(1.0, 1.0, 1.0)),
     )
+
     nx.draw_networkx_edge_labels(
-        graph, pos, edge_labels=path_edge_labels, font_color="r"
+        graph,
+        pos,
+        edge_labels=path_edge_labels,
+        font_color="r",
+        bbox=dict(alpha=0.8, boxstyle="round", ec=(1.0, 0, 0), fc=(1.0, 1.0, 1.0)),
     )
-    nx.draw_networkx_labels(graph, pos, labels=normal_node_labels, font_color="black")
+
+    nx.draw_networkx_labels(
+        graph, pos, labels=normal_node_labels, font_color="black", font_size=8
+    )
 
     if node_label_key != "default":
         nx.draw_networkx_labels(
