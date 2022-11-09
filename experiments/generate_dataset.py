@@ -96,10 +96,10 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             theta += 1
             generator.set_theta(theta)
 
-        size = process.memory_info().rss
-        dataset_logger.info(f"Mem usage: {round(size/1e9, 2)} GB")
+        mem_usage = process.memory_info().rss
+        dataset_logger.info(f"Mem usage: {round(mem_usage/1e9, 2)} GB")
 
-        if size > chunk_if_mem_usage_exceed:
+        if mem_usage > chunk_if_mem_usage_exceed:
             with open(raw_path + f"/{file_name}_{chunk_counter}.json", "w") as outfile:
                 json.dump(all_graphs, outfile, cls=NpEncoder)
                 all_graphs.clear()
