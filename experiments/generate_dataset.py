@@ -91,7 +91,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
         range(size),
         unit="graph",
         total=size,
-        desc=f"[Mem: {round(mem_usage, 2)}/{round(mem_avail, 2)} GB]",
+        desc=f"[Mem Used: {round(mem_usage, 2)} | Free: {round(mem_avail, 2)} GB]",
         leave=False,
     )
     for idx in loop:
@@ -109,7 +109,9 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
         mem_usage = process.memory_info().rss / 1e9
         mem_avail = psutil.virtual_memory().available / 1e9
 
-        loop.set_description(f"[Mem: {round(mem_usage, 2)}/{round(mem_avail, 2)} GB]")
+        loop.set_description(
+            f"[Mem Used: {round(mem_usage, 2)} | Free: {round(mem_avail, 2)} GB]"
+        )
 
         if (
             mem_usage > chunk_if_mem_usage_exceed
