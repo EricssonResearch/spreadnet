@@ -74,7 +74,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
     mem_usage = process.memory_info().rss / 1e9
     mem_avail = psutil.virtual_memory().available / 1e9
 
-    chunk_if_mem_usage_exceed = 2e9  # 2GB
+    chunk_if_mem_usage_exceed = 2  # 2GB
     chunk_counter = 1
 
     if visualize_graph:
