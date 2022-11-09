@@ -7,6 +7,7 @@ data:
   num_node_min: 8
   num_node_max: 50
   starting_theta: 17 # the higher the less edge
+  theta_cap: 100
 
   random_seed_test: 1
   num_node_min_test: 51
