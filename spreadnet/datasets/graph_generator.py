@@ -143,38 +143,38 @@ class GraphGenerator:
             for c in components:
                 connect_from_choices = set(c)
                 connect_from = self.random_state.choice(list(connect_from_choices))
-                connect_from_pos = pos[connect_from]
 
                 connect_to_nodes = list(set(geo_graph.nodes()) - connect_from_choices)
                 closest_node = connect_to_nodes[0]
-                closest_node_pos = pos[closest_node]
                 closest_distance = self._geo_diff(
-                    connect_from_pos[0],
-                    connect_from_pos[1],
-                    closest_node_pos[0],
-                    closest_node_pos[1],
+                    pos[connect_from][0],
+                    pos[connect_from][1],
+                    pos[closest_node][0],
+                    pos[closest_node][1],
                 )
 
                 for node in connect_to_nodes:
-                    npos = pos[node]
                     distance = self._geo_diff(
-                        connect_from_pos[0], connect_from_pos[1], npos[0], npos[1]
+                        pos[connect_from][0],
+                        pos[connect_from][1],
+                        pos[node][0],
+                        pos[node][1],
                     )
 
                     if distance < closest_distance:
                         closest_node = node
-                        closest_node_pos = npos
                         closest_distance = distance
 
                 for node in list(connect_from_choices):
-                    npos = pos[node]
                     distance = self._geo_diff(
-                        npos[0], npos[1], closest_node_pos[0], closest_node_pos[1]
+                        pos[node][0],
+                        pos[node][1],
+                        pos[closest_node][0],
+                        pos[closest_node][1],
                     )
 
                     if distance < closest_distance:
                         connect_from = node
-                        connect_from_pos = npos
                         closest_distance = distance
 
                 geo_graph.add_edge(connect_from, closest_node)
