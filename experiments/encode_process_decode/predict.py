@@ -105,7 +105,7 @@ def predict(model, graph):
 if __name__ == "__main__":
 
     predict_logger = log_utils.init_file_console_logger(
-        "predict_logger", log_save_path, f"predict_{which_model}"
+        "predict_logger", log_save_path, "predict_MPNN"
     )
 
     predict_logger.info(f"Using {device} device...")
@@ -136,8 +136,8 @@ if __name__ == "__main__":
         for raw_file_path in raw_file_paths:
             graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
             for idx, graph_json in enumerate(graphs_json):
-                print("\n\n")
-                print("Graph idx: ", idx + 1)
+                predict_logger.info("\n\n")
+                predict_logger.info("Graph idx: ", idx + 1)
 
                 graph_nx = nx.node_link_graph(graph_json)
                 (preds, infers) = predict(model, process_nx(graph_nx))
@@ -147,10 +147,10 @@ if __name__ == "__main__":
                     pred_total_weight,
                 ) = process_prediction(graph_nx, preds, infers)
 
-                print(f"Truth weights: {truth_total_weight}")
-                print(f"Pred weights: {pred_total_weight}")
+                predict_logger.info(f"Truth weights: {truth_total_weight}")
+                predict_logger.info(f"Pred weights: {pred_total_weight}")
 
-                print("Drawing comparison...")
+                predict_logger.info("Drawing comparison...")
                 fig = plt.figure(figsize=(80, 40))
                 draw_networkx(
                     f"Truth, total edge weights: {round(truth_total_weight, 2)}",
@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}.jpg"
                 plt.savefig(plot_name, pad_inches=0, bbox_inches="tight")
                 plt.clf()
-                print("Image saved at ", plot_name)
+                predict_logger.info("Image saved at ", plot_name)
 
                 input("Press enter to predict another graph")
     except Exception as e:
