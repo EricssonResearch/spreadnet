@@ -16,6 +16,7 @@ from spreadnet.utils import log_utils
 
 
 process = psutil.Process(os.getpid())
+total_mem = psutil.virtual_memory().total / 1e9
 # ------------------------------------------
 # Params
 yaml_path = os.path.join(os.path.dirname(__file__), "dataset_configs.yaml")
@@ -71,7 +72,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
     graph_generator = generator.task_graph_generator()
 
     all_graphs = list()
-    mem_usage = process.memory_info().rss
+    mem_usage = process.memory_info().rss / 1e9
     chunk_if_mem_usage_exceed = 2e9  # 2GB
     chunk_counter = 1
 
@@ -89,7 +90,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
         range(size),
         unit="graph",
         total=size,
-        desc=f"[Mem: {round(mem_usage/1e9, 2)} GB]",
+        desc=f"[Mem: {round(mem_usage, 2)}/{round(total_mem, 2)} GB]",
         leave=False,
     )
     for idx in loop:
@@ -104,10 +105,13 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             theta += 1
             generator.set_theta(theta)
 
-        mem_usage = process.memory_info().rss
-        loop.set_description(f"[Mem: {round(mem_usage/1e9, 2)} GB]")
+        mem_usage = process.memory_info().rss / 1e9
+        loop.set_description(f"[Mem: {round(mem_usage, 2)}/{round(total_mem, 2)} GB]")
 
-        if mem_usage > chunk_if_mem_usage_exceed:
+        if (
+            mem_usage > chunk_if_mem_usage_exceed
+            or psutil.virtual_memory().percent > 70
+        ):
             with open(raw_path + f"/{file_name}_{chunk_counter}.json", "w") as outfile:
                 json.dump(all_graphs, outfile, cls=NpEncoder)
                 all_graphs.clear()
