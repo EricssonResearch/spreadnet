@@ -197,7 +197,6 @@ class ModelTrainer:
         best_model_wts,
         best_acc,
     ):
-        print("Saving state...")
         ipvac = self.in_path_validation_accuracies_curve
         torch.save(
             {
@@ -452,7 +451,9 @@ class ModelTrainer:
 
                 if answer.capitalize() == "Y":
                     checkpoint = torch.load(self.checkpoint_path)
-                    print("Resume training...")
+                    train_local_logger.info(
+                        f'Resume training from {checkpoint["epoch"]} epoch'
+                    )
                     epoch = checkpoint["epoch"] + 1
                     self.model.load_state_dict(checkpoint["model_state_dict"])
                     best_model_wts = checkpoint["best_model_state_dict"]
@@ -496,12 +497,15 @@ class ModelTrainer:
                     self.save_training_state(
                         epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
                     )
+                    train_local_logger.info("Saving state...")
 
                 if epoch % 10 == 1:
                     train_local_logger.info(
-                        f'Epoch  | Train Loss (Node,Edge)|\tValidation \
-                        Loss\t|Train Acc (Node,Edge,NodeInPath,EdgeInPath)\t \
-                        |\tValidation Acc\t \n {"=" * 176}'
+                        f'{"Epoch":^8s}|{"Train Loss (Node,Edge)":^22s}|'
+                        f'{"Validation Loss":^22s}|'
+                        f'{"Train Acc (Node,Edge,NodeInPath,EdgeInPath)":^45s}|'
+                        f'{"Validation Acc":^44s}|'
+                        f'{"Precise Acc":^22s} \n {"=" * 220}'
                     )
                 lcn = self.losses_curve[-1]["nodes"]
                 lce = self.losses_curve[-1]["edges"]
@@ -515,12 +519,16 @@ class ModelTrainer:
                 vace = self.validation_accuracies_curve[-1]["edges"]
                 ipvacn = self.in_path_validation_accuracies_curve[-1]["nodes"]
                 ipvace = self.in_path_validation_accuracies_curve[-1]["edges"]
+                tpac = self.accuracies_curve[-1]["precise"]
+                vpac = self.validation_accuracies_curve[-1]["precise"]
+
                 train_local_logger.info(
                     f"{epoch:3}/{epochs}|"
                     f"{lcn:2.8f},{lce:2.8f} |"
                     f"{vlcn:2.8f},{vlce:2.8f} |"
                     f"{accn:2.8f}, {ace:2.8f} {ipacn:2.8f},{ipace:2.8f} |"
-                    f"{vacn:2.8f}, {vace:2.8f} {ipvacn:2.8f},{ipvace:2.8f}"
+                    f"{vacn:2.8f}, {vace:2.8f} {ipvacn:2.8f},{ipvace:2.8f} |"
+                    f"{tpac:2.8f}, {vpac:2.8f}"
                 )
                 if epoch % plot_after_epochs == 0:
                     self.create_plot(plot_name)
@@ -538,6 +546,7 @@ class ModelTrainer:
         train_local_logger.info(
             f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )
+        logging.shutdown(handlerList="train_local_logger")
 
 
 class WAndBModelTrainer(ModelTrainer):
