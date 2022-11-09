@@ -71,6 +71,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
     graph_generator = generator.task_graph_generator()
 
     all_graphs = list()
+    mem_usage = process.memory_info().rss
     chunk_if_mem_usage_exceed = 2e9  # 2GB
     chunk_counter = 1
 
@@ -84,7 +85,14 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             )
         )
 
-    for idx in tqdm(range(size)):
+    loop = tqdm(
+        range(size),
+        unit="graph",
+        total=size,
+        desc=f"[Mem: {round(mem_usage/1e9, 2)} GB]",
+        leave=False,
+    )
+    for idx in loop:
         g = next(graph_generator)
         all_graphs.append(nx.node_link_data(g))
 
@@ -97,7 +105,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             generator.set_theta(theta)
 
         mem_usage = process.memory_info().rss
-        dataset_logger.info(f"Mem usage: {round(mem_usage/1e9, 2)} GB")
+        loop.set_description(f"[Mem: {round(mem_usage/1e9, 2)} GB]")
 
         if mem_usage > chunk_if_mem_usage_exceed:
             with open(raw_path + f"/{file_name}_{chunk_counter}.json", "w") as outfile:
