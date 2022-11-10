@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import math
 from tqdm import tqdm
 import time
+import psutil
 
 from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
@@ -14,6 +15,7 @@ from spreadnet.datasets import run_statistics
 from spreadnet.utils import log_utils
 
 
+process = psutil.Process(os.getpid())
 # ------------------------------------------
 # Params
 yaml_path = os.path.join(os.path.dirname(__file__), "dataset_configs.yaml")
@@ -69,6 +71,11 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
     graph_generator = generator.task_graph_generator()
 
     all_graphs = list()
+    mem_usage = process.memory_info().rss / 1e9
+    mem_avail = psutil.virtual_memory().available / 1e9
+
+    chunk_if_mem_usage_exceed = 2  # 2GB
+    chunk_counter = 1
 
     if visualize_graph:
         graphs_to_be_drawn = visualize_graph
@@ -80,7 +87,14 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             )
         )
 
-    for idx in tqdm(range(size)):
+    loop = tqdm(
+        range(size),
+        unit="graph",
+        total=size,
+        desc=f"[Mem Used: {round(mem_usage, 2)} | Free: {round(mem_avail, 2)} GB]",
+        leave=False,
+    )
+    for idx in loop:
         g = next(graph_generator)
         all_graphs.append(nx.node_link_data(g))
 
@@ -92,14 +106,31 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
             theta += 1
             generator.set_theta(theta)
 
+        mem_usage = process.memory_info().rss / 1e9
+        mem_avail = psutil.virtual_memory().available / 1e9
+
+        loop.set_description(
+            f"[Mem Used: {round(mem_usage, 2)} | Free: {round(mem_avail, 2)} GB]"
+        )
+
+        if (
+            mem_usage > chunk_if_mem_usage_exceed
+            or psutil.virtual_memory().percent > 70
+        ):
+            with open(raw_path + f"/{file_name}_{chunk_counter}.json", "w") as outfile:
+                json.dump(all_graphs, outfile, cls=NpEncoder)
+                all_graphs.clear()
+                chunk_counter += 1
+
     if visualize_graph:
         dataset_logger.info("Saving figure...")
         fig.tight_layout()
         plt.savefig(raw_path + f"/{file_name}.jpg", pad_inches=0, bbox_inches="tight")
         plt.clf()
 
-    with open(raw_path + f"/{file_name}.json", "w") as outfile:
-        json.dump(all_graphs, outfile, cls=NpEncoder)
+    if len(all_graphs):
+        with open(raw_path + f"/{file_name}_{chunk_counter}.json", "w") as outfile:
+            json.dump(all_graphs, outfile, cls=NpEncoder)
 
 
 if __name__ == "__main__":
