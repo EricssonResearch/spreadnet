@@ -1,6 +1,6 @@
 #! /bin/bash -l
 #
-#SBATCH -p core -n 1 -t 2-00:00:00
+#SBATCH -p core -n 2 -G 1 -t 2-00:00:00
 #SBATCH -A uppmax2022-2-23 -M snowy
 
 cd ../experiments
