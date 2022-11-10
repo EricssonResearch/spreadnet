@@ -1,7 +1,7 @@
 SBATCH on Uppmax
 --------------------
 
-* Submit batch to Uppmax::
+* Submit job batch to Uppmax::
 
     sbatch [filename]
 
