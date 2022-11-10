@@ -15,5 +15,5 @@ SBATCH on Uppmax
     ls -l
 
     less slurm-[job_id].out
-    
+
     :q
