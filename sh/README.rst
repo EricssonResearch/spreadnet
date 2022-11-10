@@ -10,7 +10,7 @@ SBATCH on Uppmax
     jobinfo -u "$(whoami)" -M snowy
 
 * To cancel jobs::
-    
+
     scancel -u "$(whoami)" -M snowy [job_id]
 
 * To check logs, look at `.out` files in this folder matching your job id. Or list them by date by using::
