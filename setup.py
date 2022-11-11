@@ -12,7 +12,7 @@ requirements = [
     "tensorflow_gnn",
     "tensorflow",
     "pandas",
-    "psutil",
+    "joblib",
 ]
 setup(
     name="spreadnet",

@@ -1,9 +1,9 @@
+joblib~=1.1.0
 matplotlib>=3.5.1
 networkx~=2.6
 numpy>=1.21.4
 pandas~=1.4.4
 pre-commit
-psutil~=5.9.4
 pyyaml>=6.0
 scipy~=1.9.1
 setuptools~=63.4.1
