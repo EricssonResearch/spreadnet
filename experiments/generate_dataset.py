@@ -59,6 +59,11 @@ def generate_task_graph(
     Returns:
         None
     """
+    json_file_name = raw_path + f"/{file_name}_{idx:06}.json"
+    exists = os.path.exists(json_file_name)
+
+    if exists:
+        return
 
     increase_theta_after = 1 / theta_increase_rate
     theta = starting_theta + int(idx / increase_theta_after)
@@ -69,7 +74,7 @@ def generate_task_graph(
     g = gen_fn(seed, theta)
     graphs = [nx.node_link_data(g)]
 
-    with open(raw_path + f"/{file_name}_{idx:06}.json", "w") as outfile:
+    with open(json_file_name, "w") as outfile:
         json.dump(graphs, outfile, cls=NpEncoder)
 
     if visualize_graph and idx < visualize_graph:
