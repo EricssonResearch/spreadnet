@@ -29,7 +29,8 @@ num_nodes_min_max_test = (
     data_configs["num_node_min_test"],
     data_configs["num_node_max_test"],
 )
-theta_cap = float(data_configs["theta_cap"])
+theta_cap = int(data_configs["theta_cap"])
+theta_increase_rate = float(data_configs["theta_increase_rate"])
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
@@ -42,12 +43,25 @@ if not os.path.exists(raw_path):
 def generate_task_graph(
     gen_fn,
     starting_theta,
-    increase_theta_after,
     file_name,
     seed,
     idx,
 ):
-    theta = starting_theta + int((idx + 1) / increase_theta_after)
+    """Generate graph.
+
+    Args:
+        gen_fn: generation function
+        starting_theta: theta to be passed to graph generator
+        file_name: output file name
+        seed: graph seed to override
+        idx: index
+
+    Returns:
+        None
+    """
+
+    increase_theta_after = int(1 / theta_increase_rate)
+    theta = starting_theta + int(idx / increase_theta_after)
 
     if theta > theta_cap:
         theta = theta_cap
@@ -75,7 +89,7 @@ def generate_task_graph(
         plt.clf()
 
 
-def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rate=15):
+def generate(name, seed, size, nodes_min_max, starting_theta):
     """Generate dataset with config.
 
     Args:
@@ -93,8 +107,6 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
     file_name = (
         f"{name}.{seed}." + f"{nodes_min_max[0]}-{nodes_min_max[1]}.{starting_theta}"
     )
-
-    increase_theta_after = (nodes_min_max[1] - nodes_min_max[0]) * increase_theta_rate
 
     generator = GraphGenerator(
         random_seed=seed,
@@ -117,7 +129,6 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
         delayed(generate_task_graph)(
             generator.generate_task_graph,
             starting_theta,
-            increase_theta_after,
             file_name,
             seeds[i],
             i,
