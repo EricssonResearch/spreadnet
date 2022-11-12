@@ -60,7 +60,7 @@ def generate_task_graph(
         None
     """
 
-    increase_theta_after = int(1 / theta_increase_rate)
+    increase_theta_after = 1 / theta_increase_rate
     theta = starting_theta + int(idx / increase_theta_after)
 
     if theta > theta_cap:
@@ -69,7 +69,7 @@ def generate_task_graph(
     g = gen_fn(seed, theta)
     graphs = [nx.node_link_data(g)]
 
-    with open(raw_path + f"/{file_name}_{idx}.json", "w") as outfile:
+    with open(raw_path + f"/{file_name}_{idx:06}.json", "w") as outfile:
         json.dump(graphs, outfile, cls=NpEncoder)
 
     if visualize_graph and idx < visualize_graph:
