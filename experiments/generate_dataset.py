@@ -130,7 +130,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta):
     random_state = np.random.RandomState(seed)
     seeds = random_state.randint(np.iinfo(np.int32).max, size=size)
 
-    Parallel(n_jobs=-1, backend="multiprocessing")(
+    Parallel(n_jobs=-1, backend="multiprocessing", batch_size=4)(
         delayed(generate_task_graph)(
             generator.generate_task_graph,
             starting_theta,
