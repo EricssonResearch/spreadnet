@@ -2,9 +2,10 @@ import os
 import json
 import networkx as nx
 import matplotlib.pyplot as plt
-import math
 from tqdm import tqdm
 import time
+from joblib import Parallel, delayed
+import numpy as np
 
 from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
@@ -28,16 +29,72 @@ num_nodes_min_max_test = (
     data_configs["num_node_min_test"],
     data_configs["num_node_max_test"],
 )
-theta_cap = float(data_configs["theta_cap"])
+theta_cap = int(data_configs["theta_cap"])
+theta_increase_rate = float(data_configs["theta_increase_rate"])
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
 log_save_path = dataset_path + "/logs"
+
 if not os.path.exists(raw_path):
     os.makedirs(raw_path)
 
 
-def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rate=15):
+def generate_task_graph(
+    gen_fn,
+    starting_theta,
+    file_name,
+    seed,
+    idx,
+):
+    """Generate graph.
+
+    Args:
+        gen_fn: generation function
+        starting_theta: theta to be passed to graph generator
+        file_name: output file name
+        seed: graph seed to override
+        idx: index
+
+    Returns:
+        None
+    """
+    json_file_name = raw_path + f"/{file_name}_{idx:06}.json"
+    exists = os.path.exists(json_file_name)
+
+    if exists:
+        return
+
+    increase_theta_after = 1 / theta_increase_rate
+    theta = starting_theta + int(idx / increase_theta_after)
+
+    if theta > theta_cap:
+        theta = theta_cap
+
+    g = gen_fn(seed, theta)
+    graphs = [nx.node_link_data(g)]
+
+    with open(json_file_name, "w") as outfile:
+        json.dump(graphs, outfile, cls=NpEncoder)
+
+    if visualize_graph and idx < visualize_graph:
+        plot_size = 20
+        fig = plt.figure(
+            figsize=(
+                plot_size,
+                plot_size,
+            )
+        )
+
+        draw_networkx(str(idx + 1), fig, g, 1, 1)
+        fig.tight_layout()
+        plt.savefig(
+            raw_path + f"/{file_name}_{idx}.jpg", pad_inches=0, bbox_inches="tight"
+        )
+        plt.clf()
+
+
+def generate(name, seed, size, nodes_min_max, starting_theta):
     """Generate dataset with config.
 
     Args:
@@ -56,50 +113,33 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
         f"{name}.{seed}." + f"{nodes_min_max[0]}-{nodes_min_max[1]}.{starting_theta}"
     )
 
-    theta = starting_theta
-    increase_theta_after = (nodes_min_max[1] - nodes_min_max[0]) * increase_theta_rate
-
     generator = GraphGenerator(
         random_seed=seed,
         num_nodes_min_max=nodes_min_max,
-        theta=theta,
+        theta=starting_theta,
         min_length=min_path_length,
     )
 
-    graph_generator = generator.task_graph_generator()
+    loop = tqdm(
+        range(size),
+        unit="graph",
+        total=size,
+        leave=True,
+    )
 
-    all_graphs = list()
+    random_state = np.random.RandomState(seed)
+    seeds = random_state.randint(np.iinfo(np.int32).max, size=size)
 
-    if visualize_graph:
-        graphs_to_be_drawn = visualize_graph
-        plot_size = 20
-        fig = plt.figure(
-            figsize=(
-                graphs_to_be_drawn * plot_size if graphs_to_be_drawn < 5 else 60,
-                math.ceil(graphs_to_be_drawn / 5) * plot_size,
-            )
+    Parallel(n_jobs=-1, backend="multiprocessing", batch_size=4)(
+        delayed(generate_task_graph)(
+            generator.generate_task_graph,
+            starting_theta,
+            file_name,
+            seeds[i],
+            i,
         )
-
-    for idx in tqdm(range(size)):
-        g = next(graph_generator)
-        all_graphs.append(nx.node_link_data(g))
-
-        if visualize_graph and graphs_to_be_drawn > 0:
-            draw_networkx(str(idx + 1), fig, g, idx + 1, visualize_graph)
-            graphs_to_be_drawn -= 1
-
-        if theta < theta_cap and (idx + 1) % increase_theta_after == 0:
-            theta += 1
-            generator.set_theta(theta)
-
-    if visualize_graph:
-        dataset_logger.info("Saving figure...")
-        fig.tight_layout()
-        plt.savefig(raw_path + f"/{file_name}.jpg", pad_inches=0, bbox_inches="tight")
-        plt.clf()
-
-    with open(raw_path + f"/{file_name}.json", "w") as outfile:
-        json.dump(all_graphs, outfile, cls=NpEncoder)
+        for i in loop
+    )
 
 
 if __name__ == "__main__":
@@ -134,6 +174,7 @@ if __name__ == "__main__":
         dataset_logger.info("Graph Generation Done...\nProcessing...")
         process_raw_data_folder(dataset_path, "test.all", "test.")
 
+        dataset_logger.info("Computing stats...")
         run_stat = run_statistics.RunStatistics()
         run_stat.add_data("raw_path", raw_path)
 

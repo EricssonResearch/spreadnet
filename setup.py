@@ -12,6 +12,8 @@ requirements = [
     "tensorflow_gnn",
     "tensorflow",
     "pandas",
+    "joblib",
+    "wandb",
 ]
 setup(
     name="spreadnet",

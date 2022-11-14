@@ -93,27 +93,23 @@ class GraphGenerator:
             Generator of networkx.DiGraph
         """
         while True:
-            yield self._generate_task_graph()
+            yield self.generate_task_graph()
 
-    def base_graph_generator(self):
-        """The graphs are geographic threshold graphs, but with added edges via
-        a minimum spanning tree algorithm, to ensure all nodes are connected.
+    def generate_task_graph(self, random_state=None, theta=None):
+        if random_state is not None:
+            self.random_state = np.random.RandomState(random_state)
 
-        returns:
-            Generator of networkx.Graph
-        """
-        while True:
-            yield self._generate_base_graph()
+        if theta is not None:
+            self.set_theta(theta)
 
-    def _generate_task_graph(self):
-        graph = self._generate_base_graph()
+        graph = self.generate_base_graph()
         graph = self.add_shortest_path(graph, self.min_length)
         return graph
 
     def _geo_diff(self, lat1, lon1, lat2, lon2):
         return abs(lat2 - lat1) + abs(lon2 - lon1)
 
-    def _generate_base_graph(self):
+    def generate_base_graph(self):
         """Generate the base graph for the task.
 
         Returns:
@@ -213,7 +209,7 @@ class GraphGenerator:
         path = []
         while len(path) < min_length:
             if len(nodes_set) == 0:
-                return self._generate_task_graph()
+                return self.generate_task_graph()
 
             end = self.random_state.choice(list(nodes_set))
             nodes_set = nodes_set - set([end])
