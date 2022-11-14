@@ -16,6 +16,7 @@ from tqdm import tqdm
 import webdataset as wds
 import logging
 import time
+from glob import glob
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -163,8 +164,17 @@ class ModelTrainer:
         Returns:
             train_loader, validation_loader
         """
+        tar_length = len(list(glob(self.dataset_path + "/processed/[!test.]*.tar"))) - 1
+        last_tar = f"{tar_length:06}"
+
         dataset = (
-            wds.WebDataset("file:" + self.dataset_path + "/processed/all_000000.tar")
+            wds.WebDataset(
+                "file:"
+                + self.dataset_path
+                + "/processed/all_{000000.."
+                + last_tar
+                + "}.tar"
+            )
             .decode(pt_decoder)
             .to_tuple(
                 "pt",
