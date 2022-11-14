@@ -174,6 +174,7 @@ if __name__ == "__main__":
         dataset_logger.info("Graph Generation Done...\nProcessing...")
         process_raw_data_folder(dataset_path, "test.all", "test.")
 
+        dataset_logger.info("Computing stats...")
         run_stat = run_statistics.RunStatistics()
         run_stat.add_data("raw_path", raw_path)
 
