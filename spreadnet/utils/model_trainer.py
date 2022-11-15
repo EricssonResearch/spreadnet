@@ -285,12 +285,17 @@ class ModelTrainer:
 
                 # Losses
                 losses = loss_func(node_pred, edge_pred, node_true, edge_true)
-                _, corrects = get_correct_predictions(
-                    node_pred, edge_pred, node_true, edge_true
-                )
-
                 nodes_loss += losses["nodes"].item() * num_graphs
                 edges_loss += losses["edges"].item() * num_graphs
+
+                if is_training:
+                    losses["nodes"].backward(retain_graph=True)
+                    losses["edges"].backward()
+                    self.optimizer.step()
+
+                infers, corrects = get_correct_predictions(
+                    node_pred, edge_pred, node_true, edge_true
+                )
 
                 node_in_path, edge_in_path = get_corrects_in_path(
                     node_pred, edge_pred, node_true, edge_true
@@ -303,11 +308,6 @@ class ModelTrainer:
                     edge_in_path["in_path"],
                     edge_in_path["total"],
                 )
-
-                if is_training:
-                    losses["nodes"].backward(retain_graph=True)
-                    losses["edges"].backward()
-                    self.optimizer.step()
 
                 # Accuracies
                 nodes_corrects += corrects["nodes"]
@@ -323,6 +323,23 @@ class ModelTrainer:
                 edges_in_path_corrects += edge_correct_in_path
                 dataset_nodes_in_path_size += total_node_in_path
                 dataset_edges_in_path_size += total_edge_in_path
+
+                # python auto gc is not good enough to free the memory
+                del (
+                    node_pred,
+                    edge_pred,
+                    data,
+                    losses,
+                    infers,
+                    corrects,
+                    node_in_path,
+                    edge_in_path,
+                    node_correct_in_path,
+                    total_node_in_path,
+                    edge_correct_in_path,
+                    total_edge_in_path,
+                )
+                gc.collect()
 
         nodes_loss /= dataset_size
         edges_loss /= dataset_size
