@@ -207,7 +207,7 @@ class GraphGenerator:
         nodes_set = nodes_set - set([start])
 
         path = []
-        while len(path) < min_length:
+        while len(path) - 1 < min_length:
             if len(nodes_set) == 0:
                 return self.generate_task_graph()
 
