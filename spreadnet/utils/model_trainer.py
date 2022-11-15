@@ -415,7 +415,7 @@ class ModelTrainer:
 
         return validation_acc
 
-    def train(self):
+    def train(self, resume):
 
         train_local_logger = logging.getLogger("train_local_logger")
         train_local_logger.info(f"Using {self.device} device...")
@@ -455,11 +455,11 @@ class ModelTrainer:
             exists = os.path.exists(self.checkpoint_path)
 
             if exists:
-                answer = input(
+                answer = resume or input(
                     "Previous training state found. Enter y/Y to continue training: "
                 )
 
-                if answer.capitalize() == "Y":
+                if resume or answer.capitalize() == "Y":
                     checkpoint = torch.load(self.checkpoint_path)
                     train_local_logger.info(
                         f'Resume training from {checkpoint["epoch"]} epoch'
@@ -873,7 +873,7 @@ class WAndBModelTrainer(ModelTrainer):
         model_artifact.add_file(os.path.join(self.model_save_path, weight_name))
         run.log_artifact(model_artifact)
 
-    def train(self):
+    def train(self, resume):
         date = datetime.now().strftime("%H:%M:%S_%d-%m-%Y")
         experiment_name = f"train_{self.model_name}_{date}"
 
@@ -909,11 +909,11 @@ class WAndBModelTrainer(ModelTrainer):
         exists = os.path.exists(self.checkpoint_path)
 
         if exists:
-            answer = input(
+            answer = resume or input(
                 "Previous wandb training state found. Enter y/Y to continue training: "
             )
 
-            if answer.capitalize() == "Y":
+            if resume or answer.capitalize() == "Y":
                 checkpoint = torch.load(self.checkpoint_path)
                 print("Resume training...")
 
@@ -952,19 +952,6 @@ class WAndBModelTrainer(ModelTrainer):
                 self.validation_edges_in_path_acc = checkpoint[
                     "validation_edges_in_path_acc"
                 ]
-
-            else:
-                self.wandb_id = wandb.util.generate_id()
-                run = wandb.init(
-                    # Set the project where this run will be logged
-                    entity=self.entity_name,
-                    project=self.project_name,
-                    name=f"{experiment_name}",
-                    id=self.wandb_id,
-                    # Track hyperparameters and run metadata
-                    config=self.wandb_configs,
-                    job_type="training",
-                )
         else:
             self.wandb_id = wandb.util.generate_id()
             run = wandb.init(
