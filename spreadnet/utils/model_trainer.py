@@ -7,16 +7,16 @@ import copy
 import os
 from datetime import datetime
 from itertools import islice
-
 import torch
 import wandb
 import shutil
-from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import webdataset as wds
 import logging
 import time
 from glob import glob
+from torch_geometric.data import Batch
+import gc
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -158,11 +158,11 @@ class ModelTrainer:
 
         return (x, edge_index, edge_attr), (node_true, edge_true)
 
-    def construct_dataloader(self):
-        """Construct dataloaders: train loader and validation loader.
+    def construct_dataset(self):
+        """Construct datasets.
 
         Returns:
-            train_loader, validation_loader
+            dataset, dataset_size
         """
         tar_length = len(list(glob(self.dataset_path + "/processed/[!test.]*.tar"))) - 1
         last_tar = f"{tar_length:06}"
@@ -180,26 +180,12 @@ class ModelTrainer:
                 "pt",
             )
         )
+        dataset_size = sum(1 for _ in dataset)
 
-        dataset_size = len(list(dataset))
-        train_size = int(self.train_configs["train_ratio"] * dataset_size)
+        if bool(self.train_configs["shuffle"]):
+            dataset.shuffle(dataset_size * 10)
 
-        train_dataset = list(islice(dataset, 0, train_size))
-        validation_dataset = list(islice(dataset, train_size, dataset_size + 1))
-
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.train_configs["batch_size"],
-            shuffle=self.train_configs["shuffle"],
-            pin_memory=True,
-        )
-        validation_loader = DataLoader(
-            validation_dataset,
-            batch_size=self.train_configs["batch_size"],
-            shuffle=self.train_configs["shuffle"],
-            pin_memory=True,
-        )
-        return train_loader, validation_loader
+        return dataset, dataset_size
 
     def save_training_state(
         self,
@@ -226,14 +212,15 @@ class ModelTrainer:
             self.checkpoint_path,
         )
 
-    def sub_execute(self, mode, epoch, total_epoch, dataloader, loss_func):
+    def sub_execute(self, mode, epoch, total_epoch, dataset, dataset_size, loss_func):
         """sub execution: train or validation in one epoch.
 
         Args:
             mode: train | validation
             epoch: the current epoch
             total_epoch: the total epoch
-            dataloader: dataloader
+            dataset: train or validation dataset
+            dataset_size: dataset size
             loss_func: loss function
 
         Returns:
@@ -253,18 +240,29 @@ class ModelTrainer:
         nodes_in_path_corrects, edges_in_path_corrects = 0, 0
         dataset_nodes_in_path_size, dataset_edges_in_path_size = 0, 0
 
-        dataset_size = len(list(dataloader))
         precise_corrects = 0.0
 
         with torch.enable_grad() if is_training else torch.no_grad():
-            for batch, (data,) in tqdm(
-                enumerate(dataloader),
+            batch = []
+            batch_size = self.train_configs["batch_size"]
+
+            for (data,) in tqdm(
+                dataset,
                 unit="batch",
-                total=len(list(dataloader)),
+                total=dataset_size,
                 desc=f"[Epoch: {epoch:4} / {total_epoch:4} | {pb_str} ]",
                 leave=False,
             ):
-                data = data.to(self.device)
+                batch.append(data)
+
+                if len(batch) < batch_size and len(batch) < dataset_size:
+                    continue
+
+                num_graphs = len(batch)
+                data = Batch.from_data_list(batch).to(self.device)
+                batch.clear()
+                gc.collect()
+
                 (x, edge_index, edge_attr), (
                     node_true,
                     edge_true,
@@ -290,8 +288,9 @@ class ModelTrainer:
                 _, corrects = get_correct_predictions(
                     node_pred, edge_pred, node_true, edge_true
                 )
-                nodes_loss += losses["nodes"].item() * data.num_graphs
-                edges_loss += losses["edges"].item() * data.num_graphs
+
+                nodes_loss += losses["nodes"].item() * num_graphs
+                edges_loss += losses["edges"].item() * num_graphs
 
                 node_in_path, edge_in_path = get_corrects_in_path(
                     node_pred, edge_pred, node_true, edge_true
@@ -325,8 +324,8 @@ class ModelTrainer:
                 dataset_nodes_in_path_size += total_node_in_path
                 dataset_edges_in_path_size += total_edge_in_path
 
-        nodes_loss /= len(dataloader.dataset)
-        edges_loss /= len(dataloader.dataset)
+        nodes_loss /= dataset_size
+        edges_loss /= dataset_size
         nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy().item()
         edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy().item()
 
@@ -349,20 +348,24 @@ class ModelTrainer:
             precise_acc,
         )
 
-    def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
+    def execute(self, epoch, total_epoch, dataset, dataset_size, loss_func):
         """
         Execute training or validating.
         Args:
 
             epoch: current epoch
             total_epoch: the number of total epoch
-            valid_loader: validation set dataloader
-            train_loader: train set dataloader
+            dataset: train and validation dataset
+            dataset_size: dataset size
             loss_func: utils function
 
         Returns:
             accuracy
         """
+        train_size = int(self.train_configs["train_ratio"] * dataset_size)
+        validation_size = dataset_size - train_size
+        train_dataset = islice(dataset, 0, train_size)
+        validation_dataset = islice(dataset, train_size, dataset_size + 1)
         (
             train_nodes_loss,
             train_edges_loss,
@@ -371,7 +374,9 @@ class ModelTrainer:
             train_node_in_path_acc,
             train_edge_in_path_acc,
             train_precise_acc,
-        ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
+        ) = self.sub_execute(
+            "train", epoch, total_epoch, train_dataset, train_size, loss_func
+        )
 
         (
             validation_nodes_loss,
@@ -381,7 +386,14 @@ class ModelTrainer:
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
             validation_precise_acc,
-        ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
+        ) = self.sub_execute(
+            "validation",
+            epoch,
+            total_epoch,
+            validation_dataset,
+            validation_size,
+            loss_func,
+        )
 
         self.losses_curve.append({"nodes": train_nodes_loss, "edges": train_edges_loss})
         self.validation_losses_curve.append(
@@ -416,7 +428,6 @@ class ModelTrainer:
         return validation_acc
 
     def train(self, resume):
-
         train_local_logger = logging.getLogger("train_local_logger")
         train_local_logger.info(f"Using {self.device} device...")
         date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
@@ -432,7 +443,7 @@ class ModelTrainer:
         dataset_size = self.dataset_configs["dataset_size"]
         plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
 
-        train_loader, validation_loader = self.construct_dataloader()
+        dataset, dataset_size = self.construct_dataset()
 
         self.construct_model()
 
@@ -491,7 +502,7 @@ class ModelTrainer:
                 self.steps_curve.append(epoch)
 
                 validation_acc = self.execute(
-                    epoch, epochs, train_loader, validation_loader, hybrid_loss
+                    epoch, epochs, dataset, dataset_size, hybrid_loss
                 )
 
                 if validation_acc > best_acc:
@@ -636,20 +647,24 @@ class WAndBModelTrainer(ModelTrainer):
             self.checkpoint_path,
         )
 
-    def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
+    def execute(self, epoch, total_epoch, dataset, dataset_size, loss_func):
         """
         Execute training or validating.
         Args:
 
             epoch: current epoch
             total_epoch: the number of total epoch
-            valid_loader: validation set data_loader
-            train_loader: train set data_loader
+            dataset: train and validation dataset
+            dataset_size: dataset size
             loss_func: utils function
 
         Returns:
             accuracy
         """
+        train_size = int(self.train_configs["train_ratio"] * dataset_size)
+        validation_size = dataset_size - train_size
+        train_dataset = islice(dataset, 0, train_size)
+        validation_dataset = islice(dataset, train_size, dataset_size + 1)
         (
             train_nodes_loss,
             train_edges_loss,
@@ -658,7 +673,9 @@ class WAndBModelTrainer(ModelTrainer):
             train_node_in_path_acc,
             train_edge_in_path_acc,
             train_precise_acc,
-        ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
+        ) = self.sub_execute(
+            "train", epoch, total_epoch, train_dataset, train_size, loss_func
+        )
 
         (
             validation_nodes_loss,
@@ -668,7 +685,14 @@ class WAndBModelTrainer(ModelTrainer):
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
             validation_precise_acc,
-        ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
+        ) = self.sub_execute(
+            "validation",
+            epoch,
+            total_epoch,
+            validation_dataset,
+            validation_size,
+            loss_func,
+        )
 
         # simple log
         train_metrics = {
@@ -891,8 +915,8 @@ class WAndBModelTrainer(ModelTrainer):
         self.construct_model()
 
         # TODO:
-        #  We can override `construct_dataloader()` after setting the dataset in wandb
-        train_loader, validation_loader = self.construct_dataloader()
+        #  We can override `construct_dataset()` after setting the dataset in wandb
+        dataset, dataset_size = self.construct_dataset()
 
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
@@ -971,7 +995,7 @@ class WAndBModelTrainer(ModelTrainer):
             self.epoch_lst.append(epoch)
 
             validation_acc = self.execute(
-                epoch, epochs, train_loader, validation_loader, hybrid_loss
+                epoch, epochs, dataset, dataset_size, hybrid_loss
             )
 
             if validation_acc > best_acc:
