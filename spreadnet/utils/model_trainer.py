@@ -246,8 +246,8 @@ class ModelTrainer:
             batch = []
             batch_size = self.train_configs["batch_size"]
 
-            for (data,) in tqdm(
-                dataset,
+            for idx, (data,) in tqdm(
+                enumerate(dataset),
                 unit="batch",
                 total=dataset_size,
                 desc=f"[Epoch: {epoch:4} / {total_epoch:4} | {pb_str} ]",
@@ -255,7 +255,11 @@ class ModelTrainer:
             ):
                 batch.append(data)
 
-                if len(batch) < batch_size and len(batch) < dataset_size:
+                if (
+                    len(batch) < batch_size
+                    and len(batch) < dataset_size
+                    and idx + 1 != dataset_size
+                ):
                     continue
 
                 num_graphs = len(batch)
