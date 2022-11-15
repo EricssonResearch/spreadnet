@@ -319,8 +319,9 @@ class ModelTrainer:
                 dataset_nodes_size += data.num_nodes
                 dataset_edges_size += data.num_edges
 
-                precise_corrects += get_precise_corrects(
-                    corrects, (data.num_nodes, data.num_edges)
+                precise_corrects += (
+                    get_precise_corrects(corrects, (data.num_nodes, data.num_edges))
+                    * num_graphs
                 )
 
                 nodes_in_path_corrects += node_correct_in_path
