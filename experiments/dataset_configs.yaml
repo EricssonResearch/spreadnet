@@ -5,6 +5,7 @@ data:
 
   # graph generator
   min_path_length: 2
+  theta_increase_rate: 0.02 # increase after iterations 1 / value. Eg: 1 / 0.02 = 50 it.s
   theta_cap: 100
 
   random_seed: 0

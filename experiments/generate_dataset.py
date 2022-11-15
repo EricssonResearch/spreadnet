@@ -29,7 +29,8 @@ num_nodes_min_max_test = (
     data_configs["num_node_min_test"],
     data_configs["num_node_max_test"],
 )
-theta_cap = float(data_configs["theta_cap"])
+theta_cap = int(data_configs["theta_cap"])
+theta_increase_rate = float(data_configs["theta_increase_rate"])
 dataset_size = data_configs["dataset_size"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
@@ -42,12 +43,30 @@ if not os.path.exists(raw_path):
 def generate_task_graph(
     gen_fn,
     starting_theta,
-    increase_theta_after,
     file_name,
     seed,
     idx,
 ):
-    theta = starting_theta + int((idx + 1) / increase_theta_after)
+    """Generate graph.
+
+    Args:
+        gen_fn: generation function
+        starting_theta: theta to be passed to graph generator
+        file_name: output file name
+        seed: graph seed to override
+        idx: index
+
+    Returns:
+        None
+    """
+    json_file_name = raw_path + f"/{file_name}_{idx:06}.json"
+    exists = os.path.exists(json_file_name)
+
+    if exists:
+        return
+
+    increase_theta_after = 1 / theta_increase_rate
+    theta = starting_theta + int(idx / increase_theta_after)
 
     if theta > theta_cap:
         theta = theta_cap
@@ -55,7 +74,7 @@ def generate_task_graph(
     g = gen_fn(seed, theta)
     graphs = [nx.node_link_data(g)]
 
-    with open(raw_path + f"/{file_name}_{idx}.json", "w") as outfile:
+    with open(json_file_name, "w") as outfile:
         json.dump(graphs, outfile, cls=NpEncoder)
 
     if visualize_graph and idx < visualize_graph:
@@ -70,12 +89,12 @@ def generate_task_graph(
         draw_networkx(str(idx + 1), fig, g, 1, 1)
         fig.tight_layout()
         plt.savefig(
-            raw_path + f"/{file_name}_{idx}.jpg", pad_inches=0, bbox_inches="tight"
+            raw_path + f"/{file_name}_{idx:06}.jpg", pad_inches=0, bbox_inches="tight"
         )
         plt.clf()
 
 
-def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rate=15):
+def generate(name, seed, size, nodes_min_max, starting_theta):
     """Generate dataset with config.
 
     Args:
@@ -94,8 +113,6 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
         f"{name}.{seed}." + f"{nodes_min_max[0]}-{nodes_min_max[1]}.{starting_theta}"
     )
 
-    increase_theta_after = (nodes_min_max[1] - nodes_min_max[0]) * increase_theta_rate
-
     generator = GraphGenerator(
         random_seed=seed,
         num_nodes_min_max=nodes_min_max,
@@ -113,11 +130,10 @@ def generate(name, seed, size, nodes_min_max, starting_theta, increase_theta_rat
     random_state = np.random.RandomState(seed)
     seeds = random_state.randint(np.iinfo(np.int32).max, size=size)
 
-    Parallel(n_jobs=-1, backend="multiprocessing")(
+    Parallel(n_jobs=-1, backend="multiprocessing", batch_size=4)(
         delayed(generate_task_graph)(
             generator.generate_task_graph,
             starting_theta,
-            increase_theta_after,
             file_name,
             seeds[i],
             i,
@@ -158,6 +174,7 @@ if __name__ == "__main__":
         dataset_logger.info("Graph Generation Done...\nProcessing...")
         process_raw_data_folder(dataset_path, "test.all", "test.")
 
+        dataset_logger.info("Computing stats...")
         run_stat = run_statistics.RunStatistics()
         run_stat.add_data("raw_path", raw_path)
 

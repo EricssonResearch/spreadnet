@@ -15,7 +15,7 @@ import webdataset as wds
 from torch_geometric.loader import DataLoader
 from datetime import datetime
 from itertools import islice
-
+from glob import glob
 from tqdm import tqdm
 
 from spreadnet.pyg_gnn.utils import hybrid_loss
@@ -182,8 +182,13 @@ if __name__ == "__main__":
     print(f"Using {device} device...")
     date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
+    tar_length = len(list(glob(dataset_path + "/processed/[!test.]*.tar"))) - 1
+    last_tar = f"{tar_length:06}"
+
     dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        wds.WebDataset(
+            "file:" + dataset_path + "/processed/all_{000000.." + last_tar + "}.tar"
+        )
         .decode(pt_decoder)
         .to_tuple(
             "pt",
