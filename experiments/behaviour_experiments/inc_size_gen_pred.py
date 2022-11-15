@@ -61,8 +61,18 @@ def increasing_graph_size_experiment(datasets):
     Saves the results in the same folder as the
     """
     models_trained = [
-        ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
-        ExperimentUtils(model_type="pyg_gnn", weights_model="model_weights_best.pth"),
+        # ExperimentUtils(model_type="tf_gnn",
+        # weights_model="pickled_2000_model.pickle"),
+        ExperimentUtils(
+            model_type="pyg_gnn",
+            weights_model="no_weights_pyg_weights_best.pth",
+            model_name="nobalancing-pyg",
+        ),
+        ExperimentUtils(
+            model_type="pyg_gnn",
+            weights_model="weights_pyg.pth",
+            model_name="balancing-pyg",
+        ),
     ]
 
     results_dir = "increasing_size_predictions"
@@ -76,15 +86,6 @@ def increasing_graph_size_experiment(datasets):
         file_raw = open(raw_data_path)
 
         graphs = json.load(file_raw)
-        #     param_list = []
-        #     for m in models_trained:
-        #         param_list.append([results_dir, m, graphs, ds])
-
-        # pool = Pool(processes=3)
-        # pool.starmap(inc_pred, param_list)
-        # pool.close()
-
-        # # cpu_count() - 1)
 
         for model in models_trained:
             output_name = ds.replace(
@@ -92,9 +93,6 @@ def increasing_graph_size_experiment(datasets):
             )
 
             output_graphs = list()
-
-            # output_graphs = pool.starmap(inc_pred_infer, [model, graphs])
-            # pool.close()
 
             for g in graphs:
                 output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
@@ -167,21 +165,21 @@ def increasing_graph_size_generator():
     """
     seed = random.seed()
 
-    graph_size_increment = 10
-    graph_size_gap = 15  # gap between the min and the max
+    graph_size_increment = 15
+    graph_size_gap = 20  # gap between the min and the max
     graph_size_start = 10
-    max_min_graph_size = 5000
+    max_min_graph_size = 2500
     theta = 20
     path_length_increaser = 3
-    number_of_graphs = 100
+    number_of_graphs = 50
     param_list = []
 
     for i in range(graph_size_start, max_min_graph_size, graph_size_increment):
         nodes_min_max = (i, i + graph_size_gap)
-        if i % 200 == 0:
+        if i % 250 == 0:
             path_length_increaser += 1
 
-        theta += 13
+        theta += 10
 
         param_list.append(
             [
@@ -224,27 +222,7 @@ if __name__ == "__main__":
     ds_split_l = []
     for d in ds_split:
         ds_split_l.append([d.tolist()])
-    print(ds_split_l[0])
 
     pool = Pool(processes=cpu_count() - 1)
     pool.starmap(increasing_graph_size_experiment, ds_split_l)
     pool.close()
-
-    # p = Process(target=increasing_graph_size_experiment)
-
-    # p.start()
-    # p1 = Process(target=increasing_graph_size_experiment)
-
-    # p1.start()
-    # p2 = Process(target=increasing_graph_size_experiment)
-    # p2.start()
-
-    # p.join()
-    # p1.join()
-    # p2.join()
-
-    # pool = Pool(processes=3)
-    # pool.map(target=increasing_graph_size_experiment, args=())
-    # pool.close()
-
-    # increasing_graph_size_experiment()
