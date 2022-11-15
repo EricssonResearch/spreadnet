@@ -89,7 +89,7 @@ def generate_task_graph(
         draw_networkx(str(idx + 1), fig, g, 1, 1)
         fig.tight_layout()
         plt.savefig(
-            raw_path + f"/{file_name}_{idx}.jpg", pad_inches=0, bbox_inches="tight"
+            raw_path + f"/{file_name}_{idx:06}.jpg", pad_inches=0, bbox_inches="tight"
         )
         plt.clf()
 
