@@ -3,10 +3,10 @@ train:
   weight_save_freq: 10
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 100
+  epochs: 300
   batch_size: 64
   train_ratio: 0.7
-  shuffle: True
+  shuffle: False
   plot_after_epochs: 100
 
   adam_lr: !!float 1e-4

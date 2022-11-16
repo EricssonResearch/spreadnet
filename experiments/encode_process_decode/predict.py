@@ -14,12 +14,15 @@ import json
 import os
 from glob import glob
 import matplotlib.pyplot as plt
+import logging
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
 from spreadnet.datasets.data_utils.draw import draw_networkx
+import spreadnet.utils.log_utils as log_utils
+from spreadnet.datasets.data_utils.encoder import NpEncoder
 
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
@@ -54,6 +57,7 @@ dataset_path = osp.join(
     osp.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
 predictions_path = osp.join(osp.dirname(__file__), "predictions").replace("\\", "/")
+log_save_path = osp.join(osp.dirname(__file__), "logs").replace("\\", "/")
 
 if not os.path.exists(predictions_path):
     os.makedirs(predictions_path)
@@ -100,65 +104,84 @@ def predict(model, graph):
 
 
 if __name__ == "__main__":
-    # load model
-    model = EncodeProcessDecode(
-        node_in=model_configs["node_in"],
-        edge_in=model_configs["edge_in"],
-        node_out=model_configs["node_out"],
-        edge_out=model_configs["edge_out"],
-        latent_size=model_configs["latent_size"],
-        num_message_passing_steps=model_configs["num_message_passing_steps"],
-        num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
-        mlp_hidden_size=model_configs["mlp_hidden_size"],
-    ).to(device)
 
-    weight_base_path = osp.join(
-        osp.dirname(__file__), train_configs["weight_base_path"]
+    predict_logger = log_utils.init_file_console_logger(
+        "predict_logger", log_save_path, f"predict_{which_model}"
     )
 
-    model_path = osp.join(weight_base_path, which_model)
-    model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
-    model.eval()
+    predict_logger.info(f"Using {device} device...")
+    try:
+        # load model
+        model = EncodeProcessDecode(
+            node_in=model_configs["node_in"],
+            edge_in=model_configs["edge_in"],
+            node_out=model_configs["node_out"],
+            edge_out=model_configs["edge_out"],
+            latent_size=model_configs["latent_size"],
+            num_message_passing_steps=model_configs["num_message_passing_steps"],
+            num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
+            mlp_hidden_size=model_configs["mlp_hidden_size"],
+        ).to(device)
 
-    raw_path = dataset_path + "/raw"
-    raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
+        weight_base_path = osp.join(
+            osp.dirname(__file__), train_configs["weight_base_path"]
+        )
 
-    for raw_file_path in raw_file_paths:
-        graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
-        for idx, graph_json in enumerate(graphs_json):
-            print("\n\n")
-            print("Graph idx: ", idx + 1)
+        model_path = osp.join(weight_base_path, which_model)
+        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+        model.eval()
 
-            graph_nx = nx.node_link_graph(graph_json)
-            (preds, infers) = predict(model, process_nx(graph_nx))
-            (pred_graph_nx, truth_total_weight, pred_total_weight) = process_prediction(
-                graph_nx, preds, infers
-            )
+        raw_path = dataset_path + "/raw"
+        raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
 
-            print(f"Truth weights: {truth_total_weight}")
-            print(f"Pred weights: {pred_total_weight}")
+        for raw_file_path in raw_file_paths:
+            graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
+            for idx, graph_json in enumerate(graphs_json):
+                print("\n\n")
+                print("Graph idx: ", idx + 1)
 
-            print("Drawing comparison...")
-            fig = plt.figure(figsize=(80, 40))
-            draw_networkx(
-                f"Truth, total edge weights: {round(truth_total_weight, 2)}",
-                fig,
-                graph_nx,
-                1,
-                2,
-            )
-            draw_networkx(
-                f"Prediction, total edge weights: {round(pred_total_weight, 2)}",
-                fig,
-                pred_graph_nx,
-                2,
-                2,
-                "probability",
-                "probability",
-            )
-            plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}.jpg"
-            plt.savefig(plot_name, pad_inches=0, bbox_inches="tight")
-            plt.clf()
-            print("Image saved at ", plot_name)
+                graph_nx = nx.node_link_graph(graph_json)
+                (preds, infers) = predict(model, process_nx(graph_nx))
+                (
+                    pred_graph_nx,
+                    truth_total_weight,
+                    pred_total_weight,
+                ) = process_prediction(graph_nx, preds, infers)
 
-            input("Press enter to predict another graph")
+                print(f"Truth weights: {truth_total_weight}")
+                print(f"Pred weights: {pred_total_weight}")
+
+                plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
+
+                with open(f"{plot_name}.json", "w") as outfile:
+                    json.dump(
+                        [nx.node_link_data(pred_graph_nx)], outfile, cls=NpEncoder
+                    )
+
+                print("Drawing comparison...")
+                fig = plt.figure(figsize=(80, 40))
+                draw_networkx(
+                    f"Truth, total edge weights: {round(truth_total_weight, 2)}",
+                    fig,
+                    graph_nx,
+                    1,
+                    2,
+                )
+                draw_networkx(
+                    f"Prediction, total edge weights: {round(pred_total_weight, 2)}",
+                    fig,
+                    pred_graph_nx,
+                    2,
+                    2,
+                    "probability",
+                    "probability",
+                )
+                plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
+                plt.clf()
+                print("Image saved at ", plot_name)
+
+                input("Press enter to predict another graph")
+    except Exception as e:
+        predict_logger.exception(e)
+
+    logging.shutdown(handlerList="train_local_logger")

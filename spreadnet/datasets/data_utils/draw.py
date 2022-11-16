@@ -9,21 +9,22 @@ matplotlib.use("Agg")
 
 
 def get_node_color(node):
-    if node[1]["is_start"]:
-        return "#FFF3B8"
-    if node[1]["is_end"]:
-        return "#90EE90"
-    if node[1]["is_in_path"]:
-        return "#C9FFD8"
+    if "is_start" in node[1]:
+        if node[1]["is_start"]:
+            return "#FFF3B8"
+        if node[1]["is_end"]:
+            return "#90EE90"
+        if node[1]["is_in_path"]:
+            return "#C9FFD8"
     return "#D3D3D3"
 
 
 def draw_networkx(
-    title,
-    figure,
-    graph,
-    plot_index,
-    num_graphs_to_draw,
+    title: str,
+    figure: plt.figure,
+    graph: nx.DiGraph,
+    plot_index: int,
+    num_graphs_to_draw: int,
     node_label_key="default",
     edge_label_key="weight",
 ):
@@ -72,18 +73,22 @@ def draw_networkx(
     normal_edge_labels = dict()
 
     for (s, e, d) in graph.edges(data=True):
-        label = round(d[edge_label_key], 2)
+        if edge_label_key in d:
+            label = round(d[edge_label_key], 2)
 
-        if d["is_in_path"]:
-            path_edges.append((s, e))
-            path_edge_labels[(s, e)] = label
-        elif (e, s) not in path_edges:
+            if "is_in_path" in d and d["is_in_path"]:
+                path_edges.append((s, e))
+                path_edge_labels[(s, e)] = label
+            elif (e, s) not in path_edges:
+                normal_edges.append((s, e))
+
+                if edge_label_key != "weight" and label > 0.00:
+                    highlight_edge_labels[(s, e)] = label
+                else:
+                    normal_edge_labels[(s, e)] = label
+        else:
             normal_edges.append((s, e))
-
-            if edge_label_key != "weight" and label > 0.00:
-                highlight_edge_labels[(s, e)] = label
-            else:
-                normal_edge_labels[(s, e)] = label
+            normal_edge_labels[(s, e)] = 1
 
     node_colors = list(map(lambda node: get_node_color(node), graph.nodes(data=True)))
 
@@ -103,28 +108,42 @@ def draw_networkx(
 
     pos = nx.get_node_attributes(graph, "pos")
 
-    nx.draw_networkx_nodes(
-        graph, pos, cmap=plt.get_cmap("jet"), node_color=node_colors, node_size=500
-    )
-    nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True)
+    nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=500)
+    nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True, width=0.2)
     nx.draw_networkx_edges(
         graph,
         pos,
         edgelist=path_edges,
         edge_color="r",
         arrows=True,
-        arrowsize=25,
-        width=3,
+        arrowsize=20,
+        width=2,
     )
 
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=normal_edge_labels)
+    if graph.number_of_nodes() < 400:
+        nx.draw_networkx_edge_labels(
+            graph, pos, edge_labels=normal_edge_labels, font_size=8
+        )
+
     nx.draw_networkx_edge_labels(
-        graph, pos, edge_labels=highlight_edge_labels, font_color="blue"
+        graph,
+        pos,
+        edge_labels=highlight_edge_labels,
+        font_color="blue",
+        bbox=dict(alpha=0.8, boxstyle="round", ec=(0, 0, 1.0), fc=(1.0, 1.0, 1.0)),
     )
+
     nx.draw_networkx_edge_labels(
-        graph, pos, edge_labels=path_edge_labels, font_color="r"
+        graph,
+        pos,
+        edge_labels=path_edge_labels,
+        font_color="r",
+        bbox=dict(alpha=0.8, boxstyle="round", ec=(1.0, 0, 0), fc=(1.0, 1.0, 1.0)),
     )
-    nx.draw_networkx_labels(graph, pos, labels=normal_node_labels, font_color="black")
+
+    nx.draw_networkx_labels(
+        graph, pos, labels=normal_node_labels, font_color="black", font_size=8
+    )
 
     if node_label_key != "default":
         nx.draw_networkx_labels(

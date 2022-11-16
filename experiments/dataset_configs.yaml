@@ -1,18 +1,21 @@
 data:
-  # graph generator
-  random_seed: 0
-  min_path_length: 1
-  visualize_graph: 25 # less than or equal to dataset_size
+  # dataset generator
+  dataset_path: "dataset"
+  visualize_graph: 0 # less than or equal to dataset_size
 
+  # graph generator
+  min_path_length: 2
+  theta_increase_rate: 0.02 # increase after iterations 1 / value. Eg: 1 / 0.02 = 50 it.s
+  theta_cap: 100
+
+  random_seed: 0
   num_node_min: 8
   num_node_max: 50
   starting_theta: 17 # the higher the less edge
+  dataset_size: 5120 # training and validation set, specify ratio in train.py
 
+  random_seed_test: 1
   num_node_min_test: 51
   num_node_max_test: 100
   starting_theta_test: 25 # the higher the less edge
-
-  # dataset generator
-  dataset_path: "dataset"
-  dataset_size: 5120 # training and validation set, specify ratio in train.py
   dataset_size_test: 100

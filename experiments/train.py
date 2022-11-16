@@ -1,16 +1,26 @@
 """Train the models.
 
 Usage:
-    python train.py --model model_name [--wandb]
+    python train.py --model model_name [--wandb] [--resume]
 
     model_name:
         1. MPNN: EncodeProcessDecode
-        2. GCN: Co-embedding Deep GCN
+        2. DeepCoGCN: Co-embedding Deep GCN
+        3. DeepGCN: DeepGCN
+        4. GAT: Graph Attention Network
 
 Example:
-    python train.py --model="MPNN" --wandb
-    python train.py --model="GCN" --wandb
-    python train.py --model="GAT" --wandb
+    use wandb:
+        python train.py --model="MPNN" --wandb
+        python train.py --model="DeepGCN" --wandb
+        python train.py --model="GAT" --wandb
+        python train.py --model="DeepCoGCN" --wandb
+
+    on local machine:
+        python train.py --model="MPNN"
+        python train.py --model="DeepGCN"
+        python train.py --model="GAT"
+        python train.py --model="DeepCoGCN"
 
 @Time    : 10/27/2022 8:45 PM
 @Author  : Haodong Zhao
@@ -43,6 +53,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--resume",
+    help="Specify if it should resume training if training state is found",
+    action="store_true",
+)
+
+parser.add_argument(
     "--dataset-config",
     default=default_dataset_yaml_path,
     help="Specify the path of the dataset config file. ",
@@ -71,12 +87,19 @@ if model == "MPNN":
     model_save_path = os.path.join(
         os.path.dirname(__file__), "encode_process_decode", "weights"
     )
-elif model == "GCN":
+elif model == "DeepCoGCN":
     yaml_path = os.path.join(
         os.path.dirname(__file__), "co_graph_conv_network", "configs.yaml"
     )
     model_save_path = os.path.join(
         os.path.dirname(__file__), "co_graph_conv_network", "weights"
+    )
+elif model == "DeepGCN":
+    yaml_path = os.path.join(
+        os.path.dirname(__file__), "deep_graph_conv_network", "configs.yaml"
+    )
+    model_save_path = os.path.join(
+        os.path.dirname(__file__), "deep_graph_conv_network", "weights"
     )
 elif model == "GAT":
     yaml_path = os.path.join(
@@ -89,6 +112,7 @@ else:
     print("Please check the model name. -h for more details.")
     exit()
 
+resume = args.resume
 dataset_yaml_path = args.dataset_config
 dataset_path = args.dataset_path
 dataset_path = dataset_path.replace("\\", "/")
@@ -108,6 +132,7 @@ data_configs = dataset_configs.data
 
 use_wandb = args.wandb
 train_console_logger.info(f"use_wandb:{use_wandb}")
+train_console_logger.info(f"Training {model}...")
 
 trainer = None
 if use_wandb:
@@ -123,7 +148,9 @@ if use_wandb:
     )
 else:
     train_local_logger = log_utils.init_file_console_logger(
-        logger_name="train_local_logger", log_save_path=log_save_path, exp_type="train"
+        logger_name="train_local_logger",
+        log_save_path=log_save_path,
+        exp_type=f"train_{model}",
     )
     trainer = ModelTrainer(
         model_configs=model_configs,
@@ -134,4 +161,4 @@ else:
         loss_type=loss_type,
     )
 
-trainer.train()
+trainer.train(resume)

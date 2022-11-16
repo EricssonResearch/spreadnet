@@ -2,9 +2,8 @@ import copy
 import os
 import argparse
 from datetime import datetime
-
+from glob import glob
 import torch
-
 import webdataset as wds
 from torch_geometric.loader import DataLoader
 from typing import Optional
@@ -155,8 +154,13 @@ if __name__ == "__main__":
 
     epochs = train_configs["epochs"]
 
+    tar_length = len(list(glob(dataset_path + "/processed/[!test.]*.tar"))) - 1
+    last_tar = f"{tar_length:06}"
+
     dataset = (
-        wds.WebDataset("file:" + dataset_path + "/processed/all_000000.tar")
+        wds.WebDataset(
+            "file:" + dataset_path + "/processed/all_{000000.." + last_tar + "}.tar"
+        )
         .decode(pt_decoder)
         .to_tuple(
             "pt",

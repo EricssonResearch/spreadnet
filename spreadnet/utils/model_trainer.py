@@ -7,18 +7,20 @@ import copy
 import os
 from datetime import datetime
 from itertools import islice
-
 import torch
 import wandb
 import shutil
-from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import webdataset as wds
 import logging
 import time
+from glob import glob
+from torch_geometric.data import Batch
+import gc
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
+from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
@@ -116,6 +118,17 @@ class ModelTrainer:
                 encode_node_out=self.model_configs["encode_node_out"],
                 encode_edge_out=self.model_configs["encode_edge_out"],
             ).to(self.device)
+        elif self.model_name == "DeepGCN":
+            self.model = SPDeepGCN(
+                node_in=self.model_configs["node_in"],
+                edge_in=self.model_configs["edge_in"],
+                encoder_hidden_channels=self.model_configs["encoder_hidden_channels"],
+                encoder_layers=self.model_configs["encoder_layers"],
+                gcn_hidden_channels=self.model_configs["gcn_hidden_channels"],
+                gcn_layers=self.model_configs["gcn_layers"],
+                decoder_hidden_channels=self.model_configs["decoder_hidden_channels"],
+                decoder_layers=self.model_configs["decoder_layers"],
+            ).to(self.device)
 
         return self.model
 
@@ -148,39 +161,34 @@ class ModelTrainer:
 
         return (x, edge_index, edge_attr), (node_true, edge_true)
 
-    def construct_dataloader(self):
-        """Construct dataloaders: train loader and validation loader.
+    def construct_dataset(self):
+        """Construct datasets.
 
         Returns:
-            train_loader, validation_loader
+            dataset, dataset_size
         """
+        tar_length = len(list(glob(self.dataset_path + "/processed/[!test.]*.tar"))) - 1
+        last_tar = f"{tar_length:06}"
+
         dataset = (
-            wds.WebDataset("file:" + self.dataset_path + "/processed/all_000000.tar")
+            wds.WebDataset(
+                "file:"
+                + self.dataset_path
+                + "/processed/all_{000000.."
+                + last_tar
+                + "}.tar"
+            )
             .decode(pt_decoder)
             .to_tuple(
                 "pt",
             )
         )
+        dataset_size = sum(1 for _ in dataset)
 
-        dataset_size = len(list(dataset))
-        train_size = int(self.train_configs["train_ratio"] * dataset_size)
+        if bool(self.train_configs["shuffle"]):
+            dataset.shuffle(dataset_size * 10)
 
-        train_dataset = list(islice(dataset, 0, train_size))
-        validation_dataset = list(islice(dataset, train_size, dataset_size + 1))
-
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.train_configs["batch_size"],
-            shuffle=self.train_configs["shuffle"],
-            pin_memory=True,
-        )
-        validation_loader = DataLoader(
-            validation_dataset,
-            batch_size=self.train_configs["batch_size"],
-            shuffle=self.train_configs["shuffle"],
-            pin_memory=True,
-        )
-        return train_loader, validation_loader
+        return dataset, dataset_size
 
     def save_training_state(
         self,
@@ -188,7 +196,6 @@ class ModelTrainer:
         best_model_wts,
         best_acc,
     ):
-        print("Saving state...")
         ipvac = self.in_path_validation_accuracies_curve
         torch.save(
             {
@@ -208,14 +215,15 @@ class ModelTrainer:
             self.checkpoint_path,
         )
 
-    def sub_execute(self, mode, epoch, total_epoch, dataloader, loss_func):
+    def sub_execute(self, mode, epoch, total_epoch, dataset, dataset_size, loss_func):
         """sub execution: train or validation in one epoch.
 
         Args:
             mode: train | validation
             epoch: the current epoch
             total_epoch: the total epoch
-            dataloader: dataloader
+            dataset: train or validation dataset
+            dataset_size: dataset size
             loss_func: loss function
 
         Returns:
@@ -235,18 +243,35 @@ class ModelTrainer:
         nodes_in_path_corrects, edges_in_path_corrects = 0, 0
         dataset_nodes_in_path_size, dataset_edges_in_path_size = 0, 0
 
-        dataset_size = len(list(dataloader))
         precise_corrects = 0.0
 
         with torch.enable_grad() if is_training else torch.no_grad():
-            for batch, (data,) in tqdm(
-                enumerate(dataloader),
+            batch = []
+            batch_size = self.train_configs["batch_size"]
+            graph_sizes = []
+
+            for idx, (data,) in tqdm(
+                enumerate(dataset),
                 unit="batch",
-                total=len(list(dataloader)),
+                total=dataset_size,
                 desc=f"[Epoch: {epoch:4} / {total_epoch:4} | {pb_str} ]",
                 leave=False,
             ):
-                data = data.to(self.device)
+                batch.append(data)
+                graph_sizes.append({"nodes": len(data.y[0]), "edges": len(data.y[1])})
+
+                if (
+                    len(batch) < batch_size
+                    and len(batch) < dataset_size
+                    and idx + 1 != dataset_size
+                ):
+                    continue
+
+                num_graphs = len(batch)
+                data = Batch.from_data_list(batch).to(self.device)
+                batch.clear()
+                gc.collect()
+
                 (x, edge_index, edge_attr), (
                     node_true,
                     edge_true,
@@ -268,58 +293,69 @@ class ModelTrainer:
                     (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
 
                 # Losses
-                losses = loss_func(
-                    node_pred, edge_pred, node_true, edge_true, loss_type=self.loss_type
-                )
-                _, corrects = get_correct_predictions(
-                    node_pred, edge_pred, node_true, edge_true
-                )
-                nodes_loss += losses["nodes"].item() * data.num_graphs
-                edges_loss += losses["edges"].item() * data.num_graphs
-
-                node_in_path, edge_in_path = get_corrects_in_path(
-                    node_pred, edge_pred, node_true, edge_true
-                )
-                node_correct_in_path, total_node_in_path = (
-                    node_in_path["in_path"],
-                    node_in_path["total"],
-                )
-                edge_correct_in_path, total_edge_in_path = (
-                    edge_in_path["in_path"],
-                    edge_in_path["total"],
-                )
+                losses = loss_func(node_pred, edge_pred, node_true, edge_true, loss_type=self.loss_type)
+                nodes_loss += float(losses["nodes"].item()) * num_graphs
+                edges_loss += float(losses["edges"].item()) * num_graphs
 
                 if is_training:
                     losses["nodes"].backward(retain_graph=True)
                     losses["edges"].backward()
                     self.optimizer.step()
 
-                # Accuracies
-                nodes_corrects += corrects["nodes"]
-                edges_corrects += corrects["edges"]
-                dataset_nodes_size += data.num_nodes
-                dataset_edges_size += data.num_edges
-
-                precise_corrects += get_precise_corrects(
-                    corrects, (data.num_nodes, data.num_edges)
+                infers, corrects = get_correct_predictions(
+                    node_pred, edge_pred, node_true, edge_true
                 )
+
+                node_in_path, edge_in_path = get_corrects_in_path(
+                    node_pred, edge_pred, node_true, edge_true
+                )
+                node_correct_in_path, total_node_in_path = (
+                    node_in_path["in_path"].cpu().numpy().item(),
+                    node_in_path["total"].cpu().numpy().item(),
+                )
+                edge_correct_in_path, total_edge_in_path = (
+                    edge_in_path["in_path"].cpu().numpy().item(),
+                    edge_in_path["total"].cpu().numpy().item(),
+                )
+
+                # Accuracies
+                nodes_corrects += int(corrects["nodes"].cpu().numpy().item())
+                edges_corrects += int(corrects["edges"].cpu().numpy().item())
+                dataset_nodes_size += int(data.num_nodes)
+                dataset_edges_size += int(data.num_edges)
+
+                precise_corrects += get_precise_corrects(infers, data.y, graph_sizes)
 
                 nodes_in_path_corrects += node_correct_in_path
                 edges_in_path_corrects += edge_correct_in_path
                 dataset_nodes_in_path_size += total_node_in_path
                 dataset_edges_in_path_size += total_edge_in_path
 
-        nodes_loss /= len(dataloader.dataset)
-        edges_loss /= len(dataloader.dataset)
-        nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy().item()
-        edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy().item()
+                # python auto gc is not good enough to free the memory
+                del (
+                    node_pred,
+                    edge_pred,
+                    data,
+                    losses,
+                    infers,
+                    corrects,
+                    node_in_path,
+                    edge_in_path,
+                    node_correct_in_path,
+                    total_node_in_path,
+                    edge_correct_in_path,
+                    total_edge_in_path,
+                )
+                graph_sizes.clear()
+                gc.collect()
 
-        node_in_path_acc = (
-            (nodes_in_path_corrects / dataset_nodes_in_path_size).cpu().numpy().item()
-        )
-        edge_in_path_acc = (
-            (edges_in_path_corrects / dataset_edges_in_path_size).cpu().numpy().item()
-        )
+        nodes_loss /= dataset_size
+        edges_loss /= dataset_size
+        nodes_acc = nodes_corrects / dataset_nodes_size
+        edges_acc = edges_corrects / dataset_edges_size
+
+        node_in_path_acc = nodes_in_path_corrects / dataset_nodes_in_path_size
+        edge_in_path_acc = edges_in_path_corrects / dataset_edges_in_path_size
 
         precise_acc = precise_corrects / dataset_size
 
@@ -333,20 +369,24 @@ class ModelTrainer:
             precise_acc,
         )
 
-    def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
+    def execute(self, epoch, total_epoch, dataset, dataset_size, loss_func):
         """
         Execute training or validating.
         Args:
 
             epoch: current epoch
             total_epoch: the number of total epoch
-            valid_loader: validation set dataloader
-            train_loader: train set dataloader
+            dataset: train and validation dataset
+            dataset_size: dataset size
             loss_func: utils function
 
         Returns:
             accuracy
         """
+        train_size = int(self.train_configs["train_ratio"] * dataset_size)
+        validation_size = dataset_size - train_size
+        train_dataset = islice(dataset, 0, train_size)
+        validation_dataset = islice(dataset, train_size, dataset_size + 1)
         (
             train_nodes_loss,
             train_edges_loss,
@@ -355,7 +395,9 @@ class ModelTrainer:
             train_node_in_path_acc,
             train_edge_in_path_acc,
             train_precise_acc,
-        ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
+        ) = self.sub_execute(
+            "train", epoch, total_epoch, train_dataset, train_size, loss_func
+        )
 
         (
             validation_nodes_loss,
@@ -365,7 +407,14 @@ class ModelTrainer:
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
             validation_precise_acc,
-        ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
+        ) = self.sub_execute(
+            "validation",
+            epoch,
+            total_epoch,
+            validation_dataset,
+            validation_size,
+            loss_func,
+        )
 
         self.losses_curve.append({"nodes": train_nodes_loss, "edges": train_edges_loss})
         self.validation_losses_curve.append(
@@ -399,8 +448,7 @@ class ModelTrainer:
 
         return validation_acc
 
-    def train(self):
-
+    def train(self, resume):
         train_local_logger = logging.getLogger("train_local_logger")
         train_local_logger.info(f"Using {self.device} device...")
         date = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
@@ -416,7 +464,7 @@ class ModelTrainer:
         dataset_size = self.dataset_configs["dataset_size"]
         plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
 
-        train_loader, validation_loader = self.construct_dataloader()
+        dataset, dataset_size = self.construct_dataset()
 
         self.construct_model()
 
@@ -439,13 +487,15 @@ class ModelTrainer:
             exists = os.path.exists(self.checkpoint_path)
 
             if exists:
-                answer = input(
+                answer = resume or input(
                     "Previous training state found. Enter y/Y to continue training: "
                 )
 
-                if answer.capitalize() == "Y":
+                if resume or answer.capitalize() == "Y":
                     checkpoint = torch.load(self.checkpoint_path)
-                    print("Resume training...")
+                    train_local_logger.info(
+                        f'Resume training from {checkpoint["epoch"]} epoch'
+                    )
                     epoch = checkpoint["epoch"] + 1
                     self.model.load_state_dict(checkpoint["model_state_dict"])
                     best_model_wts = checkpoint["best_model_state_dict"]
@@ -473,7 +523,7 @@ class ModelTrainer:
                 self.steps_curve.append(epoch)
 
                 validation_acc = self.execute(
-                    epoch, epochs, train_loader, validation_loader, hybrid_loss
+                    epoch, epochs, dataset, dataset_size, hybrid_loss
                 )
 
                 if validation_acc > best_acc:
@@ -489,12 +539,15 @@ class ModelTrainer:
                     self.save_training_state(
                         epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
                     )
+                    train_local_logger.info("Saving state...")
 
                 if epoch % 10 == 1:
                     train_local_logger.info(
-                        f'Epoch  | Train Loss (Node,Edge)|\tValidation \
-                        Loss\t|Train Acc (Node,Edge,NodeInPath,EdgeInPath)\t \
-                        |\tValidation Acc\t \n {"=" * 176}'
+                        f'{"Epoch":^8s}|{"Train Loss (Node,Edge)":^22s}|'
+                        f'{"Validation Loss":^22s}|'
+                        f'{"Train Acc (Node,Edge,NodeInPath,EdgeInPath)":^45s}|'
+                        f'{"Validation Acc":^44s}|'
+                        f'{"Precise Acc":^22s} \n {"=" * 220}'
                     )
                 lcn = self.losses_curve[-1]["nodes"]
                 lce = self.losses_curve[-1]["edges"]
@@ -508,12 +561,16 @@ class ModelTrainer:
                 vace = self.validation_accuracies_curve[-1]["edges"]
                 ipvacn = self.in_path_validation_accuracies_curve[-1]["nodes"]
                 ipvace = self.in_path_validation_accuracies_curve[-1]["edges"]
+                tpac = self.accuracies_curve[-1]["precise"]
+                vpac = self.validation_accuracies_curve[-1]["precise"]
+
                 train_local_logger.info(
                     f"{epoch:3}/{epochs}|"
                     f"{lcn:2.8f},{lce:2.8f} |"
                     f"{vlcn:2.8f},{vlce:2.8f} |"
                     f"{accn:2.8f}, {ace:2.8f} {ipacn:2.8f},{ipace:2.8f} |"
-                    f"{vacn:2.8f}, {vace:2.8f} {ipvacn:2.8f},{ipvace:2.8f}"
+                    f"{vacn:2.8f}, {vace:2.8f} {ipvacn:2.8f},{ipvace:2.8f} |"
+                    f"{tpac:2.8f}, {vpac:2.8f}"
                 )
                 if epoch % plot_after_epochs == 0:
                     self.create_plot(plot_name)
@@ -531,6 +588,7 @@ class ModelTrainer:
         train_local_logger.info(
             f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )
+        logging.shutdown(handlerList="train_local_logger")
 
 
 class WAndBModelTrainer(ModelTrainer):
@@ -616,20 +674,24 @@ class WAndBModelTrainer(ModelTrainer):
             self.checkpoint_path,
         )
 
-    def execute(self, epoch, total_epoch, train_loader, valid_loader, loss_func):
+    def execute(self, epoch, total_epoch, dataset, dataset_size, loss_func):
         """
         Execute training or validating.
         Args:
 
             epoch: current epoch
             total_epoch: the number of total epoch
-            valid_loader: validation set data_loader
-            train_loader: train set data_loader
+            dataset: train and validation dataset
+            dataset_size: dataset size
             loss_func: utils function
 
         Returns:
             accuracy
         """
+        train_size = int(self.train_configs["train_ratio"] * dataset_size)
+        validation_size = dataset_size - train_size
+        train_dataset = islice(dataset, 0, train_size)
+        validation_dataset = islice(dataset, train_size, dataset_size + 1)
         (
             train_nodes_loss,
             train_edges_loss,
@@ -638,7 +700,9 @@ class WAndBModelTrainer(ModelTrainer):
             train_node_in_path_acc,
             train_edge_in_path_acc,
             train_precise_acc,
-        ) = self.sub_execute("train", epoch, total_epoch, train_loader, loss_func)
+        ) = self.sub_execute(
+            "train", epoch, total_epoch, train_dataset, train_size, loss_func
+        )
 
         (
             validation_nodes_loss,
@@ -648,7 +712,14 @@ class WAndBModelTrainer(ModelTrainer):
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
             validation_precise_acc,
-        ) = self.sub_execute("validation", epoch, total_epoch, valid_loader, loss_func)
+        ) = self.sub_execute(
+            "validation",
+            epoch,
+            total_epoch,
+            validation_dataset,
+            validation_size,
+            loss_func,
+        )
 
         # simple log
         train_metrics = {
@@ -853,7 +924,7 @@ class WAndBModelTrainer(ModelTrainer):
         model_artifact.add_file(os.path.join(self.model_save_path, weight_name))
         run.log_artifact(model_artifact)
 
-    def train(self):
+    def train(self, resume):
         date = datetime.now().strftime("%H:%M:%S_%d-%m-%Y")
         experiment_name = f"train_{self.model_name}_{date}"
 
@@ -871,8 +942,8 @@ class WAndBModelTrainer(ModelTrainer):
         self.construct_model()
 
         # TODO:
-        #  We can override `construct_dataloader()` after setting the dataset in wandb
-        train_loader, validation_loader = self.construct_dataloader()
+        #  We can override `construct_dataset()` after setting the dataset in wandb
+        dataset, dataset_size = self.construct_dataset()
 
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
@@ -889,11 +960,11 @@ class WAndBModelTrainer(ModelTrainer):
         exists = os.path.exists(self.checkpoint_path)
 
         if exists:
-            answer = input(
+            answer = resume or input(
                 "Previous wandb training state found. Enter y/Y to continue training: "
             )
 
-            if answer.capitalize() == "Y":
+            if resume or answer.capitalize() == "Y":
                 checkpoint = torch.load(self.checkpoint_path)
                 print("Resume training...")
 
@@ -932,19 +1003,6 @@ class WAndBModelTrainer(ModelTrainer):
                 self.validation_edges_in_path_acc = checkpoint[
                     "validation_edges_in_path_acc"
                 ]
-
-            else:
-                self.wandb_id = wandb.util.generate_id()
-                run = wandb.init(
-                    # Set the project where this run will be logged
-                    entity=self.entity_name,
-                    project=self.project_name,
-                    name=f"{experiment_name}",
-                    id=self.wandb_id,
-                    # Track hyperparameters and run metadata
-                    config=self.wandb_configs,
-                    job_type="training",
-                )
         else:
             self.wandb_id = wandb.util.generate_id()
             run = wandb.init(
@@ -964,7 +1022,7 @@ class WAndBModelTrainer(ModelTrainer):
             self.epoch_lst.append(epoch)
 
             validation_acc = self.execute(
-                epoch, epochs, train_loader, validation_loader, hybrid_loss
+                epoch, epochs, dataset, dataset_size, hybrid_loss
             )
 
             if validation_acc > best_acc:
