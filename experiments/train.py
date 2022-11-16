@@ -11,10 +11,10 @@ Usage:
 
 Example:
     use wandb:
-        python train.py --model="MPNN" --wandb
-        python train.py --model="DeepGCN" --wandb
-        python train.py --model="GAT" --wandb
-        python train.py --model="DeepCoGCN" --wandb
+        python train.py --model="MPNN" --wandb --project=PROJECT_NAME
+        python train.py --model="DeepGCN" --wandb --project=PROJECT_NAME
+        python train.py --model="GAT" --wandb --project=PROJECT_NAME
+        python train.py --model="DeepCoGCN" --wandb --project=PROJECT_NAME
 
     on local machine:
         python train.py --model="MPNN"
@@ -52,6 +52,8 @@ parser.add_argument(
     "--wandb", help="Specify if train the model with wandb", action="store_true"
 )
 
+parser.add_argument("--project", help="Specify the wandb project.")
+
 parser.add_argument(
     "--resume",
     help="Specify if it should resume training if training state is found",
@@ -77,8 +79,18 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-model = args.model
+use_wandb = args.wandb
+project_name = args.project
 
+if use_wandb:
+    if project_name is None:
+        print(
+            "ERROR: You need to specify the project name,"
+            "if you want to train models with wandb."
+        )
+        exit(0)
+
+model = args.model
 yaml_path, model_save_path = "", ""
 if model == "MPNN":
     yaml_path = os.path.join(
@@ -130,15 +142,16 @@ train_configs = configs.train
 model_configs = configs.model
 data_configs = dataset_configs.data
 
-use_wandb = args.wandb
-train_console_logger.info(f"use_wandb:{use_wandb}")
+train_console_logger.info(f"use_wandb: {use_wandb}")
+if use_wandb:
+    train_console_logger.info(f"project name: {project_name}")
 train_console_logger.info(f"Training {model}...")
 
 trainer = None
 if use_wandb:
     trainer = WAndBModelTrainer(
         entity_name="uu-spreadnet",
-        project_name="Train",
+        project_name=project_name,
         model_configs=model_configs,
         train_configs=train_configs,
         dataset_configs=data_configs,
