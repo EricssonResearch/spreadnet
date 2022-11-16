@@ -11,10 +11,10 @@ Usage:
 
 Example:
     use wandb:
-        python train.py --model="MPNN" --wandb -project=PROJECT_NAME
-        python train.py --model="DeepGCN" --wandb -project=PROJECT_NAME
-        python train.py --model="GAT" --wandb -project=PROJECT_NAME
-        python train.py --model="DeepCoGCN" --wandb -project=PROJECT_NAME
+        python train.py --model="MPNN" --wandb --project=PROJECT_NAME
+        python train.py --model="DeepGCN" --wandb --project=PROJECT_NAME
+        python train.py --model="GAT" --wandb --project=PROJECT_NAME
+        python train.py --model="DeepCoGCN" --wandb --project=PROJECT_NAME
 
     on local machine:
         python train.py --model="MPNN"
