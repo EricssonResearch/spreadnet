@@ -6,7 +6,7 @@ train:
   epochs: 500
   batch_size: 128
   train_ratio: 0.7
-  shuffle: True
+  shuffle: False
   plot_after_epochs: 100
 
 

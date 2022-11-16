@@ -1,7 +1,7 @@
 """Train the models.
 
 Usage:
-    python train.py --model model_name [--wandb]
+    python train.py --model model_name [--wandb] [--resume]
 
     model_name:
         1. MPNN: EncodeProcessDecode
@@ -51,6 +51,12 @@ parser.add_argument(
 )
 
 parser.add_argument("--project", help="Specify the wandb project.")
+
+parser.add_argument(
+    "--resume",
+    help="Specify if it should resume training if training state is found",
+    action="store_true",
+)
 
 parser.add_argument(
     "--dataset-config",
@@ -110,6 +116,7 @@ else:
     print("Please check the model name. -h for more details.")
     exit()
 
+resume = args.resume
 dataset_yaml_path = args.dataset_config
 dataset_path = args.dataset_path
 dataset_path = dataset_path.replace("\\", "/")
@@ -155,4 +162,4 @@ else:
         model_save_path=model_save_path,
     )
 
-trainer.train()
+trainer.train(resume)
