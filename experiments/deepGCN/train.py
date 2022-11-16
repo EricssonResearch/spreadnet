@@ -22,6 +22,8 @@ default_dataset_yaml_path = os.path.join(
     os.path.dirname(__file__), "../dataset_configs.yaml"
 )
 
+default_loss_type = "d"
+
 parser = argparse.ArgumentParser(description="Train the model.")
 parser.add_argument(
     "--config", default=default_yaml_path, help="Specify the path of the config file. "
@@ -30,6 +32,11 @@ parser.add_argument(
     "--dataset-config",
     default=default_dataset_yaml_path,
     help="Specify the path of the dataset config file. ",
+)
+parser.add_argument(
+    "--loss-type",
+    default=default_loss_type,
+    help="Specify if you want to use the original loss (d) or weighted loss (w)",
 )
 
 args = parser.parse_args()
@@ -48,6 +55,8 @@ data_configs = dataset_configs.data
 dataset_path = os.path.join(
     os.path.dirname(__file__), "..", data_configs["dataset_path"]
 ).replace("\\", "/")
+
+loss_type = args.loss_type
 
 # For plotting learning curves.
 steps_curve = []
@@ -79,7 +88,7 @@ def train(
             edge_index = data.edge_index
             node_pred, edge_pred = trainable_model(data.x, edge_index, data.edge_attr)
             # losses, corrects = loss_func(data, trainable_model)
-            losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+            losses = loss_func(node_pred, edge_pred, node_true, edge_true, loss_type)
             _, corrects = get_correct_predictions(
                 node_pred, edge_pred, node_true, edge_true
             )

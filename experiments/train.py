@@ -30,6 +30,8 @@ default_dataset_path = os.path.join(os.path.dirname(__file__), "dataset")
 
 log_save_path = os.path.join(os.path.dirname(__file__), "logs")
 
+default_loss_type = "d"
+
 parser = argparse.ArgumentParser(description="Train the model.")
 
 parser.add_argument(
@@ -50,6 +52,12 @@ parser.add_argument(
     "--dataset-path",
     default=default_dataset_path,
     help="Specify the path of the dataset",
+)
+
+parser.add_argument(
+    "--loss-type",
+    default=default_loss_type,
+    help="Specify if you want to use the original loss (d) or weighted loss (w)",
 )
 
 args = parser.parse_args()
@@ -89,6 +97,7 @@ train_console_logger = log_utils.init_console_only_logger(
     logger_name="train_console_logger"
 )
 
+loss_type = args.loss_type
 
 configs = yaml_parser(yaml_path)
 dataset_configs = yaml_parser(dataset_yaml_path)
@@ -110,6 +119,7 @@ if use_wandb:
         dataset_configs=data_configs,
         dataset_path=dataset_path,
         model_save_path=model_save_path,
+        loss_type=loss_type,
     )
 else:
     train_local_logger = log_utils.init_file_console_logger(
@@ -121,6 +131,7 @@ else:
         dataset_configs=data_configs,
         dataset_path=dataset_path,
         model_save_path=model_save_path,
+        loss_type=loss_type,
     )
 
 trainer.train()

@@ -42,7 +42,7 @@ def get_masked_loss(
     return {"nodes": updated_node_losses, "edges": updated_edge_losses}
 
 
-def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
+def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type):
     """A hybrid cross entropy loss combining edges and nodes.
 
     Args:
@@ -50,13 +50,14 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
         edge_pred: the edge prediction
         node_true: the ground-truth node label
         edge_true: the ground-truth edge label
+        loss_type: to use the original loss (d) or the weighted loss (w)
 
     Returns:
         losses: { nodes: loss, edges: loss }
         corrects: { nodes: correct, edges: correct }
     """
 
-    losses = {
+    losses_tensor = {
         "nodes": torch.nn.functional.cross_entropy(
             node_pred, node_true, reduction="none"
         ),
@@ -64,8 +65,19 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true):
             edge_pred, edge_true, reduction="none"
         ),
     }
-    penalized_losses = get_masked_loss(
-        node_true, node_pred, losses["nodes"], edge_true, edge_pred, losses["edges"]
-    )
 
-    return penalized_losses
+    if loss_type == "w" or loss_type == "W":
+        penalized_losses = get_masked_loss(
+            node_true,
+            node_pred,
+            losses_tensor["nodes"],
+            edge_true,
+            edge_pred,
+            losses_tensor["edges"],
+        )
+        return penalized_losses
+
+    return {
+        "nodes": torch.mean(losses_tensor["nodes"]),
+        "edges": torch.mean(losses_tensor["edges"]),
+    }
