@@ -74,11 +74,13 @@ class BalancingLoss:
             if edge_prediction == 1 and (edge_prediction == edge_truth):
                 (source_node, target_node) = self.edge_data[i]
 
-                # 1a: penalize the wrongly classified source node (which should be in path)
+                # 1a: penalize the wrongly classified source node
+                # (which should be in path)
                 if self.node_pred_classes[source_node] == 0:
                     self.updated_node_losses[source_node] *= self.node_mult_factor
 
-                # 1b: penalize the wrongly classified target node (which should be in path)
+                # 1b: penalize the wrongly classified target node
+                # (which should be in path)
                 if self.node_pred_classes[target_node] == 0:
                     self.updated_node_losses[target_node] *= self.node_mult_factor
 

@@ -16,7 +16,8 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type, edge_data
         edge_pred: the edge prediction
         node_true: the ground-truth node label
         edge_true: the ground-truth edge label
-        loss_type: to use the original loss (d), the weighted loss (w), or the sequenced weighted loss (s)
+        loss_type: to use the original loss (d), the weighted loss (w),
+                   or the sequenced weighted loss (s)
         edge_data: source and target nodes for each edge
 
     Returns:
