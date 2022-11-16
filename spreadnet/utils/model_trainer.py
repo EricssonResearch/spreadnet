@@ -289,8 +289,8 @@ class ModelTrainer:
 
                 # Losses
                 losses = loss_func(node_pred, edge_pred, node_true, edge_true)
-                nodes_loss += losses["nodes"].item() * num_graphs
-                edges_loss += losses["edges"].item() * num_graphs
+                nodes_loss += float(losses["nodes"].item()) * num_graphs
+                edges_loss += float(losses["edges"].item()) * num_graphs
 
                 if is_training:
                     losses["nodes"].backward(retain_graph=True)
@@ -305,22 +305,24 @@ class ModelTrainer:
                     node_pred, edge_pred, node_true, edge_true
                 )
                 node_correct_in_path, total_node_in_path = (
-                    node_in_path["in_path"],
-                    node_in_path["total"],
+                    node_in_path["in_path"].cpu().numpy().item(),
+                    node_in_path["total"].cpu().numpy().item(),
                 )
                 edge_correct_in_path, total_edge_in_path = (
-                    edge_in_path["in_path"],
-                    edge_in_path["total"],
+                    edge_in_path["in_path"].cpu().numpy().item(),
+                    edge_in_path["total"].cpu().numpy().item(),
                 )
 
                 # Accuracies
-                nodes_corrects += corrects["nodes"]
-                edges_corrects += corrects["edges"]
-                dataset_nodes_size += data.num_nodes
-                dataset_edges_size += data.num_edges
+                nodes_corrects += int(corrects["nodes"].cpu().numpy().item())
+                edges_corrects += int(corrects["edges"].cpu().numpy().item())
+                dataset_nodes_size += int(data.num_nodes)
+                dataset_edges_size += int(data.num_edges)
 
                 precise_corrects += (
-                    get_precise_corrects(corrects, (data.num_nodes, data.num_edges))
+                    get_precise_corrects(
+                        corrects, (dataset_nodes_size, dataset_edges_size)
+                    )
                     * num_graphs
                 )
 
@@ -348,15 +350,11 @@ class ModelTrainer:
 
         nodes_loss /= dataset_size
         edges_loss /= dataset_size
-        nodes_acc = (nodes_corrects / dataset_nodes_size).cpu().numpy().item()
-        edges_acc = (edges_corrects / dataset_edges_size).cpu().numpy().item()
+        nodes_acc = nodes_corrects / dataset_nodes_size
+        edges_acc = edges_corrects / dataset_edges_size
 
-        node_in_path_acc = (
-            (nodes_in_path_corrects / dataset_nodes_in_path_size).cpu().numpy().item()
-        )
-        edge_in_path_acc = (
-            (edges_in_path_corrects / dataset_edges_in_path_size).cpu().numpy().item()
-        )
+        node_in_path_acc = nodes_in_path_corrects / dataset_nodes_in_path_size
+        edge_in_path_acc = edges_in_path_corrects / dataset_edges_in_path_size
 
         precise_acc = precise_corrects / dataset_size
 
