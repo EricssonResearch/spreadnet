@@ -996,6 +996,18 @@ class WAndBModelTrainer(ModelTrainer):
                 self.validation_edges_in_path_acc = checkpoint[
                     "validation_edges_in_path_acc"
                 ]
+            else:
+                self.wandb_id = wandb.util.generate_id()
+                run = wandb.init(
+                    # Set the project where this run will be logged
+                    entity=self.entity_name,
+                    project=self.project_name,
+                    name=f"{experiment_name}",
+                    id=self.wandb_id,
+                    # Track hyperparameters and run metadata
+                    config=self.wandb_configs,
+                    job_type="training",
+                )
         else:
             self.wandb_id = wandb.util.generate_id()
             run = wandb.init(
@@ -1011,6 +1023,7 @@ class WAndBModelTrainer(ModelTrainer):
 
         train_console_logger.info(f"Using {self.device} device...")
         train_console_logger.info("Start training")
+
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)
 
