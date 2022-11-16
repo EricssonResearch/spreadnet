@@ -91,23 +91,43 @@ def get_correct_predictions(node_pred, edge_pred, node_true, edge_true):
     return infers, corrects
 
 
-def get_precise_corrects(corrects, data_nums):
+def get_precise_corrects(infers, labels, graph_sizes):
     """
     Get precise Corrections
     Args:
-        corrects: `_, corrects = get_correct_predictions()`  {"nodes":..., "edges":...}
-        data_nums: Tuple: data.num_nodes, data.num_edges
+        infers: {"nodes":..., "edges":...}
+        labels: Tuple: node_labels, edge_labels
+        graph_sizes: [{"nodes": n, "edges": n}]
 
     Returns: precise_corrects
 
     """
-    num_nodes, num_edges = data_nums
     precise_corrects = 0.0
+    node_idx = 0
+    edge_idx = 0
+    node_infers = infers["nodes"].tolist()
+    edge_infers = infers["edges"].tolist()
 
-    if corrects["nodes"] == num_nodes:
-        precise_corrects += 0.5
+    node_labels = labels[0].tolist()
+    edge_labels = labels[1].tolist()
 
-    if corrects["edges"] == num_edges:
-        precise_corrects += 0.5
+    for graph_size in graph_sizes:
+        node_corrects = 0
+        edge_corrects = 0
+
+        for _ in range(graph_size["nodes"]):
+            if node_infers[node_idx] == node_labels[node_idx]:
+                node_corrects += 1
+            node_idx += 1
+
+        for _ in range(graph_size["edges"]):
+            if edge_infers[edge_idx] == edge_labels[edge_idx]:
+                edge_corrects += 1
+            edge_idx += 1
+
+        if node_corrects == graph_size["nodes"]:
+            precise_corrects += 0.5
+        if edge_corrects == graph_size["edges"]:
+            precise_corrects += 0.5
 
     return precise_corrects

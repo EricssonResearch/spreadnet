@@ -245,6 +245,7 @@ class ModelTrainer:
         with torch.enable_grad() if is_training else torch.no_grad():
             batch = []
             batch_size = self.train_configs["batch_size"]
+            graph_sizes = []
 
             for idx, (data,) in tqdm(
                 enumerate(dataset),
@@ -254,6 +255,7 @@ class ModelTrainer:
                 leave=False,
             ):
                 batch.append(data)
+                graph_sizes.append({"nodes": len(data.y[0]), "edges": len(data.y[1])})
 
                 if (
                     len(batch) < batch_size
@@ -319,12 +321,7 @@ class ModelTrainer:
                 dataset_nodes_size += int(data.num_nodes)
                 dataset_edges_size += int(data.num_edges)
 
-                precise_corrects += (
-                    get_precise_corrects(
-                        corrects, (dataset_nodes_size, dataset_edges_size)
-                    )
-                    * num_graphs
-                )
+                precise_corrects += get_precise_corrects(infers, data.y, graph_sizes)
 
                 nodes_in_path_corrects += node_correct_in_path
                 edges_in_path_corrects += edge_correct_in_path
@@ -346,6 +343,7 @@ class ModelTrainer:
                     edge_correct_in_path,
                     total_edge_in_path,
                 )
+                graph_sizes.clear()
                 gc.collect()
 
         nodes_loss /= dataset_size
