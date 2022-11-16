@@ -5,44 +5,10 @@
 """
 import torch
 
-
-def get_masked_loss(
-    node_true, node_pred, node_losses, edge_true, edge_pred, edge_losses
-):
-    # getting the node and edge multiplication factor:
-    # ratio = nr_nodes_not_in_path / nr_nodes_in_path
-    count_nodes_in_path = torch.bincount(node_true)  # tensor([nr of 0's, nr of 1's])
-    node_mult_factor = count_nodes_in_path[0] / count_nodes_in_path[1]
-    count_edges_in_path = torch.bincount(edge_true)
-    edge_mult_factor = count_edges_in_path[0] / count_edges_in_path[1]
-
-    # converts logits to their classes
-    node_0 = node_pred[:, 0]
-    node_1 = node_pred[:, 1]
-    node_pred_classes = torch.where(node_0 > node_1, 0, 1)
-    # adds penalties to the losses with a node wrongly classified as "not in path"
-    updated_node_losses = torch.where(
-        torch.logical_and(node_pred_classes == 0, node_true == 1),
-        node_losses * node_mult_factor,
-        node_losses,
-    )
-    updated_node_losses = torch.mean(updated_node_losses)
-
-    # repeat for edges
-    edge_0 = edge_pred[:, 0]
-    edge_1 = edge_pred[:, 1]
-    edge_pred_classes = torch.where(edge_0 > edge_1, 0, 1)
-    updated_edge_losses = torch.where(
-        torch.logical_and(edge_pred_classes == 0, edge_true == 1),
-        edge_losses * edge_mult_factor,
-        edge_losses,
-    )
-    updated_edge_losses = torch.mean(updated_edge_losses)
-
-    return {"nodes": updated_node_losses, "edges": updated_edge_losses}
+from spreadnet.pyg_gnn.utils.balancing_loss import BalancingLoss
 
 
-def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type):
+def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type, edge_data):
     """A hybrid cross entropy loss combining edges and nodes.
 
     Args:
@@ -50,7 +16,8 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type):
         edge_pred: the edge prediction
         node_true: the ground-truth node label
         edge_true: the ground-truth edge label
-        loss_type: to use the original loss (d) or the weighted loss (w)
+        loss_type: to use the original loss (d), the weighted loss (w), or the sequenced weighted loss (s)
+        edge_data: source and target nodes for each edge
 
     Returns:
         losses: { nodes: loss, edges: loss }
@@ -66,16 +33,20 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type):
         ),
     }
 
-    if loss_type == "w" or loss_type == "W":
-        penalized_losses = get_masked_loss(
+    if loss_type != "d" or loss_type != "D":
+        penalized_losses = BalancingLoss(
             node_true,
             node_pred,
             losses_tensor["nodes"],
             edge_true,
             edge_pred,
             losses_tensor["edges"],
+            edge_data,
         )
-        return penalized_losses
+        if loss_type == "w" or loss_type == "W":
+            return penalized_losses.get_weighted_loss()
+        elif loss_type == "s" or loss_type == "S":
+            return penalized_losses.get_sequence_weighted_loss()
 
     return {
         "nodes": torch.mean(losses_tensor["nodes"]),
