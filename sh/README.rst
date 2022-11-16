@@ -17,9 +17,9 @@ SBATCH on Uppmax
 
     ls -l
     tail -f slurm-[job_id].out
-    
+
     or
-    
+
     less slurm-[job_id].out
 
     :q
