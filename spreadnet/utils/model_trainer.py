@@ -293,7 +293,9 @@ class ModelTrainer:
                     (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
 
                 # Losses
-                losses = loss_func(node_pred, edge_pred, node_true, edge_true, loss_type=self.loss_type)
+                losses = loss_func(
+                    node_pred, edge_pred, node_true, edge_true, loss_type=self.loss_type
+                )
                 nodes_loss += float(losses["nodes"].item()) * num_graphs
                 edges_loss += float(losses["edges"].item()) * num_graphs
 
