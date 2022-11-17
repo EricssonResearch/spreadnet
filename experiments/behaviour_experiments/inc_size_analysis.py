@@ -11,16 +11,15 @@ from spreadnet.utils.visualization_utils import VisualUtils
 
 def prob_accuracy_calls():
     accmet = AccuracyMetrics()
-    # accmet.prob_accuracy(only_path=False,
-    # file_name="all_nodes_acc.csv", use_edges=True)
-    # accmet.prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
+    accmet.prob_accuracy(only_path=False, file_name="all_nodes_acc.csv", use_edges=True)
+    accmet.prob_accuracy(only_path=True, file_name="only_path_nodes_acc.csv")
     accmet.prob_accuracy(
         only_path=True,
         file_name="only_path_nodes_acc_no_start_end.csv",
         use_start_end=False,
     )
-    # accmet.path_length_as_accuracy(file_name="path_length.csv")
-    # accmet.max_prob_path_lengths(file_name="max_prob_walk.csv")
+    accmet.path_length_as_accuracy(file_name="path_length.csv")
+    accmet.max_prob_path_lengths(file_name="max_prob_walk.csv")
 
 
 if __name__ == "__main__":

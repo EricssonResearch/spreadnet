@@ -216,7 +216,7 @@ def divide_datasets(no_process=cpu_count() - 1):
 
 if __name__ == "__main__":
 
-    increasing_graph_size_generator()
+    # increasing_graph_size_generator()
 
     ds_split = divide_datasets()
     ds_split_l = []

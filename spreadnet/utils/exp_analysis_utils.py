@@ -144,7 +144,7 @@ class AccuracyMetrics:
                             for i in range(0, g.number_of_nodes()):
                                 if g.nodes[i]["is_in_path"]:
                                     no_ground_truth_nodes += 1
-                            if use_start_end:
+                            if not use_start_end:
                                 no_ground_truth_nodes -= 2
                         if use_edges:
                             for e in edges_list:
