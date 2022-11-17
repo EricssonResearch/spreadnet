@@ -93,7 +93,7 @@ def get_correct_predictions(node_pred, edge_pred, node_true, edge_true):
 
 def get_precise_corrects(infers, labels, graph_sizes):
     """
-    Get precise Corrections
+    Get precise corrects
     Args:
         infers: {"nodes":..., "edges":...}
         labels: Tuple: node_labels, edge_labels

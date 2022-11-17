@@ -92,7 +92,14 @@ class AccuracyMetrics:
 
         return max_prob_walk_nodes, max_prob_walk_edges
 
-    def prob_accuracy(self, file_name, only_path=False, use_nodes=True, use_edges=True):
+    def prob_accuracy(
+        self,
+        file_name,
+        only_path=False,
+        use_nodes=True,
+        use_edges=True,
+        use_start_end=True,
+    ):
         """Saves the accuracy to a pandas dataframe that is then saved as a
         csv.
 
@@ -133,30 +140,57 @@ class AccuracyMetrics:
 
                     if only_path:
                         if use_nodes:
+
                             for i in range(0, g.number_of_nodes()):
                                 if g.nodes[i]["is_in_path"]:
                                     no_ground_truth_nodes += 1
+                            if not use_start_end:
+                                no_ground_truth_nodes -= 2
                         if use_edges:
                             for e in edges_list:
                                 if e[2]["is_in_path"]:
                                     ground_truth_edges += 1
                     if use_nodes:
-                        for i in range(0, g.number_of_nodes()):
-                            prob = np.round(
-                                tf.nn.softmax(g.nodes[i]["logits"])[1].numpy(), 2
-                            )
-                            if prob >= pt and g.nodes[i]["is_in_path"]:
-                                # print(prob, pt, g.nodes[i]["is_in_path"])
+                        if use_start_end:
+                            for i in range(0, g.number_of_nodes()):
+                                prob = np.round(
+                                    tf.nn.softmax(g.nodes[i]["logits"])[1].numpy(), 2
+                                )
+                                if prob >= pt and g.nodes[i]["is_in_path"]:
+                                    # print(prob, pt, g.nodes[i]["is_in_path"])
 
-                                pred.append(1)
-                            elif (
-                                prob < pt
-                                and not g.nodes[i]["is_in_path"]
-                                and not only_path
-                            ):
-                                pred.append(1)
-                            else:
-                                pred.append(0)
+                                    pred.append(1)
+                                elif (
+                                    prob < pt
+                                    and not g.nodes[i]["is_in_path"]
+                                    and not only_path
+                                ):
+                                    pred.append(1)
+                                else:
+                                    pred.append(0)
+                        else:
+                            for i in range(0, g.number_of_nodes()):
+                                prob = np.round(
+                                    tf.nn.softmax(g.nodes[i]["logits"])[1].numpy(), 2
+                                )
+                                if (
+                                    prob >= pt
+                                    and g.nodes[i]["is_in_path"]
+                                    and not g.nodes[i]["is_start"]
+                                    and not g.nodes[i]["is_end"]
+                                ):
+                                    # print(prob, pt, g.nodes[i]["is_in_path"])
+
+                                    pred.append(1)
+                                elif (
+                                    prob < pt
+                                    and not g.nodes[i]["is_in_path"]
+                                    and not only_path
+                                ):
+                                    pred.append(1)
+                                else:
+                                    pred.append(0)
+
                     if use_edges:
                         for e in edges_list:
                             prob = np.round(tf.nn.softmax(e[2]["logits"])[1].numpy(), 2)
@@ -180,7 +214,7 @@ class AccuracyMetrics:
             name=file_name,
         )
 
-    def max_prob_path_lengths(self):
+    def max_prob_path_lengths(self, file_name=""):
         """Comapres the length of the path found to the ground truth length."""
 
         pred_dir = "increasing_size_predictions"
@@ -240,7 +274,7 @@ class AccuracyMetrics:
             datasets=datasets,
             prob_threshold=prob_threshold,
             accuracy=accuracy_path_length,
-            name="acc_prob_walk.csv",
+            name=file_name,
         )
 
     def path_length_as_accuracy(self, file_name):
