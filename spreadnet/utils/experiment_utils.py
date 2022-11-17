@@ -31,7 +31,9 @@ from torch_geometric.data import Data
 
 
 class ExperimentUtils:
-    def __init__(self, model_type: str = "", weights_model: str = "") -> None:
+    def __init__(
+        self, model_type: str = "", weights_model: str = "", model_name=""
+    ) -> None:
         """Load the weights path during training.
 
         Raise: Exception if the folder does not exist.
@@ -41,7 +43,7 @@ class ExperimentUtils:
         self.implemented_models = ["tf_gnn", "pyg_gnn"]
         self.model_type = model_type
         self.model_weights = weights_model  # name of the weights file
-
+        self.model_name = model_name
         self._load_model()
 
         """
@@ -104,10 +106,10 @@ class ExperimentUtils:
         """
         if ret:
             if wh_w:
-                return self.model_type
-            return (self.model_type, self.model_weights)
+                return self.model_name
+            return (self.model_name, self.model_weights)
         else:
-            print(self.model_type, self.model_weights)
+            print(self.model_name, self.model_weights)
 
     def _load_model(
         self,

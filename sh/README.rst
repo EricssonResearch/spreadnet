@@ -1,7 +1,7 @@
 SBATCH on Uppmax
 --------------------
 
-* Submit job batch to Uppmax::
+* Submit job batch to Uppmax (does not require shelling into singularity)::
 
     sbatch [filename]
 
