@@ -193,6 +193,15 @@ dijkstra_runtime_list = list()
 dijksta_runtime_msp_memo_list = list()
 dijkstra_runtime_memo_list = list()
 message_passing_runtime_list = list()
+networkx_dijkstra_runtime_list = list()
+
+hashing_walltime_test_list = list()
+dijkstra_walltime_list = list()
+dijksta_walltime_msp_memo_list = list()
+dijkstra_walltime_memo_list = list()
+message_passing_walltime_list = list()
+networkx_dijkstra_walltime_list = list()
+
 walltime_test_list = list()
 number_nodes_list = list()
 number_edges_list = list()
@@ -206,10 +215,16 @@ graph_data = {
     "file_name": file_name_list,
     "min_nodes": min_node_list,
     "max_nodes": max_node_list,
-    "hashing graphs only": hashing_runtime_test_list,
-    "dijkstra_msp_memo": dijksta_runtime_msp_memo_list,
-    "dijkstra_memo": dijkstra_runtime_memo_list,
-    "Message Passing GNN": message_passing_runtime_list,
+    "Hashing Graphs RunTime": hashing_runtime_test_list,
+    "Dijkstra Full Path and Memoization Runtime": dijksta_runtime_msp_memo_list,
+    "Dijkstra With Memoization Runtime": dijkstra_runtime_memo_list,
+    "Message Passing GNN Runtime": message_passing_runtime_list,
+    "Networkx Dijkstra Runtime": networkx_dijkstra_runtime_list,
+    "Hashing Graphs Walltime": hashing_runtime_test_list,
+    "Dijkstra Full Path and Memoization Walltime": dijksta_runtime_msp_memo_list,
+    "Dijkstra With Memoization Walltime": dijkstra_runtime_memo_list,
+    "Message Passing GNN Walltime": message_passing_runtime_list,
+    "Networkx Dijkstra Walltime": networkx_dijkstra_walltime_list,
 }
 
 
@@ -219,76 +234,12 @@ graph_data = {
 #        print( nx.single_source_dijkstra(g, 1, g.number_of_nodes() - 1) )
 #    return
 
-"""
-def increasing_graph_size_experiment(datasets):
-    #Predict for files in the increasing_size_experiment_data folder.
-
-    #Saves the results in the same folder as the
-
-    models_trained = [
-        ExperimentUtils(model_type="tf_gnn", weights_model="pickled_2000_model.pickle"),
-        ExperimentUtils(model_type="pyg_gnn", weights_model="model_weights_best.pth"),
-    ]
-
-    results_dir = "increasing_size_predictions"
-    experiments_dir = "runtime_increasing_size_experiment_data"
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir)
-
-    for ds in datasets:
-
-        raw_data_path = experiments_dir + "/" + ds
-        file_raw = open(raw_data_path)
-        # print("file parts", file_parts)
-        graphs = json.load(file_raw)
-        #     param_list = []
-        #     for m in models_trained:
-        #         param_list.append([results_dir, m, graphs, ds])
-
-        # pool = Pool(processes=3)
-        # pool.starmap(inc_pred, param_list)
-        # pool.close()
-
-        # # cpu_count() - 1)
-
-        for model in models_trained:
-            output_name = ds.replace(
-                ".json", "_out_" + model.show_model_used(ret=True, wh_w=True) + ".json"
-            )
-
-            output_graphs = list()
-
-            # output_graphs = pool.starmap(inc_pred_infer, [model, graphs])
-            # pool.close()
-
-            for g in graphs:
-                output_graphs.append(nx.node_link_data(model.inferer_single_data(g)))
-
-            with open(results_dir + f"/{output_name}", "w") as outfile:
-                json.dump(output_graphs, outfile, cls=NpEncoder)
-
-            # print(os.getpid(), ": ", output_name, "Written ")
-
-"""
-
 
 def main():
     ds_split = (
         divide_datasets()
     )  # list of all the .json files to be used in runtime tests
 
-    """
-    data = {'graph': ['file', 'number_nodes', 'number_edges', 'start_node', 'end_node'],
-        'price': [0, 850, 200, 150, 1300]
-        }
-
-    df = pd.DataFrame(data)
-    df.to_csv(r'runtime_test_results.csv', index=False, header=True)
-
-    print(df)
-
-    # return 1
-"""
     for ds in ds_split:
         # print(ds)
         # f = open(dataset_path + "/raw/random.102.100-110.20.json")
@@ -343,111 +294,95 @@ def main():
 
         print("Number of graphs: ", len(all_graphs))
 
-        # return
-        # print("all_graphs", all_graphs.source)
-        # print("total_time for ", f)
-
-        dijkstra_runner.clear_memo_table()
-        # print("hashing graphs only")
+        # hashing graphs only runtime test
         function_name_list.append("hashing_graphs_only")
 
+        dijkstra_runner.clear_memo_table()
         for i in range(1):
-            t1_start = process_time()
-            # wall_time_start = time()
+            total_time = 0
+            total_wall_time = 0
             for g in all_graphs:
+                t1_start = process_time()
+                wall_time_start = time()
                 dijkstra_runner.hash_graph_weisfeiler(g["nxdata"])
-                # print(dijkstra_runner.memoTable)
-            # print( "Graph start:", g["start"], " End:", g["end"])
-            t1_stop = process_time()
-            # wall_time_stop = time()
+                t1_stop = process_time()
+                wall_time_stop = time()
+                runtime = t1_stop - t1_start
+                walltime = wall_time_stop - wall_time_start
+                total_time = total_time + runtime
+                total_wall_time = total_wall_time + walltime
 
-            # print("starttime", t1_start)
-            # print("stop time", t1_stop)
-            total_time = t1_stop - t1_start
-            # total_wall_time = wall_time_stop - wall_time_start
-            # print(total_time)
             hashing_runtime_test_list.append(total_time)
-            # print(total_wall_time)
-
-        # return 0
+            hashing_walltime_test_list.append(total_wall_time)
 
         dijkstra_runner.clear_memo_table()
 
-        # print("dijkstra minimum spanning tree with memoization only one path saved")
+        # dijkstra minimum spanning tree with memoization only
+        # one path saved runtime test
 
+        dijkstra_runner.clear_memo_table()
         for i in range(1):
-            t1_start = process_time()
+            total_time = 0
+            total_wall_time = 0
             for g in all_graphs:
+                t1_start = process_time()
+                wall_time_start = time()
                 dijkstra_runner.shortest_path_single(
                     g["nxdata"], g["hashed_graph"], g["start"], g["end"]
                 )
-                # print(dijkstra_runner.memoTable)
-            # print( "Graph start:", g["start"], " End:", g["end"])
-            t1_stop = process_time()
-            # print("starttime", t1_start)
-            # print("stop time", t1_stop)
-            total_time = t1_stop - t1_start
-            # print(total_time)
+                t1_stop = process_time()
+                wall_time_stop = time()
+                runtime = t1_stop - t1_start
+                walltime = wall_time_stop - wall_time_start
+                total_time = total_time + runtime
+                total_wall_time = total_wall_time + walltime
+
             dijkstra_runtime_memo_list.append(total_time)
+            dijkstra_walltime_memo_list.append(total_wall_time)
+
+        # networkx Dijkstra algorithm
 
         dijkstra_runner.clear_memo_table()
-
-        """
-
-        print("single source dijkstra")
-
         for i in range(1):
-            t1_start = process_time()
+            total_time = 0
+            total_wall_time = 0
             for g in all_graphs:
+                t1_start = process_time()
+                wall_time_start = time()
                 nx.single_source_dijkstra(g["nxdata"], g["start"], g["end"])
-            # print( "Graph start:", g["start"], " End:", g["end"])
-            t1_stop = process_time()
-            # print("starttime", t1_start)
-            # print("stop time", t1_stop)
-            total_time = t1_stop - t1_start
-            print(total_time)
+                t1_stop = process_time()
+                wall_time_stop = time()
+                runtime = t1_stop - t1_start
+                walltime = wall_time_stop - wall_time_start
+                total_time = total_time + runtime
+                total_wall_time = total_wall_time + walltime
 
+            networkx_dijkstra_runtime_list.append(total_time)
+            networkx_dijkstra_walltime_list.append(total_wall_time)
+
+        # dijkstra minimum spanning tree with memoization runtime test
         dijkstra_runner.clear_memo_table()
-        """
-
-        """
-        print("astar")
-
         for i in range(1):
-            t1_start = process_time()
+            total_time = 0
+            total_wall_time = 0
             for g in all_graphs:
-                nx.astar_path(g["nxdata"], g["start"], g["end"])
-            # print( "Graph start:", g["start"], " End:", g["end"])
-            t1_stop = process_time()
-            # print("starttime", t1_start)
-            # print("stop time", t1_stop)
-            total_time = t1_stop - t1_start
-            print(total_time)
+                t1_start = process_time()
+                wall_time_start = time()
+                nx.single_source_dijkstra(g["nxdata"], g["start"], g["end"])
+                t1_stop = process_time()
+                wall_time_stop = time()
+                runtime = t1_stop - t1_start
+                walltime = wall_time_stop - wall_time_start
+                total_time = total_time + runtime
+                total_wall_time = total_wall_time + walltime
 
-        dijkstra_runner.clear_memo_table()
-        """
-
-        # print("dijkstra minimum spanning tree with memoization")
-
-        for i in range(1):
-            t1_start = process_time()
-            for g in all_graphs:
-                dijkstra_runner.shortest_path(
-                    g["nxdata"], g["hashed_graph"], g["start"], g["end"]
-                )
-            # print( "Graph start:", g["start"], " End:", g["end"])
-            t1_stop = process_time()
-            # print("starttime", t1_start)
-            # print("stop time", t1_stop)
-            total_time = t1_stop - t1_start
-            # print(total_time)
             dijksta_runtime_msp_memo_list.append(total_time)
-
-        dijkstra_runner.clear_memo_table()
+            dijksta_walltime_msp_memo_list.append(total_wall_time)
 
         # for g in all_graphs:
         #    print( nx.single_source_dijkstra(g, 1, g.number_of_nodes() - 1) )
 
+        # Encode Process Decode GNN runtime test
         model = EncodeProcessDecode(
             node_in=model_configs["node_in"],
             edge_in=model_configs["edge_in"],
@@ -476,34 +411,25 @@ def main():
         for i in range(1):
             total_time_process_all_runs = 0
             total_wall_time_all_runs = 0
-            t1_start = process_time()
 
-            # wall_time_start = time()
             for g in all_graphs:
-                (preds, infers, time_per_graph, wall_time) = predict(
+                (preds, infers, time_per_graph, wall_time_per_graph) = predict(
                     model, process_nx(g["nxdata"])
                 )
-                total_wall_time_all_runs = total_wall_time_all_runs + wall_time
+                total_wall_time_all_runs = (
+                    total_wall_time_all_runs + wall_time_per_graph
+                )
                 total_time_process_all_runs = (
                     total_time_process_all_runs + time_per_graph
                 )
-                # t1_stop = process_time()
-                # wall_time_stop = time()
                 (
                     pred_graph_nx,
                     truth_total_weight,
                     pred_total_weight,
                 ) = process_prediction(g["nxdata"], preds, infers)
-                # print(dijkstra_runner.memoTable)
             # print( "Graph start:", g["start"], " End:", g["end"])
-
-            # print("starttime", t1_start)
-            # print("stop time", t1_stop)
-            # total_time = t1_stop - t1_start
-            # total_wall_time = wall_time_stop - wall_time_start
-            # print(total_time)
             message_passing_runtime_list.append(total_time_process_all_runs)
-        # print(total_wall_time_all_runs)
+            message_passing_walltime_list.append(total_wall_time_all_runs)
 
     gd = pd.DataFrame(graph_data)
     gd.to_csv(r"runtime_test_results.csv", index=False, header=True)

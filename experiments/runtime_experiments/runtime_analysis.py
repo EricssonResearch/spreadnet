@@ -13,6 +13,7 @@ def main():
         y=["dijkstra_msp_memo", "dijkstra_memo", "Message Passing GNN"],
         figsize=(10, 5),
         grid=True,
+        style=".-",
     )
     # barplot = df.plot(x='min_nodes', columns=['dijkstra_msp_memo',
     # 'dijkstra_memo', 'Message Passing GNN'])
