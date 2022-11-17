@@ -1,3 +1,17 @@
+"""This file will run tests on the graphs given in
+runtime_increasing_size_experiment_data folder with JSON, networkx graphs in
+the runtime_experiments folder.
+
+The JSON file names must be in the following format:
+ name_name_minnode(int)_maxnode(int)_theta(int).json
+ e.g. increasing_size_10_25_33.json
+
+ Otherwise, the graph information will not be saved correctly.
+
+All runtimes will be collected into a csv file and can be analyzed on
+runtime_analysis.py
+"""
+
 # from dijkstra_algorithm import single_source_dijkstra
 # from dijkstra_runner import shortest_path
 
@@ -23,7 +37,6 @@ from os import path as osp
 import torch
 
 # from glob import glob
-
 # import matplotlib.pyplot as plt
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode

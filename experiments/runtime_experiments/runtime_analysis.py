@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 # pd.options.plotting.backend = "plotly"
 
 
+"""
+These tests will only show correct data with 20 graph sets
+(it has been hard coded, so this value will need to be changed
+for variations on this or an update to set the value
+based off counted runs.)
+
+The graphs will print from the data in the runtime_test_results.csv which is
+created after completing runtime_experiments.py
+"""
+
+
 def line_graph_pandas_dijkstra_gnn_runtime(df):
     df.plot(
         x="min_nodes",
