@@ -66,13 +66,14 @@ class BalancingLoss:
         }
 
     def get_sequence_weighted_loss(self):
-        # 1: if edge is correctly classified as "in path"
-        for i in range(len(self.edge_pred_classes)):
+        for i in range(len(self.edge_data)):
+            (source_node, target_node) = self.edge_data[i]
+
+            # 1: if edge is correctly classified as "in path"
             edge_prediction = self.edge_pred_classes[i]
             edge_truth = self.edge_true[i]
 
             if edge_prediction == 1 and (edge_prediction == edge_truth):
-                (source_node, target_node) = self.edge_data[i]
 
                 # 1a: penalize the wrongly classified source node
                 # (which should be in path)
@@ -84,11 +85,8 @@ class BalancingLoss:
                 if self.node_pred_classes[target_node] == 0:
                     self.updated_node_losses[target_node] *= self.node_mult_factor
 
-        # 2: if 2 neighbouring nodes are correctly classified to be "in path"
-        for i in range(len(self.edge_data)):
-            (source_node, target_node) = self.edge_data[i]
-
-            # 2a: penalize the wrongly classified edge (which should be in path)
+            # 2: if 2 neighbouring nodes are correctly classified to be "in path"
+            # penalize the wrongly classified edge (which should be in path)
             if (
                 (self.node_pred_classes[source_node] == self.node_true[source_node])
                 and (self.node_pred_classes[target_node] == self.node_true[target_node])
