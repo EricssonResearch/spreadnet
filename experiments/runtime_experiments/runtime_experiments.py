@@ -66,7 +66,9 @@ which_model = args.model
 # ).replace("\\", "/")
 
 
-"""    {
+"""
+JSON file layout example
+    {
 "directed": true,
     "multigraph": false,
     "graph": {},
@@ -81,52 +83,6 @@ which_model = args.model
             "is_start": false,
             "is_in_path": true,
             "id": 0  """
-
-"""
-def inc_process(
-    number_of_graphs,
-    i,
-    graph_size_start,
-    graph_size_increment,
-    graph_size_gap,
-    seed,
-    nodes_min_max,
-    theta,
-    path_length_increaser,
-):
-    generator = GraphGenerator(
-        random_seed=seed,
-        num_nodes_min_max=nodes_min_max,
-        theta=theta,
-        min_length=path_length_increaser,
-    )
-    graph_generator = generator.task_graph_generator()
-
-    all_graphs = list()
-    for idx in range(number_of_graphs):
-
-        g = next(graph_generator)
-        all_graphs.append(nx.node_link_data(g))
-        generator.set_theta(theta)
-
-    graph_name = (
-        "increasing_size"
-        + "_"
-        + str(i)
-        + "_"
-        + str(i + graph_size_gap)
-        + "_"
-        + str(theta)
-        + ".json"
-    )
-    graphs_folder = "increasing_size_experiment_data/"
-    if not os.path.exists(graphs_folder):
-        os.makedirs(graphs_folder)
-    with open(graphs_folder + f"/{graph_name}", "w") as outfile:
-        json.dump(all_graphs, outfile, cls=NpEncoder)
-    print("Dataset: ", int((i - graph_size_start) / graph_size_increment))
-
-"""
 
 
 default_dataset_yaml_path = os.path.join(
