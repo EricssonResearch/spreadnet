@@ -22,6 +22,7 @@ from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
 from spreadnet.datasets.data_utils.draw import draw_networkx
 import spreadnet.utils.log_utils as log_utils
+from spreadnet.datasets.data_utils.encoder import NpEncoder
 
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
@@ -150,6 +151,13 @@ if __name__ == "__main__":
                 print(f"Truth weights: {truth_total_weight}")
                 print(f"Pred weights: {pred_total_weight}")
 
+                plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
+
+                with open(f"{plot_name}.json", "w") as outfile:
+                    json.dump(
+                        [nx.node_link_data(pred_graph_nx)], outfile, cls=NpEncoder
+                    )
+
                 print("Drawing comparison...")
                 fig = plt.figure(figsize=(80, 40))
                 draw_networkx(
@@ -168,8 +176,7 @@ if __name__ == "__main__":
                     "probability",
                     "probability",
                 )
-                plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}.jpg"
-                plt.savefig(plot_name, pad_inches=0, bbox_inches="tight")
+                plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
                 plt.clf()
                 print("Image saved at ", plot_name)
 

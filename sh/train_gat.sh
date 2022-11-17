@@ -8,4 +8,4 @@
 
 cd ../experiments
 singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu116.sif python train.py --model="GAT" --resume
-# singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu116.sif python train.py --model="GAT" --wandb --resume
+# singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu116.sif python train.py --model="GAT" --wandb --project="SpreadNet-Train" --resume
