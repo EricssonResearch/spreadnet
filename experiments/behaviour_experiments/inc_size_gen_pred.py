@@ -223,6 +223,6 @@ if __name__ == "__main__":
     for d in ds_split:
         ds_split_l.append([d.tolist()])
 
-    pool = Pool(processes=cpu_count() - 1)
+    pool = Pool(processes=cpu_count() - 2)
     pool.starmap(increasing_graph_size_experiment, ds_split_l)
     pool.close()

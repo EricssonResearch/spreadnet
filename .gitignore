@@ -195,3 +195,5 @@ experiments/behaviour_experiments/same_g_mult_paths/*.json
 #wandb local run files
 experiments/encode_process_decode/wandb/
 experiments/wandb/
+
+experiments/behaviour_experiments/10-100_dataset_raw

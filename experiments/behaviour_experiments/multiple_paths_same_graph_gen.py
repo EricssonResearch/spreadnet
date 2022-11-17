@@ -42,7 +42,100 @@ def append_sp(graph, start, end):
     return digraph
 
 
+def remove_ground_truth(G: nx.Graph() = None) -> nx.Graph():
+    """Removes the ground truth This means that only the weights attributes
+    should remain."""
+    for (n1, n2, d) in G.edges(data=True):
+        del d["is_in_path"]
+        del d["is_start"]
+        del d["is_end"]
+    for n in G.nodes(data=True):
+        del d["is_in_path"]
+        del d["is_start"]
+        del d["is_end"]
+
+    return G
+
+
 def generate_base_graphs():
+    """_summary_
+
+    Args:
+        list (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    graph_sizes = []
+    in_graph_gap = 20
+    max_num_nodes = 1500
+    seed = 543
+    theta = 20
+    path_length_increaser = 3
+    graph_size_start = 20
+    between_sets_gaps = 200
+    file_base_name = "sgmp_"
+    data_dir = "same_g_mult_paths/"
+
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+
+    file_base_name = "sgmp_"
+    graphs = []
+    datasets_names = []
+    for i in range(graph_size_start, max_num_nodes, between_sets_gaps):
+        graph_sizes.append([i, i + in_graph_gap])
+        theta += 13
+
+        generator = GraphGenerator(
+            random_seed=seed,
+            num_nodes_min_max=(i, i + in_graph_gap),
+            theta=theta,
+            min_length=path_length_increaser,
+        )
+        graphs.append(generator.generate_base_graph())
+        datasets_names.append(
+            file_base_name + str(i) + "_" + str(i + in_graph_gap) + ".json"
+        )
+
+    return graphs, datasets_names
+
+
+def get_graphs_from_dataset(dataset_folder=""):
+    """
+
+    Args:
+        list (_type_): _description_
+        dataset_name (_type_, optional): _description_. Defaults to "",
+        dataset_folder="")->tuple(list(nx.Graph()).
+    ?
+    """
+    file_base_name = "sgmp_"
+    datasets = os.listdir(dataset_folder)
+    for path in os.listdir(dataset_folder):
+        # check if current path is a file
+        if os.path.isfile(os.path.join(dataset_folder, path)):
+            datasets.append(path)
+
+    graphs = []
+    datasets_names = []
+
+    percentage_datasets_used = 0.20
+    for i in range(int(len(datasets) * percentage_datasets_used)):
+
+        raw_data_path = dataset_folder + datasets[i]
+        file_raw = open(raw_data_path)
+
+        g = nx.node_link_graph(json.load(file_raw))
+        g = remove_ground_truth(g)
+        graphs.append(g)
+        file_base_name = "sgmp_"
+        datasets_names.append(file_base_name + "10_100" + "_" + str(i) + ".json")
+        # TODO construct dataset name here
+    return graphs, datasets_names
+
+
+def generate_sgmp():
     """Generates the base graphs.
 
     Those base graphs will later be used for having all the paths in between.
@@ -57,33 +150,24 @@ def generate_base_graphs():
                 -  one with all paths but smaller graphs
                 -  one with larger graphs but increasing a small ratio of paths
     """
-    graph_sizes = []
-    in_graph_gap = 20
-    max_num_nodes = 1500
-    seed = 543
-    theta = 20
-    path_length_increaser = 3
-    graph_size_start = 20
-    between_sets_gaps = 200
+
     threshold = 2500  # threshold for deciding every x path that is added
     data_dir = "same_g_mult_paths/"
+
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
-    file_base_name = "sgmp_"
+    threshold = 2500  # threshold for deciding every x path that is added
+    # graphs = generate_base_graphs()
+    graphs, datasets_names = get_graphs_from_dataset(
+        dataset_folder="10-100_dataset_raw/"
+    )
 
-    for i in range(graph_size_start, max_num_nodes, between_sets_gaps):
-        graph_sizes.append([i, i + in_graph_gap])
-        theta += 13
+    for i in len(graphs):
 
-        generator = GraphGenerator(
-            random_seed=seed,
-            num_nodes_min_max=(i, i + in_graph_gap),
-            theta=theta,
-            min_length=path_length_increaser,
-        )
-        g = generator.generate_base_graph()
-        dataset_name = file_base_name + str(i) + "_" + str(i + in_graph_gap) + ".json"
+        g = graphs[i]
+
+        dataset_name = datasets_names[i]
 
         paths_of_g = []
 
@@ -114,27 +198,28 @@ def generate_base_graphs():
                 paths_of_g.append(append_sp(g, x[0], x[1]))
             counter += 1
 
-        # # Visual check to see if the graphs generated are the right types of graphs
-        # #
-        # # vis = VisualUtils()
-        # # vis.new_nx_draw(paths_of_g[2], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[3], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[4], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[20], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[55], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[56], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[100], ground_truth=True)
-        # # vis.new_nx_draw(paths_of_g[101], ground_truth=True)
-        # # plt.show()
-        # # quit()
-        paths_of_g_converted = []
+            # # Visual check to see if the graphs generated are
+            # the right types of graphs
+            # #
+            # # vis = VisualUtils()
+            # # vis.new_nx_draw(paths_of_g[2], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[3], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[4], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[20], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[55], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[56], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[100], ground_truth=True)
+            # # vis.new_nx_draw(paths_of_g[101], ground_truth=True)
+            # # plt.show()
+            # # quit()
+            paths_of_g_converted = []
 
-        for p in paths_of_g:
-            paths_of_g_converted.append(nx.node_link_data(p))
+            for p in paths_of_g:
+                paths_of_g_converted.append(nx.node_link_data(p))
 
-        with open(data_dir + f"/{dataset_name}", "w") as outfile:
-            json.dump(paths_of_g_converted, outfile, cls=NpEncoder)
+            with open(data_dir + f"/{dataset_name}", "w") as outfile:
+                json.dump(paths_of_g_converted, outfile, cls=NpEncoder)
 
 
 if __name__ == "__main__":
-    generate_base_graphs()
+    generate_sgmp()
