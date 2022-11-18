@@ -163,6 +163,8 @@ dijksta_runtime_msp_memo_list = list()
 dijkstra_runtime_memo_list = list()
 message_passing_runtime_list = list()
 networkx_dijkstra_runtime_list = list()
+memoization_table_runtime_list = list()
+
 
 hashing_walltime_test_list = list()
 dijkstra_walltime_list = list()
@@ -170,6 +172,8 @@ dijksta_walltime_msp_memo_list = list()
 dijkstra_walltime_memo_list = list()
 message_passing_walltime_list = list()
 networkx_dijkstra_walltime_list = list()
+memotable_walltime = list()
+memotable_runtime = list()
 
 walltime_test_list = list()
 number_nodes_list = list()
@@ -194,6 +198,8 @@ graph_data = {
     "Dijkstra With Memoization Walltime": dijkstra_runtime_memo_list,
     "Message Passing GNN Walltime": message_passing_runtime_list,
     "Networkx Dijkstra Walltime": networkx_dijkstra_walltime_list,
+    "Memotable Walltime": memotable_walltime,
+    "Memotable Runtime": memotable_runtime,
 }
 
 
@@ -337,7 +343,9 @@ def main():
             for g in all_graphs:
                 t1_start = process_time()
                 wall_time_start = time()
-                nx.single_source_dijkstra(g["nxdata"], g["start"], g["end"])
+                dijkstra_runner.shortest_path(
+                    g["nxdata"], g["hashed_graph"], g["start"], g["end"]
+                )
                 t1_stop = process_time()
                 wall_time_stop = time()
                 runtime = t1_stop - t1_start
