@@ -6,35 +6,47 @@ from tqdm import tqdm
 import time
 from joblib import Parallel, delayed
 import numpy as np
+import wandb
+import argparse
 
 from spreadnet.utils import GraphGenerator, yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.datasets.data_utils.processor import process_raw_data_folder
 from spreadnet.datasets.data_utils.draw import draw_networkx
-from spreadnet.datasets import run_statistics
 from spreadnet.utils import log_utils
+from spreadnet.datasets import dataset_statistics
 
 
 # ------------------------------------------
 # Params
 yaml_path = os.path.join(os.path.dirname(__file__), "dataset_configs.yaml")
 data_configs = yaml_parser(yaml_path).data
+parser = argparse.ArgumentParser(description="Generate dataset.")
 
 visualize_graph = int(data_configs["visualize_graph"])
-random_seed = data_configs["random_seed"]
+random_seed = data_configs["random_seed_train"]
 random_seed_test = data_configs["random_seed_test"]
 min_path_length = int(data_configs["min_path_length"])
-num_nodes_min_max = (data_configs["num_node_min"], data_configs["num_node_max"])
+num_nodes_min_max = (
+    data_configs["num_node_min_train"],
+    data_configs["num_node_max_train"],
+)
 num_nodes_min_max_test = (
     data_configs["num_node_min_test"],
     data_configs["num_node_max_test"],
 )
 theta_cap = int(data_configs["theta_cap"])
 theta_increase_rate = float(data_configs["theta_increase_rate"])
-dataset_size = data_configs["dataset_size"]
+dataset_size = data_configs["dataset_size_train"]
 dataset_path = os.path.join(os.path.dirname(__file__), data_configs["dataset_path"])
 raw_path = dataset_path + "/raw"
 log_save_path = dataset_path + "/logs"
+
+parser.add_argument(
+    "--wandb", help="Specify if generate dataset with wandb", action="store_true"
+)
+args = parser.parse_args()
+use_wandb = args.wandb
 
 if not os.path.exists(raw_path):
     os.makedirs(raw_path)
@@ -148,6 +160,7 @@ if __name__ == "__main__":
         "dataset_logger", log_save_path, "generate_dataset"
     )
     # Train and validation set
+    dataset_logger.info(f"use_wandb:{use_wandb}")
     dataset_logger.info("Generating training and validation set...")
 
     start_time = time.time()
@@ -157,7 +170,7 @@ if __name__ == "__main__":
             random_seed,
             dataset_size,
             num_nodes_min_max,
-            data_configs["starting_theta"],
+            data_configs["starting_theta_train"],
         )
         process_raw_data_folder(dataset_path, "all", "[!test.]")
 
@@ -174,11 +187,18 @@ if __name__ == "__main__":
         dataset_logger.info("Graph Generation Done...\nProcessing...")
         process_raw_data_folder(dataset_path, "test.all", "test.")
 
-        dataset_logger.info("Computing stats...")
-        run_stat = run_statistics.RunStatistics()
-        run_stat.add_data("raw_path", raw_path)
-
     except Exception as exception:
         dataset_logger.exception(exception)
 
+    dataset_logger.info("Computing stats...")
+    dataset_stat = dataset_statistics.DatasetStatistics(dataset_logger)
+    dataset_stat.add_data("raw_path", raw_path)
+    if use_wandb:
+        wandb.login()
+        json_file_paths = dataset_stat.get_dataset_path()
+        dataset_stat.upload_dataset_statistics(json_file_paths)
+        # artifact_location = dataset_stat.download_dataset_wandb(
+        #                                 entity="pbs",
+        #                                 project="artifacts-testing",
+        #                                 job_type="data-download")
     dataset_logger.info(f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}')
