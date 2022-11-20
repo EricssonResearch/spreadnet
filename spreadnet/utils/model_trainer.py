@@ -714,25 +714,25 @@ class WAndBModelTrainer(ModelTrainer):
 
         # simple log
         train_metrics = {
-            "Train/epoch": epoch,
-            "Train/train_nodes_loss": train_nodes_loss,
-            "Train/train_edges_loss": train_edges_loss,
-            "Train/train_nodes_acc": train_nodes_acc,
-            "Train/train_edges_acc": train_edges_acc,
-            "Train/train_nodes_in_path_acc": train_node_in_path_acc,
-            "Train/train_edges_in_path_acc": train_edge_in_path_acc,
-            "Train/train_precise_acc": train_precise_acc,
+            "epoch": epoch,
+            "train_nodes_loss": train_nodes_loss,
+            "train_edges_loss": train_edges_loss,
+            "train_nodes_acc": train_nodes_acc,
+            "train_edges_acc": train_edges_acc,
+            "train_nodes_in_path_acc": train_node_in_path_acc,
+            "train_edges_in_path_acc": train_edge_in_path_acc,
+            "train_precise_acc": train_precise_acc,
         }
 
         validation_metrics = {
-            "Train/epoch": epoch,
-            "Validation/validation_nodes_loss": validation_nodes_loss,
-            "Validation/validation_edges_loss": validation_edges_loss,
-            "Validation/validation_nodes_acc": validation_nodes_acc,
-            "Validation/validation_edges_acc": validation_edges_acc,
-            "Validation/validation_nodes_in_path_acc": validation_node_in_path_acc,
-            "Validation/validation_edges_in_path_acc": validation_edge_in_path_acc,
-            "Validation/validation_precise_acc": validation_precise_acc,
+            "epoch": epoch,
+            "validation_nodes_loss": validation_nodes_loss,
+            "validation_edges_loss": validation_edges_loss,
+            "validation_nodes_acc": validation_nodes_acc,
+            "validation_edges_acc": validation_edges_acc,
+            "validation_nodes_in_path_acc": validation_node_in_path_acc,
+            "validation_edges_in_path_acc": validation_edge_in_path_acc,
+            "validation_precise_acc": validation_precise_acc,
         }
 
         wandb.log({**train_metrics, **validation_metrics})
