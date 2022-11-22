@@ -45,8 +45,13 @@ log_save_path = dataset_path + "/logs"
 parser.add_argument(
     "--wandb", help="Specify if generate dataset with wandb", action="store_true"
 )
+
+parser.add_argument(
+    "--stats", help="Specify if generate dataset with statistics", action="store_true"
+)
 args = parser.parse_args()
 use_wandb = args.wandb
+generate_statistics = args.stats
 
 if not os.path.exists(raw_path):
     os.makedirs(raw_path)
@@ -190,15 +195,16 @@ if __name__ == "__main__":
     except Exception as exception:
         dataset_logger.exception(exception)
 
-    dataset_logger.info("Computing stats...")
-    dataset_stat = dataset_statistics.DatasetStatistics(dataset_logger)
-    dataset_stat.add_data("raw_path", raw_path)
-    if use_wandb:
-        wandb.login()
-        json_file_paths = dataset_stat.get_dataset_path()
-        dataset_stat.upload_dataset_statistics(json_file_paths)
-        # artifact_location = dataset_stat.download_dataset_wandb(
-        #                                 entity="pbs",
-        #                                 project="artifacts-testing",
-        #                                 job_type="data-download")
+    if generate_statistics:
+        dataset_logger.info("Computing stats...")
+        dataset_stat = dataset_statistics.DatasetStatistics(dataset_logger)
+        dataset_stat.add_data("raw_path", raw_path)
+        if use_wandb:
+            wandb.login()
+            json_file_paths = dataset_stat.get_dataset_path()
+            dataset_stat.upload_dataset_statistics(json_file_paths)
+            # artifact_location = dataset_stat.download_dataset_wandb(
+            #                                 entity="pbs",
+            #                                 project="artifacts-testing",
+            #                                 job_type="data-download")
     dataset_logger.info(f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}')
