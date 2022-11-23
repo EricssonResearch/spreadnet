@@ -458,7 +458,7 @@ class ModelTrainer:
         if not os.path.exists(self.plots_save_path):
             os.makedirs(self.plots_save_path)
 
-        dataset_size = self.dataset_configs["dataset_size"]
+        dataset_size = self.dataset_configs["dataset_size_train"]
         plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
 
         dataset, dataset_size = self.construct_dataset()
