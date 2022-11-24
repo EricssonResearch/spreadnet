@@ -1,7 +1,7 @@
 SBATCH on Uppmax
 --------------------
 
-* Submit job batch to Uppmax::
+* Submit job batch to Uppmax (does not require shelling into singularity)::
 
     sbatch [filename]
 
@@ -16,6 +16,9 @@ SBATCH on Uppmax
 * To check logs, look at `.out` files in this folder matching your job id. Or list them by date by using::
 
     ls -l
+    tail -f slurm-[job_id].out
+
+    or
 
     less slurm-[job_id].out
 

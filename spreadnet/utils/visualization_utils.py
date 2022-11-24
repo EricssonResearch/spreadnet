@@ -269,6 +269,7 @@ class VisualUtils:
         return max_prob_walk_nodes, max_prob_walk_edges
 
     def plot_graph(self, df, pb_treshold, model_name, title):
+
         df.drop(
             [
                 "Model Type",
@@ -280,6 +281,7 @@ class VisualUtils:
         for pb in pb_treshold:
             df_tr = df[df["Probabiltiy Threshold"] == pb]
             plt.scatter(df_tr["Graph Size"], df_tr["Accuracy"])
+
         plt.yticks(np.arange(0, df_tr["Accuracy"].max() + 0.1, 0.05))
         plt.legend(df["Probabiltiy Threshold"], title="Probability Threshold")
         plt.xlabel("Graph Size")
@@ -297,14 +299,13 @@ class VisualUtils:
         # print(df)
         # pb_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
         pb_treshold = [0.5, 0.25, 0.01]
-        df_pyg = df[df["Model Type"] == "pyg"]
-        df_tf = df[df["Model Type"] == "tf"]
-        self.plot_graph(
-            df_pyg, pb_treshold=pb_treshold, model_name=" Pyg Original", title=title
-        )
-        self.plot_graph(
-            df_tf,
-            pb_treshold=pb_treshold,
-            model_name=" Tensorflow Original",
-            title=title,
-        )
+
+        models_shortname = df["Model Type"].unique()
+        print(models_shortname)
+
+        for m_name in models_shortname:
+            df_single_model = df[df["Model Type"] == m_name]
+            print(df_single_model)
+            self.plot_graph(
+                df_single_model, pb_treshold=pb_treshold, model_name=m_name, title=title
+            )
