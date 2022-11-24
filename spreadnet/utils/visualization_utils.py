@@ -202,7 +202,7 @@ class VisualUtils:
         and edges if we take the maximum probability, either node or edge.
 
         Args:
-            G (_type_): Oruput Graph
+            G (_type_): Output Graph
             start_node int: Start node.
             end_node int: End node.
 
