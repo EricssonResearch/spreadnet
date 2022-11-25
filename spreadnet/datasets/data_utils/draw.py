@@ -27,6 +27,7 @@ def draw_networkx(
     num_graphs_to_draw: int,
     node_label_key="default",
     edge_label_key="weight",
+    per_row=5,
 ):
     """Draw networkx graph to figure.
 
@@ -41,8 +42,8 @@ def draw_networkx(
     """
 
     ax = figure.add_subplot(
-        math.ceil(num_graphs_to_draw / 5),
-        num_graphs_to_draw if num_graphs_to_draw <= 5 else 5,
+        math.ceil(num_graphs_to_draw / per_row),
+        num_graphs_to_draw if num_graphs_to_draw <= per_row else per_row,
         plot_index,
     )
     ax.set_title(title)

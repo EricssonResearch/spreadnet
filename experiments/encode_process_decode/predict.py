@@ -15,6 +15,7 @@ import os
 from glob import glob
 import matplotlib.pyplot as plt
 import logging
+from joblib import Parallel, delayed
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.pyg_gnn.utils import get_correct_predictions
@@ -24,6 +25,7 @@ from spreadnet.datasets.data_utils.draw import draw_networkx
 import spreadnet.utils.log_utils as log_utils
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 
+torch.multiprocessing.set_start_method("spawn", force=True)
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
@@ -73,6 +75,17 @@ def load_model(model_path):
     return model
 
 
+def swap_start_end(graph_nx: nx.DiGraph):
+    for (_, data) in graph_nx.nodes(data=True):
+        if data["is_start"]:
+            data["is_end"] = True
+            data["is_start"] = False
+        elif data["is_end"]:
+            data["is_start"] = True
+            data["is_end"] = False
+    return graph_nx
+
+
 def predict(model, graph):
     """Make prediction.
 
@@ -98,7 +111,7 @@ def predict(model, graph):
 
     print("\n--- Accuracies ---")
     print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
-    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
+    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}\n")
 
     return preds, infers
 
@@ -141,16 +154,41 @@ if __name__ == "__main__":
                     print("\n\n")
                     print("Graph idx: ", idx + 1)
 
-                    graph_nx = nx.node_link_graph(graph_json)
-                    (preds, infers) = predict(model, process_nx(graph_nx))
-                    (
-                        pred_graph_nx,
-                        truth_total_weight,
-                        pred_total_weight,
-                    ) = process_prediction(graph_nx, preds, infers)
+                    [graph_nx, graph_nx_r] = Parallel(
+                        n_jobs=2, backend="multiprocessing", batch_size=1
+                    )(
+                        [
+                            delayed(nx.node_link_graph)(graph_json),
+                            delayed(swap_start_end)(nx.node_link_graph(graph_json)),
+                        ]
+                    )
 
-                    print(f"Truth weights: {truth_total_weight}")
-                    print(f"Pred weights: {pred_total_weight}")
+                    [(preds, infers), (preds_r, infers_r)] = Parallel(
+                        n_jobs=2, backend="multiprocessing", batch_size=1
+                    )(
+                        [
+                            delayed(predict)(model, process_nx(graph_nx)),
+                            delayed(predict)(model, process_nx(graph_nx_r)),
+                        ]
+                    )
+
+                    [
+                        (
+                            pred_graph_nx,
+                            truth_total_weight,
+                            pred_total_weight,
+                        ),
+                        (
+                            pred_graph_nx_r,
+                            truth_total_weight_r,
+                            pred_total_weight_r,
+                        ),
+                    ] = Parallel(n_jobs=2, backend="multiprocessing", batch_size=1)(
+                        [
+                            delayed(process_prediction)(graph_nx, preds, infers),
+                            delayed(process_prediction)(graph_nx_r, preds_r, infers_r),
+                        ]
+                    )
 
                     plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
 
@@ -159,24 +197,50 @@ if __name__ == "__main__":
                             [nx.node_link_data(pred_graph_nx)], outfile, cls=NpEncoder
                         )
 
+                    with open(f"{plot_name}_r.json", "w") as outfile:
+                        json.dump(
+                            [nx.node_link_data(pred_graph_nx_r)], outfile, cls=NpEncoder
+                        )
+
                     print("Drawing comparison...")
-                    fig = plt.figure(figsize=(80, 40))
+                    fig = plt.figure(figsize=(80, 80))
                     draw_networkx(
-                        f"Truth, total edg weights: {round(truth_total_weight, 2)}",
+                        f"Truth, edg weights: {round(truth_total_weight, 2)}",
                         fig,
                         graph_nx,
                         1,
-                        2,
+                        4,
+                        per_row=2,
                     )
                     draw_networkx(
-                        f"Prediction, total edg weights: {round(pred_total_weight, 2)}",
+                        f"Pred, edg weights: {round(pred_total_weight, 2)}",
                         fig,
                         pred_graph_nx,
                         2,
-                        2,
+                        4,
                         "probability",
                         "probability",
+                        per_row=2,
                     )
+                    draw_networkx(
+                        f"Truth Rev, edg weights: {round(truth_total_weight_r, 2)}",
+                        fig,
+                        graph_nx_r,
+                        3,
+                        4,
+                        per_row=2,
+                    )
+                    draw_networkx(
+                        f"Pred Rev, edg weights: {round(pred_total_weight_r, 2)}",
+                        fig,
+                        pred_graph_nx_r,
+                        4,
+                        4,
+                        "probability",
+                        "probability",
+                        per_row=2,
+                    )
+
                     plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
                     plt.clf()
                     print("Image saved at ", plot_name)
