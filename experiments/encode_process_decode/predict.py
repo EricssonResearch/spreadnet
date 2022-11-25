@@ -83,6 +83,15 @@ def swap_start_end(graph_nx: nx.DiGraph):
         elif data["is_end"]:
             data["is_start"] = True
             data["is_end"] = False
+
+    rev_edges = []
+
+    for (u, v, d) in graph_nx.edges(data=True):
+        if not graph_nx.has_edge(v, u):
+            rev_edges.append((v, u, {"weight": d["weight"], "is_in_path": False}))
+
+    graph_nx.add_edges_from(rev_edges)
+
     return graph_nx
 
 
