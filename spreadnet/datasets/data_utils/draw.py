@@ -63,7 +63,7 @@ def draw_networkx(
             "Path Edge",
             "Discarded prediction probability",
         ],
-        loc="upper right",
+        loc="upper center",
     )
 
     path_edges = list()

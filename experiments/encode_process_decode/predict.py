@@ -203,7 +203,7 @@ if __name__ == "__main__":
                         )
 
                     print("Drawing comparison...")
-                    fig = plt.figure(figsize=(80, 80))
+                    fig = plt.figure(figsize=(40, 40))
                     draw_networkx(
                         f"Truth, edg weights: {round(truth_total_weight, 2)}",
                         fig,
@@ -245,7 +245,7 @@ if __name__ == "__main__":
                     plt.clf()
                     print("Image saved at ", plot_name)
 
-                    input("Press enter to predict another graph")
+                    # input("Press enter to predict another graph")
     except Exception as e:
         predict_logger.exception(e)
 
