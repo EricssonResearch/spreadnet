@@ -553,8 +553,6 @@ def main():
             dijkstra_runner.clear_memo_table()
             shortest_path_dijkstra_all_paths_memoization_runtime(all_graphs)
             shortest_path_memoization_table_search_runtime(all_graphs)
-            print(dijksta_runtime_msp_memo_list)
-
             dijkstra_runner.clear_memo_table()
             encode_process_decode_runtime(all_graphs)
 
