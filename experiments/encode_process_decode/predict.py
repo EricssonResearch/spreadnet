@@ -60,6 +60,7 @@ dataset_path = osp.join(
 ).replace("\\", "/")
 predictions_path = osp.join(osp.dirname(__file__), "predictions").replace("\\", "/")
 log_save_path = osp.join(osp.dirname(__file__), "logs").replace("\\", "/")
+plot_size = 80
 
 if not os.path.exists(predictions_path):
     os.makedirs(predictions_path)
@@ -212,7 +213,7 @@ if __name__ == "__main__":
                         )
 
                     print("Drawing comparison...")
-                    fig = plt.figure(figsize=(40, 40))
+                    fig = plt.figure(figsize=(plot_size, plot_size))
                     draw_networkx(
                         f"Truth, edg weights: {round(truth_total_weight, 2)}",
                         fig,
