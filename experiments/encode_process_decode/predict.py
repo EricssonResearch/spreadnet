@@ -77,13 +77,19 @@ def load_model(model_path):
 
 
 def swap_start_end(graph_nx: nx.DiGraph):
+    swapped = 0
     for (_, data) in graph_nx.nodes(data=True):
         if data["is_start"]:
             data["is_end"] = True
             data["is_start"] = False
+            swapped += 1
         elif data["is_end"]:
             data["is_start"] = True
             data["is_end"] = False
+            swapped += 1
+
+        if swapped == 2:
+            break
 
     rev_edges = []
 
