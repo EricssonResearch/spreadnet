@@ -16,6 +16,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import logging
 from joblib import Parallel, delayed
+from copy import deepcopy
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.pyg_gnn.utils import get_correct_predictions
@@ -77,6 +78,13 @@ def load_model(model_path):
 
 
 def swap_start_end(graph_nx: nx.DiGraph):
+    """Swap start and end node for bidirectional inference.
+
+    :param graph_nx: networkx graph to predict
+
+    :return: swapped graph
+    """
+
     swapped = 0
     for (_, data) in graph_nx.nodes(data=True):
         if data["is_start"]:
@@ -100,6 +108,39 @@ def swap_start_end(graph_nx: nx.DiGraph):
     graph_nx.add_edges_from(rev_edges)
 
     return graph_nx
+
+
+def aggregate_results(g1: nx.DiGraph, g2: nx.DiGraph):
+    """Merge two results together favoring nodes/edges with higher
+    probabilities into g1.
+
+    :pre: two graphs must have the same structure
+
+    :param g1: inferred graph
+    :param g2: inferred reversed graph
+
+    :return: aggregated graph
+    """
+
+    g1_nodes = g1.nodes(data=True)
+    g2_nodes = g2.nodes(data=True)
+    g2_edges = g2.edges(data=True)
+
+    for idx, (_, d2) in enumerate(g2_nodes):
+        if d2["is_in_path"]:
+            g1_nodes[idx]["is_in_path"] = True
+        if d2["probability"] > g1_nodes[idx]["probability"]:
+            g1_nodes[idx]["probability"] = d2["probability"]
+
+    for idx, (u, v, d2) in enumerate(g2_edges):
+        d1 = g1.get_edge_data(v, u)
+
+        if d2["is_in_path"]:
+            d1["is_in_path"] = True
+        if d2["probability"] > d1["probability"]:
+            d1["probability"] = d2["probability"]
+
+    return g1
 
 
 def predict(model, graph):
@@ -164,11 +205,11 @@ if __name__ == "__main__":
         raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
 
         with torch.no_grad():
-            for raw_file_path in raw_file_paths:
+            for idx, raw_file_path in enumerate(raw_file_paths):
                 graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
-                for idx, graph_json in enumerate(graphs_json):
+                for iidx, graph_json in enumerate(graphs_json):
                     print("\n\n")
-                    print("Graph idx: ", idx + 1)
+                    print("Graph idx: ", idx + 1, ".", iidx + 1)
 
                     [graph_nx, graph_nx_r] = Parallel(
                         n_jobs=2, backend="multiprocessing", batch_size=1
@@ -206,7 +247,13 @@ if __name__ == "__main__":
                         ]
                     )
 
-                    plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
+                    aggregated_nx = aggregate_results(
+                        deepcopy(pred_graph_nx), pred_graph_nx_r
+                    )
+
+                    plot_name = (
+                        predictions_path + f"/{raw_file_path}.{idx + 1}.{iidx + 1}"
+                    )
 
                     with open(f"{plot_name}.json", "w") as outfile:
                         json.dump(
@@ -221,7 +268,7 @@ if __name__ == "__main__":
                     print("Drawing comparison...")
                     fig = plt.figure(figsize=(plot_size, plot_size))
                     draw_networkx(
-                        f"Truth, edg weights: {round(truth_total_weight, 2)}",
+                        "Truth",
                         fig,
                         graph_nx,
                         1,
@@ -229,7 +276,7 @@ if __name__ == "__main__":
                         per_row=2,
                     )
                     draw_networkx(
-                        f"Pred, edg weights: {round(pred_total_weight, 2)}",
+                        "Pred",
                         fig,
                         pred_graph_nx,
                         2,
@@ -239,17 +286,20 @@ if __name__ == "__main__":
                         per_row=2,
                     )
                     draw_networkx(
-                        f"Truth Rev, edg weights: {round(truth_total_weight_r, 2)}",
-                        fig,
-                        graph_nx_r,
-                        3,
-                        4,
-                        per_row=2,
-                    )
-                    draw_networkx(
-                        f"Pred Rev, edg weights: {round(pred_total_weight_r, 2)}",
+                        "Pred Rev",
                         fig,
                         pred_graph_nx_r,
+                        3,
+                        4,
+                        "probability",
+                        "probability",
+                        per_row=2,
+                    )
+
+                    draw_networkx(
+                        "Aggregated",
+                        fig,
+                        aggregated_nx,
                         4,
                         4,
                         "probability",
