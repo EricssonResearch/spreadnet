@@ -148,4 +148,7 @@ def process_prediction(input_graph_nx, preds, infers):
         probability = softmax(edge_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
 
+    print(f"Truth weights: {truth_total_weight}")
+    print(f"Pred weights: {pred_total_weight}")
+
     return pred_graph_nx, truth_total_weight, pred_total_weight
