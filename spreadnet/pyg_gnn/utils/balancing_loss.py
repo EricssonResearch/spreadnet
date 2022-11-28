@@ -1,9 +1,18 @@
+"""Adding additional penalties to the nodes and edges losses.
+
+This contains 3 types of loss modifications:
+W = weighted loss
+S = connectivity favouring "sequenced" weighted loss
+E = loss modification based on Euclidean distance from the ground truth
+
+@Time    : 11/14/2022 10:38 AM
+@Author  : Ishita Jaju
+"""
+
 import torch
 
 
 class BalancingLoss:
-    """Adding additional penalties to the nodes and edges losses."""
-
     def __init__(
         self,
         node_true,
