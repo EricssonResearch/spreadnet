@@ -76,7 +76,8 @@ parser.add_argument(
     "--loss-type",
     default=default_loss_type,
     help="Specify if you want to use the original loss (d), \
-    weighted loss (w), or sequenced weighted loss (s)",
+    weighted loss (w), or sequenced weighted loss (s), \
+    or euclidean weighted loss (e)",
 )
 
 args = parser.parse_args()
