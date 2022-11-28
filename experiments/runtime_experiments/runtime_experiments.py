@@ -102,15 +102,7 @@ def predict(model, graph):
         node_pred, edge_pred, node_true, edge_true
     )
 
-    # node_acc = corrects["nodes"] / graph.num_nodes
-    # edge_acc = corrects["edges"] / graph.num_edges
-
     preds = {"nodes": node_pred, "edges": edge_pred}
-
-    # Commenting out for time analysis
-    # print("\n--- Accuracies ---")
-    # print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
-    # print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
 
     return preds, infers, runtime_process, runtime_walltime
 
