@@ -170,53 +170,6 @@ graph_data = {
 }
 
 
-def setup_graphs():
-    ds_split = (
-        divide_datasets()
-    )  # list of all the .json files to be used in runtime tests
-
-    for ds in ds_split:
-        f = open(dataset_path + "/" + ds)
-        dataset = json.load(f)
-        all_graphs = list()
-        file_parts = ds.split("_")
-        min_node_list.append(file_parts[2])
-        max_node_list.append(file_parts[3])
-        theta_list.append(file_parts[4])
-        file_name_list.append(ds)
-
-
-        for d in dataset:
-            g = {}
-            g["nxdata"] = nx.node_link_graph(d)
-            g["hashed_graph"] = dijkstra_runner.hash_graph_weisfeiler(g["nxdata"])
-            count_nodes = 0
-            count_edges = 0
-            g["min_node_graph"] = 0
-            g["max_node_graph"] = 0
-            g["min_edge_graph"] = 0
-            g["max_edge_graph"] = 0
-
-            for n in d["nodes"]:
-                count_nodes = count_nodes + 1
-                if n["is_start"]:
-                    g["start"] = n["id"]
-                if n["is_end"]:
-                    g["end"] = n["id"]
-            for e in d["links"]:
-                count_edges = count_edges + 1
-            # if count_edges < g["min_edge_graph"]:
-            #    min_edge_graph = count_edges
-            # if count_edges > g["max_edge_graph"]:
-            #    max_edge_graph = count_edges
-            if count_nodes < g["min_node_graph"]:
-                g["min_node_graph"] = count_nodes
-            if count_nodes > g["max_node_graph"]:
-                g["max_node_graph"] = count_nodes
-
-            all_graphs.append(g)
-
-
 def start_your_engines(all_graphs):
     for g in all_graphs:
         dijkstra_runner.hash_graph_weisfeiler(g["nxdata"])
