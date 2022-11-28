@@ -15,6 +15,8 @@ import os
 from glob import glob
 import matplotlib.pyplot as plt
 import logging
+from joblib import Parallel, delayed
+from copy import deepcopy
 
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.pyg_gnn.utils import get_correct_predictions
@@ -24,6 +26,7 @@ from spreadnet.datasets.data_utils.draw import draw_networkx
 import spreadnet.utils.log_utils as log_utils
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 
+torch.multiprocessing.set_start_method("spawn", force=True)
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
@@ -58,6 +61,7 @@ dataset_path = osp.join(
 ).replace("\\", "/")
 predictions_path = osp.join(osp.dirname(__file__), "predictions").replace("\\", "/")
 log_save_path = osp.join(osp.dirname(__file__), "logs").replace("\\", "/")
+plot_size = 80
 
 if not os.path.exists(predictions_path):
     os.makedirs(predictions_path)
@@ -71,6 +75,72 @@ def load_model(model_path):
     """
     model = torch.load(model_path)
     return model
+
+
+def swap_start_end(graph_nx: nx.DiGraph):
+    """Swap start and end node for bidirectional inference.
+
+    :param graph_nx: networkx graph to predict
+
+    :return: swapped graph
+    """
+
+    swapped = 0
+    for (_, data) in graph_nx.nodes(data=True):
+        if data["is_start"]:
+            data["is_end"] = True
+            data["is_start"] = False
+            swapped += 1
+        elif data["is_end"]:
+            data["is_start"] = True
+            data["is_end"] = False
+            swapped += 1
+
+        if swapped == 2:
+            break
+
+    rev_edges = []
+
+    for (u, v, d) in graph_nx.edges(data=True):
+        if not graph_nx.has_edge(v, u):
+            rev_edges.append((v, u, {"weight": d["weight"], "is_in_path": False}))
+
+    graph_nx.add_edges_from(rev_edges)
+
+    return graph_nx
+
+
+def aggregate_results(g1: nx.DiGraph, g2: nx.DiGraph):
+    """Merge two results together favoring nodes/edges with higher
+    probabilities into g1.
+
+    :pre: two graphs must have the same structure
+
+    :param g1: inferred graph
+    :param g2: inferred reversed graph
+
+    :return: aggregated graph
+    """
+
+    g1_nodes = g1.nodes(data=True)
+    g2_nodes = g2.nodes(data=True)
+    g2_edges = g2.edges(data=True)
+
+    for idx, (_, d2) in enumerate(g2_nodes):
+        if d2["is_in_path"]:
+            g1_nodes[idx]["is_in_path"] = True
+        if d2["probability"] > g1_nodes[idx]["probability"]:
+            g1_nodes[idx]["probability"] = d2["probability"]
+
+    for idx, (u, v, d2) in enumerate(g2_edges):
+        d1 = g1.get_edge_data(v, u)
+
+        if d2["is_in_path"]:
+            d1["is_in_path"] = True
+        if d2["probability"] > d1["probability"]:
+            d1["probability"] = d2["probability"]
+
+    return g1
 
 
 def predict(model, graph):
@@ -98,7 +168,7 @@ def predict(model, graph):
 
     print("\n--- Accuracies ---")
     print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
-    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}")
+    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}\n")
 
     return preds, infers
 
@@ -135,53 +205,113 @@ if __name__ == "__main__":
         raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
 
         with torch.no_grad():
-            for raw_file_path in raw_file_paths:
+            for idx, raw_file_path in enumerate(raw_file_paths):
                 graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
-                for idx, graph_json in enumerate(graphs_json):
+                for iidx, graph_json in enumerate(graphs_json):
                     print("\n\n")
-                    print("Graph idx: ", idx + 1)
+                    print("Graph idx: ", idx + 1, ".", iidx + 1)
 
-                    graph_nx = nx.node_link_graph(graph_json)
-                    (preds, infers) = predict(model, process_nx(graph_nx))
-                    (
-                        pred_graph_nx,
-                        truth_total_weight,
-                        pred_total_weight,
-                    ) = process_prediction(graph_nx, preds, infers)
+                    [graph_nx, graph_nx_r] = Parallel(
+                        n_jobs=2, backend="multiprocessing", batch_size=1
+                    )(
+                        [
+                            delayed(nx.node_link_graph)(graph_json),
+                            delayed(swap_start_end)(nx.node_link_graph(graph_json)),
+                        ]
+                    )
 
-                    print(f"Truth weights: {truth_total_weight}")
-                    print(f"Pred weights: {pred_total_weight}")
+                    [(preds, infers), (preds_r, infers_r)] = Parallel(
+                        n_jobs=2, backend="multiprocessing", batch_size=1
+                    )(
+                        [
+                            delayed(predict)(model, process_nx(graph_nx)),
+                            delayed(predict)(model, process_nx(graph_nx_r)),
+                        ]
+                    )
 
-                    plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
+                    [
+                        (
+                            pred_graph_nx,
+                            truth_total_weight,
+                            pred_total_weight,
+                        ),
+                        (
+                            pred_graph_nx_r,
+                            truth_total_weight_r,
+                            pred_total_weight_r,
+                        ),
+                    ] = Parallel(n_jobs=2, backend="multiprocessing", batch_size=1)(
+                        [
+                            delayed(process_prediction)(graph_nx, preds, infers),
+                            delayed(process_prediction)(graph_nx_r, preds_r, infers_r),
+                        ]
+                    )
+
+                    aggregated_nx = aggregate_results(
+                        deepcopy(pred_graph_nx), pred_graph_nx_r
+                    )
+
+                    plot_name = (
+                        predictions_path + f"/{raw_file_path}.{idx + 1}.{iidx + 1}"
+                    )
 
                     with open(f"{plot_name}.json", "w") as outfile:
                         json.dump(
                             [nx.node_link_data(pred_graph_nx)], outfile, cls=NpEncoder
                         )
 
+                    with open(f"{plot_name}_r.json", "w") as outfile:
+                        json.dump(
+                            [nx.node_link_data(pred_graph_nx_r)], outfile, cls=NpEncoder
+                        )
+
                     print("Drawing comparison...")
-                    fig = plt.figure(figsize=(80, 40))
+                    fig = plt.figure(figsize=(plot_size, plot_size))
                     draw_networkx(
-                        f"Truth, total edg weights: {round(truth_total_weight, 2)}",
+                        "Truth",
                         fig,
                         graph_nx,
                         1,
-                        2,
+                        4,
+                        per_row=2,
                     )
                     draw_networkx(
-                        f"Prediction, total edg weights: {round(pred_total_weight, 2)}",
+                        "Pred",
                         fig,
                         pred_graph_nx,
                         2,
-                        2,
+                        4,
                         "probability",
                         "probability",
+                        per_row=2,
                     )
+                    draw_networkx(
+                        "Pred Rev",
+                        fig,
+                        pred_graph_nx_r,
+                        3,
+                        4,
+                        "probability",
+                        "probability",
+                        per_row=2,
+                    )
+
+                    draw_networkx(
+                        "Aggregated",
+                        fig,
+                        aggregated_nx,
+                        4,
+                        4,
+                        "probability",
+                        "probability",
+                        per_row=2,
+                    )
+
                     plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
                     plt.clf()
                     print("Image saved at ", plot_name)
 
-                    input("Press enter to predict another graph")
+                    # input("Press enter to predict another graph")
     except Exception as e:
         predict_logger.exception(e)
 
