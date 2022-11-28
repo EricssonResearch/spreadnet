@@ -106,24 +106,15 @@ class BalancingLoss:
         }
 
     def get_euclidean_weighted_loss(self):
-        # converting the logits to their softmax probabilities
-        probabilities_nodes = torch.nn.functional.softmax(self.node_pred, dim=-1)
-        probabilities_edges = torch.nn.functional.softmax(self.edge_pred, dim=-1)
-
-        # chooses the max probability class
-        node_0 = probabilities_nodes[:, 0]
-        node_1 = probabilities_nodes[:, 1]
-        node_pred_probabilities = torch.where(self.node_true == 0, node_0, node_1)
-        edge_0 = probabilities_edges[:, 0]
-        edge_1 = probabilities_edges[:, 1]
-        edge_pred_probabilities = torch.where(self.edge_true == 0, edge_0, edge_1)
+        node_1 = self.node_pred[:, 1]
+        edge_1 = self.edge_pred[:, 1]
 
         # calculates the euclidean distance from the ground truth
-        node_euc_dist = abs(self.node_true - node_pred_probabilities)
-        edge_euc_dist = abs(self.edge_true - edge_pred_probabilities)
+        node_euc_dist = abs(torch.sub(node_1, self.node_true))
+        edge_euc_dist = abs(torch.sub(edge_1, self.edge_true))
 
-        updated_node_losses = node_euc_dist * self.node_losses
-        updated_edge_losses = edge_euc_dist * self.edge_losses
+        updated_node_losses = torch.mul(node_euc_dist, self.node_losses)
+        updated_edge_losses = torch.mul(edge_euc_dist, self.edge_losses)
 
         return {
             "nodes": torch.mean(updated_node_losses),
