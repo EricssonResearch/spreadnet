@@ -10,39 +10,39 @@ The JSON file names must be in the following format:
 
 All runtimes will be collected into a csv file and can be analyzed on
 runtime_analysis.py
+
+JSON file layout example:
+    {
+"directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+        {
+            "weight": 1.4213646962011073,
+            "pos": [
+                0.8442657485810173,
+                0.8579456176227568
+            ],
+            "is_end": true,
+            "is_start": false,
+            "is_in_path": true,
+            "id": 0
 """
 
 
 from spreadnet.dijkstra_memoization import dijkstra_runner
-
-# from spreadnet.datasets.data_utils.decoder import pt_decoder
-
 import networkx as nx
-
-# import webdataset as wds
-# import timeit
 from time import process_time, time
-
-# import copy
 import os
 import json
-
-# import sys
-# import numpy as np
 import pandas as pd
 import argparse
 from os import path as osp
 import torch
-
-# from glob import glob
-# import matplotlib.pyplot as plt
-
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
-
-# from spreadnet.datasets.data_utils.draw import draw_networkx
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -70,30 +70,6 @@ configs = yaml_parser(yaml_path)
 model_configs = configs.model
 train_configs = configs.train
 which_model = args.model
-
-
-# dataset_path = os.path.join(
-#    os.path.dirname(__file__), "..", data_configs["dataset_path"]
-# ).replace("\\", "/")
-
-
-"""
-JSON file layout example
-    {
-"directed": true,
-    "multigraph": false,
-    "graph": {},
-    "nodes": [
-        {
-            "weight": 1.4213646962011073,
-            "pos": [
-                0.8442657485810173,
-                0.8579456176227568
-            ],
-            "is_end": true,
-            "is_start": false,
-            "is_in_path": true,
-            "id": 0  """
 
 
 default_dataset_yaml_path = os.path.join(
@@ -286,10 +262,6 @@ def hashing_graphs_runtime(all_graphs):
         walltime = wall_time_stop - wall_time_start
         runtime_list.append(runtime)
         walltime_list.append(walltime)
-
-        # total_time = total_time + runtime
-        # total_wall_time = total_wall_time + walltime
-
     hashing_runtime_test_list.append(runtime_list)
     hashing_walltime_test_list.append(walltime_list)
 
@@ -314,13 +286,6 @@ def shortest_path_dijkstra_single_memo_runtime(all_graphs):
 
     dijkstra_runtime_memo_list.append(runtime_list)
     dijkstra_walltime_memo_list.append(walltime_list)
-
-
-# def runTimeTest(graphs, start, end):
-#    for g in graphs:
-#        #print( nx.single_source_dijkstra(g, start, end) )
-#        print( nx.single_source_dijkstra(g, 1, g.number_of_nodes() - 1) )
-#    return
 
 
 def shortest_path_dijkstra_networkx_runtime(all_graphs):
@@ -399,17 +364,9 @@ def encode_process_decode_runtime(all_graphs):
         "encode_process_decode",
         train_configs["weight_base_path"],
     )
-    # print(weight_base_path)
     model_path = osp.join(weight_base_path, which_model)
-    # print(model_path)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
     model.eval()
-    # print("Message Passing/Encode Process Decode")
-    # raw_path = dataset_path + "/raw"
-    # raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
-    # for i in range(1):
-    # total_time_process_all_runs = 0
-    # total_wall_time_all_runs = 0
     runtime_list = list()
     walltime_list = list()
 
@@ -448,17 +405,11 @@ def encode_process_decode_runtime_pretest_run(all_graphs):
         "encode_process_decode",
         train_configs["weight_base_path"],
     )
-    # print(weight_base_path)
     model_path = osp.join(weight_base_path, which_model)
-    # print(model_path)
     model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
     model.eval()
-    # print("Message Passing/Encode Process Decode")
-    # raw_path = dataset_path + "/raw"
-    # raw_file_paths = list(map(os.path.basename, glob(raw_path + "/test.*.json")))
     total_time_process_all_runs = 0
     total_wall_time_all_runs = 0
-
     for g in all_graphs:
         total_time_process_all_runs = 0
         total_wall_time_all_runs = 0
@@ -473,21 +424,15 @@ def encode_process_decode_runtime_pretest_run(all_graphs):
             truth_total_weight,
             pred_total_weight,
         ) = process_prediction(g["nxdata"], preds, infers)
-    # print( "Graph start:", g["start"], " End:", g["end"])
 
 
 def main():
-    # setup_graphs()
-
     ds_split = (
         divide_datasets()
     )  # list of all the .json files to be used in runtime tests
 
     for ds in ds_split:
-        # print(ds)
-        # f = open(dataset_path + "/raw/random.102.100-110.20.json")
-        # path = dataset_path + "/" + ds
-        # print(path)
+
         f = open(dataset_path + "/" + ds)
         dataset = json.load(f)
         all_graphs = list()
@@ -496,14 +441,7 @@ def main():
         max_node_list.append(file_parts[3])
         theta_list.append(file_parts[4])
 
-        # start_nodes = list()
-        # end_nodes = list()
-        # file_name_list = list()
         file_name_list.append(ds)
-        # graph_data = {'file_name': file_name_list}
-        # gd = pd.DataFrame(graph_data)
-        # gd.to_csv
-        # print(gd)
 
         for d in dataset:
             g = {}
@@ -524,21 +462,12 @@ def main():
                     g["end"] = n["id"]
             for e in d["links"]:
                 count_edges = count_edges + 1
-            # if count_edges < g["min_edge_graph"]:
-            #    min_edge_graph = count_edges
-            # if count_edges > g["max_edge_graph"]:
-            #    max_edge_graph = count_edges
             if count_nodes < g["min_node_graph"]:
                 g["min_node_graph"] = count_nodes
             if count_nodes > g["max_node_graph"]:
                 g["max_node_graph"] = count_nodes
 
             all_graphs.append(g)
-
-        # print("Number of graphs: ", len(all_graphs))
-        # number_graphs_per_size = len(all_graphs)
-
-        # hashing graphs only runtime test
 
         dijkstra_runner.clear_memo_table()
 
@@ -555,53 +484,6 @@ def main():
             shortest_path_memoization_table_search_runtime(all_graphs)
             dijkstra_runner.clear_memo_table()
             encode_process_decode_runtime(all_graphs)
-
-        # for g in all_graphs:
-        #    print( nx.single_source_dijkstra(g, 1, g.number_of_nodes() - 1) )
-    """
-    print(len(file_name_list))
-    print(len(hashing_runtime_test_list))
-    print(dijkstra_runtime_list)
-    print(len(dijksta_runtime_msp_memo_list))
-    print(len(dijkstra_runtime_memo_list))
-    print(len(message_passing_runtime_list))
-    print(len(networkx_dijkstra_runtime_list))
-    print(memoization_table_runtime_list)
-    print(len(hashing_walltime_test_list))
-    print(dijkstra_walltime_list)
-    print(len(dijksta_walltime_msp_memo_list))
-    print(len(dijkstra_walltime_memo_list))
-    print(len(message_passing_walltime_list))
-    print(len(networkx_dijkstra_walltime_list))
-    print(memotable_walltime)
-    print(memotable_runtime)
-    print(walltime_test_list)
-    print(number_nodes_list)
-    print(number_edges_list)
-    print(start_node_list)
-    print(end_node_list)
-    print(function_name_list)
-    print(len(min_node_list))
-    print(len(max_node_list))
-    print(len(theta_list))
-
-
-    print("file_name", file_name_list)
-    print("min_nodes", min_node_list)
-    print("max_nodes", max_node_list)
-    print("Hashing Graphs RunTime", hashing_runtime_test_list)
-    print("Dijkstra Full Path and Memoization Runtime", dijksta_runtime_msp_memo_list)
-    print("Dijkstra With Memoization Runtime", dijkstra_runtime_memo_list)
-    print("Message Passing GNN Runtime", message_passing_runtime_list)
-    print("Networkx Dijkstra Runtime", networkx_dijkstra_runtime_list)
-    print("Hashing Graphs Walltime", hashing_runtime_test_list)
-    print("Dijkstra Full Path and Memoization Walltime", dijksta_runtime_msp_memo_list)
-    print("Dijkstra With Memoization Walltime", dijkstra_runtime_memo_list)
-    print("Message Passing GNN Walltime", message_passing_runtime_list)
-    print("Networkx Dijkstra Walltime", networkx_dijkstra_walltime_list)
-    print("Memotable Walltime", memotable_walltime)
-    print("Memotable Runtime", memotable_runtime)
-    """
 
     gd = pd.DataFrame(graph_data)
     gd.to_csv(r"runtime_test_results.csv", index=False, header=True)

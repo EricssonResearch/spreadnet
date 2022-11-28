@@ -27,84 +27,6 @@ Available data in dataframe:
     "Memotable Runtime": memotable_runtime,
 """
 
-"""
-#TODO In order to use these, an average or whatever analysis will need to be
-# found as these were written prior to having the value come in as a list
-def line_graph_pandas_dijkstra_gnn_runtime(df):
-    df.plot(
-        x="min_nodes",
-        y=[
-            "Dijkstra Full Path and Memoization Runtime",
-            "Dijkstra With Memoization Runtime",
-            "Message Passing GNN Runtime",
-        ],
-        figsize=(10, 5),
-        grid=True,
-        style=".-",
-    )
-    plt.title("Run Time for 20 Graph Sets")
-    plt.xlabel("Minimum Number of Nodes in Set")
-    plt.ylabel("Seconds")
-    plt.show()
-
-
-def line_graph_pandas_dijkstra_gnn_walltime(df):
-    df.plot(
-        x="min_nodes",
-        y=[
-            "Dijkstra Full Path and Memoization Walltime",
-            "Dijkstra With Memoization Walltime",
-            "Message Passing GNN Walltime",
-        ],
-        figsize=(10, 5),
-        grid=True,
-        style=".-",
-    )
-    plt.title("Run Time for 20 Graph Sets")
-    plt.xlabel("Minimum Number of Nodes in Set")
-    plt.ylabel("Seconds")
-    plt.show()
-
-
-def line_graph_pandas_dijkstra_versions_walltime(df):
-    df.plot(
-        x="min_nodes",
-        y=[
-            "Dijkstra Full Path and Memoization Walltime",
-            "Dijkstra With Memoization Walltime",
-            "Networkx Dijkstra Walltime",
-            "Memotable Walltime",
-        ],
-        figsize=(10, 5),
-        grid=True,
-        style=".-",
-    )
-    plt.title("Run Time for 20 Graph Sets")
-    plt.xlabel("Minimum Number of Nodes in Set")
-    plt.ylabel("Seconds")
-    plt.show()
-
-
-def line_graph_pandas_dijkstra_versions_runtime(df):
-    df.plot(
-        x="min_nodes",
-        y=[
-            "Dijkstra Full Path and Memoization Runtime",
-            "Dijkstra With Memoization Runtime",
-            "Networkx Dijkstra Runtime",
-            "Memotable Runtime",
-        ],
-        figsize=(10, 5),
-        grid=True,
-        style=".-",
-    )
-    plt.title("Run Time for 20 Graph Sets")
-    plt.xlabel("Minimum Number of Nodes in Set")
-    plt.ylabel("Seconds")
-    plt.show()
-
-"""
-
 
 def bar_plot_gnn_dijkstra(df):
     # Convert the min nodes to the datatype category since the plot tool needs this.
@@ -210,15 +132,6 @@ def bar_plot_gnn_dijkstra_pandas(df):
     plt.show()
 
 
-"""
-#TODO create plotly graphs
-def linear_regression_plotly(df):
-    df = px.data.tips()
-    fig = px.scatter(df, x="total_bill", y="tip", trendline="ols")
-    fig.show()
-"""
-
-
 def main():
     data = pd.read_csv(
         "runtime_test_results.csv",
@@ -232,13 +145,6 @@ def main():
     )
     df = pd.DataFrame(data)
     df = df.sort_values(by=["min_nodes"])
-    # bar_plot_gnn_dijkstra(df)
-    # bar_plot_gnn_dijkstra_pandas(df)
-    # line_graph_pandas_dijkstra_gnn_runtime(df)
-    # line_graph_pandas_dijkstra_gnn_walltime(df)
-    # line_graph_pandas_dijkstra_versions_runtime(df)
-    # line_graph_pandas_dijkstra_versions_walltime(df)
-    # bar_plot_gnn_dijkstra_pandas(df)
     bar_plot_gnn_dijkstra(df)
     bar_plot_dijkstra_variants(df)
 
