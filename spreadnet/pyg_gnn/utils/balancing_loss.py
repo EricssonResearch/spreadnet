@@ -13,6 +13,7 @@ class BalancingLoss:
         edge_pred,
         edge_losses,
         edge_data,
+        loss_type,
     ):
         self.node_true = node_true
         self.node_pred = node_pred
@@ -22,42 +23,45 @@ class BalancingLoss:
         self.edge_losses = edge_losses
         self.edge_data = edge_data
 
-        # getting the node and edge multiplication factor:
-        # nodes ratio = nr_nodes_not_in_path / nr_nodes_in_path
-        count_nodes_in_path = torch.bincount(
-            node_true
-        )  # tensor([nr of 0's, nr of 1's])
-        self.node_mult_factor = count_nodes_in_path[0] / count_nodes_in_path[1]
+        if loss_type == "s" or loss_type == "S" or loss_type == "w" or loss_type == "W":
+            # getting the node and edge multiplication factor:
+            # nodes ratio = nr_nodes_not_in_path / nr_nodes_in_path
+            count_nodes_in_path = torch.bincount(
+                node_true
+            )  # tensor([nr of 0's, nr of 1's])
+            self.node_mult_factor = count_nodes_in_path[0] / count_nodes_in_path[1]
 
-        # edges ratio = nr_edges_not_in_path / nr_edges_in_path
-        count_edges_in_path = torch.bincount(edge_true)
-        self.edge_mult_factor = count_edges_in_path[0] / count_edges_in_path[1]
+            # edges ratio = nr_edges_not_in_path / nr_edges_in_path
+            count_edges_in_path = torch.bincount(edge_true)
+            self.edge_mult_factor = count_edges_in_path[0] / count_edges_in_path[1]
 
-        # converts logits to their classes
-        node_0 = node_pred[:, 0]
-        node_1 = node_pred[:, 1]
-        self.node_pred_classes = torch.where(node_0 > node_1, 0, 1)
+            # converts logits to their classes
+            node_0 = node_pred[:, 0]
+            node_1 = node_pred[:, 1]
+            self.node_pred_classes = torch.where(node_0 > node_1, 0, 1)
 
-        edge_0 = edge_pred[:, 0]
-        edge_1 = edge_pred[:, 1]
-        self.edge_pred_classes = torch.where(edge_0 > edge_1, 0, 1)
+            edge_0 = edge_pred[:, 0]
+            edge_1 = edge_pred[:, 1]
+            self.edge_pred_classes = torch.where(edge_0 > edge_1, 0, 1)
 
-        self.updated_node_losses = node_losses
-        self.updated_edge_losses = edge_losses
+            self.updated_node_losses = node_losses
+            self.updated_edge_losses = edge_losses
 
-        # adds penalties to the losses with a node wrongly classified as "not in path"
-        self.updated_node_losses = torch.where(
-            torch.logical_and(self.node_pred_classes == 0, self.node_true == 1),
-            self.node_losses * self.node_mult_factor,
-            self.node_losses,
-        )
+            # adds penalties to the losses with a node
+            # wrongly classified as "not in path"
+            self.updated_node_losses = torch.where(
+                torch.logical_and(self.node_pred_classes == 0, self.node_true == 1),
+                self.node_losses * self.node_mult_factor,
+                self.node_losses,
+            )
 
-        # adds penalties to the losses with an edge wrongly classified as "not in path"
-        self.updated_edge_losses = torch.where(
-            torch.logical_and(self.edge_pred_classes == 0, self.edge_true == 1),
-            self.edge_losses * self.edge_mult_factor,
-            self.edge_losses,
-        )
+            # adds penalties to the losses with an edge
+            # wrongly classified as "not in path"
+            self.updated_edge_losses = torch.where(
+                torch.logical_and(self.edge_pred_classes == 0, self.edge_true == 1),
+                self.edge_losses * self.edge_mult_factor,
+                self.edge_losses,
+            )
 
     def get_weighted_loss(self):
         return {
@@ -99,4 +103,29 @@ class BalancingLoss:
         return {
             "nodes": torch.mean(self.updated_node_losses),
             "edges": torch.mean(self.updated_edge_losses),
+        }
+
+    def get_euclidean_weighted_loss(self):
+        # converting the logits to their softmax probabilities
+        probabilities_nodes = torch.nn.functional.softmax(self.node_pred, dim=-1)
+        probabilities_edges = torch.nn.functional.softmax(self.edge_pred, dim=-1)
+
+        # chooses the max probability class
+        node_0 = probabilities_nodes[:, 0]
+        node_1 = probabilities_nodes[:, 1]
+        node_pred_probabilities = torch.where(self.node_true == 0, node_0, node_1)
+        edge_0 = probabilities_edges[:, 0]
+        edge_1 = probabilities_edges[:, 1]
+        edge_pred_probabilities = torch.where(self.edge_true == 0, edge_0, edge_1)
+
+        # calculates the euclidean distance from the ground truth
+        node_euc_dist = abs(self.node_true - node_pred_probabilities)
+        edge_euc_dist = abs(self.edge_true - edge_pred_probabilities)
+
+        updated_node_losses = node_euc_dist * self.node_losses
+        updated_edge_losses = edge_euc_dist * self.edge_losses
+
+        return {
+            "nodes": torch.mean(updated_node_losses),
+            "edges": torch.mean(updated_edge_losses),
         }

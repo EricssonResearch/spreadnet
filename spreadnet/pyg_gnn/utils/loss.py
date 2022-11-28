@@ -43,11 +43,14 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type, edge_data
             edge_pred,
             losses_tensor["edges"],
             edge_data,
+            loss_type,
         )
         if loss_type == "w" or loss_type == "W":
             return penalized_losses.get_weighted_loss()
         elif loss_type == "s" or loss_type == "S":
             return penalized_losses.get_sequence_weighted_loss()
+        elif loss_type == "e" or loss_type == "E":
+            return penalized_losses.get_euclidean_weighted_loss()
 
     return {
         "nodes": torch.mean(losses_tensor["nodes"]),
