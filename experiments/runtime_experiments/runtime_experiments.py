@@ -176,10 +176,6 @@ def setup_graphs():
     )  # list of all the .json files to be used in runtime tests
 
     for ds in ds_split:
-        # print(ds)
-        # f = open(dataset_path + "/raw/random.102.100-110.20.json")
-        # path = dataset_path + "/" + ds
-        # print(path)
         f = open(dataset_path + "/" + ds)
         dataset = json.load(f)
         all_graphs = list()
@@ -187,15 +183,8 @@ def setup_graphs():
         min_node_list.append(file_parts[2])
         max_node_list.append(file_parts[3])
         theta_list.append(file_parts[4])
-
-        # start_nodes = list()
-        # end_nodes = list()
-        # file_name_list = list()
         file_name_list.append(ds)
-        # graph_data = {'file_name': file_name_list}
-        # gd = pd.DataFrame(graph_data)
-        # gd.to_csv
-        # print(gd)
+
 
         for d in dataset:
             g = {}
@@ -271,8 +260,6 @@ def shortest_path_dijkstra_single_memo_runtime(all_graphs):
         wall_time_stop = time()
         runtime = t1_stop - t1_start
         walltime = wall_time_stop - wall_time_start
-        # total_time = total_time + runtime
-        # total_wall_time = total_wall_time + walltime
         runtime_list.append(runtime)
         walltime_list.append(walltime)
 
@@ -374,7 +361,6 @@ def encode_process_decode_runtime(all_graphs):
                 truth_total_weight,
                 pred_total_weight,
             ) = process_prediction(g["nxdata"], preds, infers)
-        # print( "Graph start:", g["start"], " End:", g["end"])
     message_passing_runtime_list.append(runtime_list)
     message_passing_walltime_list.append(walltime_list)
 
