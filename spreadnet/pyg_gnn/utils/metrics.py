@@ -129,8 +129,8 @@ def get_precise_and_f_score(infers, labels, graph_sizes):
 
     nodes_corrects = 0.0
     edges_corrects = 0.0
-    nodes_score = 0
-    edges_score = 0
+    nodes_score = 0.0
+    edges_score = 0.0
 
     for graph_size in graph_sizes:
         node_corrects = 0
