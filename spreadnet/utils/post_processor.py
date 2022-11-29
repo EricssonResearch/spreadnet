@@ -116,9 +116,7 @@ def max_probability_walk(G: nx.DiGraph, prob_treshold: float):
         end_node int: End node.
         prob_treshold: float (0,1]
     Returns:
-        node_path: list of nodes.
-
-    Notes: The path can be incomplete.
+        node_path: list of nodes or False if there is no path.
     """
 
     nodes = G.nodes(data=True)
