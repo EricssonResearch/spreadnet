@@ -25,6 +25,11 @@ from spreadnet.datasets.data_utils.processor import process_nx, process_predicti
 from spreadnet.datasets.data_utils.draw import draw_networkx
 import spreadnet.utils.log_utils as log_utils
 from spreadnet.datasets.data_utils.encoder import NpEncoder
+from spreadnet.utils.post_processor import (
+    swap_start_end,
+    aggregate_results,
+    max_probability_walk,
+)
 
 torch.multiprocessing.set_start_method("spawn", force=True)
 
@@ -75,72 +80,6 @@ def load_model(model_path):
     """
     model = torch.load(model_path)
     return model
-
-
-def swap_start_end(graph_nx: nx.DiGraph):
-    """Swap start and end node for bidirectional inference.
-
-    :param graph_nx: networkx graph to predict
-
-    :return: swapped graph
-    """
-
-    swapped = 0
-    for (_, data) in graph_nx.nodes(data=True):
-        if data["is_start"]:
-            data["is_end"] = True
-            data["is_start"] = False
-            swapped += 1
-        elif data["is_end"]:
-            data["is_start"] = True
-            data["is_end"] = False
-            swapped += 1
-
-        if swapped == 2:
-            break
-
-    rev_edges = []
-
-    for (u, v, d) in graph_nx.edges(data=True):
-        if not graph_nx.has_edge(v, u):
-            rev_edges.append((v, u, {"weight": d["weight"], "is_in_path": False}))
-
-    graph_nx.add_edges_from(rev_edges)
-
-    return graph_nx
-
-
-def aggregate_results(g1: nx.DiGraph, g2: nx.DiGraph):
-    """Merge two results together favoring nodes/edges with higher
-    probabilities into g1.
-
-    :pre: two graphs must have the same structure
-
-    :param g1: inferred graph
-    :param g2: inferred reversed graph
-
-    :return: aggregated graph
-    """
-
-    g1_nodes = g1.nodes(data=True)
-    g2_nodes = g2.nodes(data=True)
-    g2_edges = g2.edges(data=True)
-
-    for idx, (_, d2) in enumerate(g2_nodes):
-        if d2["is_in_path"]:
-            g1_nodes[idx]["is_in_path"] = True
-        if d2["probability"] > g1_nodes[idx]["probability"]:
-            g1_nodes[idx]["probability"] = d2["probability"]
-
-    for idx, (u, v, d2) in enumerate(g2_edges):
-        d1 = g1.get_edge_data(v, u)
-
-        if d2["is_in_path"]:
-            d1["is_in_path"] = True
-        if d2["probability"] > d1["probability"]:
-            d1["probability"] = d2["probability"]
-
-    return g1
 
 
 def predict(model, graph):
@@ -209,7 +148,7 @@ if __name__ == "__main__":
                 graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
                 for iidx, graph_json in enumerate(graphs_json):
                     print("\n\n")
-                    print("Graph idx: ", idx + 1, ".", iidx + 1)
+                    print("Graph idx: ", f"{idx + 1}.{iidx + 1}")
 
                     [graph_nx, graph_nx_r] = Parallel(
                         n_jobs=2, backend="multiprocessing", batch_size=1
@@ -311,6 +250,7 @@ if __name__ == "__main__":
                     plt.clf()
                     print("Image saved at ", plot_name)
 
+                    print("Max Prob Path: ", max_probability_walk(aggregated_nx, 0.01))
                     # input("Press enter to predict another graph")
     except Exception as e:
         predict_logger.exception(e)
