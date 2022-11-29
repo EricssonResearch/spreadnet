@@ -91,7 +91,23 @@ def get_correct_predictions(node_pred, edge_pred, node_true, edge_true):
     return infers, corrects
 
 
-def get_precise_corrects(infers, labels, graph_sizes):
+def calc_f_score(precision, recall, beta=2):
+    """
+    Calc f score
+    Args:
+        precision: true positive / (true and false positives)
+        recall: true positive / (true positives and false negatives)
+        beta: chosen such that recall is considered n times as important as precision
+
+    Returns: f_score
+
+    """
+    return (1 + (beta**2)) * (
+        (precision * recall) / (((beta**2) * precision) + recall)
+    )
+
+
+def get_precise_and_f_score(infers, labels, graph_sizes):
     """
     Get precise corrects
     Args:
@@ -99,35 +115,85 @@ def get_precise_corrects(infers, labels, graph_sizes):
         labels: Tuple: node_labels, edge_labels
         graph_sizes: [{"nodes": n, "edges": n}]
 
-    Returns: precise_corrects
+    Returns: nodes_precise_corrects, edges_precise_corrects, nodes_score, edges_score
 
     """
-    precise_corrects = 0.0
+
     node_idx = 0
     edge_idx = 0
+
     node_infers = infers["nodes"].tolist()
     edge_infers = infers["edges"].tolist()
-
     node_labels = labels[0].tolist()
     edge_labels = labels[1].tolist()
 
+    nodes_corrects = 0.0
+    edges_corrects = 0.0
+    nodes_score = 0
+    edges_score = 0
+
     for graph_size in graph_sizes:
         node_corrects = 0
+        node_true_positives = 0
+        node_false_positives = 0
+        node_false_negatives = 0
+
         edge_corrects = 0
+        edge_true_positives = 0
+        edge_false_positives = 0
+        edge_false_negatives = 0
 
         for _ in range(graph_size["nodes"]):
             if node_infers[node_idx] == node_labels[node_idx]:
                 node_corrects += 1
+
+            if node_labels[node_idx] and node_infers[node_idx]:
+                node_true_positives += 1
+            elif node_labels[node_idx]:
+                node_false_negatives += 1
+            elif node_infers[node_idx]:
+                node_false_positives += 1
+
             node_idx += 1
 
         for _ in range(graph_size["edges"]):
             if edge_infers[edge_idx] == edge_labels[edge_idx]:
                 edge_corrects += 1
+
+            if edge_labels[edge_idx] and edge_infers[edge_idx]:
+                edge_true_positives += 1
+            elif edge_labels[edge_idx]:
+                edge_false_negatives += 1
+            elif edge_infers[edge_idx]:
+                edge_false_positives += 1
+
             edge_idx += 1
 
         if node_corrects == graph_size["nodes"]:
-            precise_corrects += 0.5
+            nodes_corrects += 1
         if edge_corrects == graph_size["edges"]:
-            precise_corrects += 0.5
+            edges_corrects += 1
 
-    return precise_corrects
+        try:
+            nodes_precision = node_true_positives / (
+                node_true_positives + node_false_positives
+            )
+            nodes_recall = node_true_positives / (
+                node_true_positives + node_false_negatives
+            )
+            nodes_score += calc_f_score(nodes_precision, nodes_recall)
+        except Exception:
+            pass
+
+        try:
+            edges_precision = edge_true_positives / (
+                edge_true_positives + edge_false_positives
+            )
+            edges_recall = edge_true_positives / (
+                edge_true_positives + edge_false_negatives
+            )
+            edges_score += calc_f_score(edges_precision, edges_recall)
+        except Exception:
+            pass
+
+    return nodes_corrects, edge_corrects, nodes_score, edges_score
