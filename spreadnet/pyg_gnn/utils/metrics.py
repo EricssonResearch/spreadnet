@@ -196,4 +196,4 @@ def get_precise_and_f_score(infers, labels, graph_sizes):
         except Exception:
             pass
 
-    return nodes_corrects, edge_corrects, nodes_score, edges_score
+    return nodes_corrects, edges_corrects, nodes_score, edges_score
