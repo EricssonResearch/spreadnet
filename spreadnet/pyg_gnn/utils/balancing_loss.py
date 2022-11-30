@@ -118,9 +118,12 @@ class BalancingLoss:
         node_1 = self.node_pred[:, 1]
         edge_1 = self.edge_pred[:, 1]
 
+        node_true_logits = torch.where(self.node_true == 0, -5, 5)
+        edge_true_logits = torch.where(self.edge_true == 0, -5, 5)
+
         # calculates the euclidean distance from the ground truth
-        node_euc_dist = abs(torch.sub(node_1, self.node_true))
-        edge_euc_dist = abs(torch.sub(edge_1, self.edge_true))
+        node_euc_dist = abs(torch.sub(node_1, node_true_logits))
+        edge_euc_dist = abs(torch.sub(edge_1, edge_true_logits))
 
         updated_node_losses = torch.mul(node_euc_dist, self.node_losses)
         updated_edge_losses = torch.mul(edge_euc_dist, self.edge_losses)
