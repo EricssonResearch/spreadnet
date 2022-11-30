@@ -45,7 +45,7 @@ def process_prediction(input_graph_nx: nx.DiGraph, preds, infers):
         infers: nodes and edges infers
 
     Returns:
-        (predicted, truth_total_weight, pred_total_weight)
+        (predicted, truth_total_edge_weight)
     """
 
     pred_graph_nx = deepcopy(input_graph_nx)
@@ -53,7 +53,6 @@ def process_prediction(input_graph_nx: nx.DiGraph, preds, infers):
     edge_pred = preds["edges"].cpu().detach()
 
     truth_total_weight = 0.0
-    pred_total_weight = 0.0
 
     for i, (n, data) in enumerate(pred_graph_nx.nodes(data=True)):
         data["is_in_path"] = bool(infers["nodes"][i])
@@ -61,22 +60,16 @@ def process_prediction(input_graph_nx: nx.DiGraph, preds, infers):
         probability = softmax(node_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
 
-    for i, (s, e, data) in enumerate(pred_graph_nx.edges(data=True)):
+    for i, (u, v, data) in enumerate(pred_graph_nx.edges(data=True)):
         if data["is_in_path"]:
             truth_total_weight += data["weight"]
 
         data["is_in_path"] = bool(infers["edges"][i])
 
-        if data["is_in_path"]:
-            pred_total_weight += data["weight"]
-
         probability = softmax(edge_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
 
-    print(f"Truth weights: {truth_total_weight}")
-    print(f"Pred weights: {pred_total_weight}")
-
-    return pred_graph_nx, truth_total_weight, pred_total_weight
+    return pred_graph_nx, truth_total_weight
 
 
 def aggregate_results(g1: nx.DiGraph, g2: nx.DiGraph):
@@ -195,7 +188,7 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
         path: list of nodes
         require_clean: set other nodes and edges as False (slower)
     Returns:
-        applied_graph
+        applied_graph, total_edge_weights
     """
 
     nodes = G.nodes(data=True)
@@ -206,10 +199,14 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
         for (u, v, d) in G.edges(data=True):
             d["is_in_path"] = False
 
+    edge_weights = 0.0
+
     for idx, node in enumerate(path):
         nodes[node]["is_in_path"] = True
 
         if idx + 1 < len(path):
-            G.get_edge_data(node, path[idx + 1])["is_in_path"] = True
+            edge = G.get_edge_data(node, path[idx + 1])
+            edge["is_in_path"] = True
+            edge_weights += edge["weight"]
 
-    return G
+    return G, edge_weights

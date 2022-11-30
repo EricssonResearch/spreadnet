@@ -174,12 +174,10 @@ if __name__ == "__main__":
                         (
                             pred_graph_nx,
                             truth_total_weight,
-                            pred_total_weight,
                         ),
                         (
                             pred_graph_nx_r,
                             truth_total_weight_r,
-                            pred_total_weight_r,
                         ),
                     ] = Parallel(n_jobs=2, backend="multiprocessing", batch_size=1)(
                         [
@@ -192,10 +190,17 @@ if __name__ == "__main__":
                         deepcopy(pred_graph_nx), 0.01
                     )
 
-                    print("Max Prob Path on Pred: ", complete_path, max_prob_path)
-
-                    applied_nx = apply_path_on_graph(
+                    applied_nx, pred_edge_weights = apply_path_on_graph(
                         deepcopy(pred_graph_nx), max_prob_path, True
+                    )
+
+                    print("Truth Edge Weights: ", round(truth_total_weight, 3))
+
+                    print(
+                        "Max Prob Path on Pred: ",
+                        complete_path,
+                        round(pred_edge_weights, 3),
+                        max_prob_path,
                     )
 
                     aggregated_nx = aggregate_results(
@@ -206,14 +211,15 @@ if __name__ == "__main__":
                         deepcopy(aggregated_nx), 0.01
                     )
 
+                    applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
+                        deepcopy(aggregated_nx), max_prob_path_a, True
+                    )
+
                     print(
                         "Max Prob Path on Aggregated: ",
                         complete_path_a,
+                        round(pred_edge_weights_a, 3),
                         max_prob_path_a,
-                    )
-
-                    applied_nx_a = apply_path_on_graph(
-                        deepcopy(aggregated_nx), max_prob_path_a, True
                     )
 
                     plot_name = (
@@ -230,10 +236,10 @@ if __name__ == "__main__":
                             [nx.node_link_data(pred_graph_nx_r)], outfile, cls=NpEncoder
                         )
 
-                    print("Drawing comparison...")
+                    print("\nDrawing comparison...")
                     fig = plt.figure(figsize=(plot_size * 2, plot_size * 3))
                     draw_networkx(
-                        "Truth",
+                        f"Truth, Edge Weights: {truth_total_weight}",
                         fig,
                         graph_nx,
                         1,
@@ -273,7 +279,7 @@ if __name__ == "__main__":
                     )
 
                     draw_networkx(
-                        "Prob Walk on Pred",
+                        f"Prob Walk on Pred, Edge Weights: {pred_edge_weights}",
                         fig,
                         applied_nx,
                         5,
@@ -284,7 +290,7 @@ if __name__ == "__main__":
                     )
 
                     draw_networkx(
-                        "Prob Walk on Aggregated",
+                        f"Prob Walk on Aggregated, Edge Weights: {pred_edge_weights_a}",
                         fig,
                         applied_nx_a,
                         6,

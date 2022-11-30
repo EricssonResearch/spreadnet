@@ -128,11 +128,9 @@ if __name__ == "__main__":
                 (
                     pred_graph_nx,
                     truth_total_weight,
-                    pred_total_weight,
                 ) = process_prediction(graph_nx, preds, infers)
 
                 print(f"Truth weights: {truth_total_weight}")
-                print(f"Pred weights: {pred_total_weight}")
 
                 plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
 
@@ -144,14 +142,14 @@ if __name__ == "__main__":
                 print("Drawing comparison...")
                 fig = plt.figure(figsize=(80, 40))
                 draw_networkx(
-                    f"Truth, total edg weights: {round(truth_total_weight, 2)}",
+                    "Truth",
                     fig,
                     graph_nx,
                     1,
                     2,
                 )
                 draw_networkx(
-                    f"Prediction, total edg weights: {round(pred_total_weight, 2)}",
+                    "Prediction",
                     fig,
                     pred_graph_nx,
                     2,
