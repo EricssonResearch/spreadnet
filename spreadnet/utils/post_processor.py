@@ -70,12 +70,13 @@ def aggregate_results(g1: nx.DiGraph, g2: nx.DiGraph):
 
 def _max_probability_walk(
     G: nx.DiGraph,
-    nodes,
-    current_node,
-    end_node,
+    nodes: nx.DiGraph.nodes,
+    current_node: int,
+    end_node: int,
     path: list,
     visited: list,
-    prob_treshold,
+    is_strongest: bool,
+    prob_treshold: float,
 ):
     """Recursive child for max_probability_walk."""
     visited.append(current_node)
@@ -89,7 +90,7 @@ def _max_probability_walk(
 
     out_edges.sort(key=lambda x: x[2]["probability"], reverse=True)
 
-    for (u, v, d) in out_edges:
+    for idx, (u, v, d) in enumerate(out_edges):
         new_path = deepcopy(path)
         new_path.append(v)
 
@@ -97,11 +98,14 @@ def _max_probability_walk(
             return new_path
 
         result = _max_probability_walk(
-            G, nodes, v, end_node, new_path, visited, prob_treshold
+            G, nodes, v, end_node, new_path, visited, not idx, prob_treshold
         )
 
         if result:
             return result
+
+    if is_strongest:
+        return path
 
     return False
 
@@ -116,7 +120,7 @@ def max_probability_walk(G: nx.DiGraph, prob_treshold: float):
         end_node int: End node.
         prob_treshold: float (0,1]
     Returns:
-        node_path: list of nodes or False if there is no path.
+        is_complete, node_path: list of nodes or False if there is no path.
     """
 
     nodes = G.nodes(data=True)
@@ -132,6 +136,8 @@ def max_probability_walk(G: nx.DiGraph, prob_treshold: float):
         if start_node != -1 and end_node != -1:
             break
 
-    return _max_probability_walk(
-        G, nodes, start_node, end_node, [start_node], [], prob_treshold
+    path = _max_probability_walk(
+        G, nodes, start_node, end_node, [start_node], [], True, prob_treshold
     )
+
+    return path[-1] == end_node, path
