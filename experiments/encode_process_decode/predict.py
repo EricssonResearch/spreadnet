@@ -21,11 +21,12 @@ from copy import deepcopy
 from spreadnet.pyg_gnn.models import EncodeProcessDecode
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
-from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
+from spreadnet.datasets.data_utils.processor import process_nx
 from spreadnet.datasets.data_utils.draw import draw_networkx
 import spreadnet.utils.log_utils as log_utils
 from spreadnet.datasets.data_utils.encoder import NpEncoder
 from spreadnet.utils.post_processor import (
+    process_prediction,
     swap_start_end,
     aggregate_results,
     max_probability_walk,

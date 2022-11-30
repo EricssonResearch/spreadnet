@@ -16,12 +16,13 @@ import os
 from glob import glob
 import matplotlib.pyplot as plt
 
-from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
+from spreadnet.datasets.data_utils.processor import process_nx
 from spreadnet.datasets.data_utils.draw import draw_networkx
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.encoder import NpEncoder
+from spreadnet.utils.post_processor import process_prediction
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = os.path.join(
