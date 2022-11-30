@@ -185,3 +185,31 @@ def max_probability_walk(G: nx.DiGraph, prob_treshold: float):
     )
 
     return path[-1] == end_node, path
+
+
+def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
+    """Apply is_in_path on graph using the path list.
+
+    Args:
+        G: Graph
+        path: list of nodes
+        require_clean: set other nodes and edges as False (slower)
+    Returns:
+        applied_graph
+    """
+
+    nodes = G.nodes(data=True)
+
+    if require_clean:
+        for (n, d) in nodes:
+            d["is_in_path"] = False
+        for (u, v, d) in G.edges(data=True):
+            d["is_in_path"] = False
+
+    for idx, node in enumerate(path):
+        nodes[node]["is_in_path"] = True
+
+        if idx + 1 < len(path):
+            G.get_edge_data(node, path[idx + 1])["is_in_path"] = True
+
+    return G

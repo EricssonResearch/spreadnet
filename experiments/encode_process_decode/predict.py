@@ -30,6 +30,7 @@ from spreadnet.utils.post_processor import (
     swap_start_end,
     aggregate_results,
     max_probability_walk,
+    apply_path_on_graph,
 )
 
 torch.multiprocessing.set_start_method("spawn", force=True)
@@ -67,7 +68,7 @@ dataset_path = osp.join(
 ).replace("\\", "/")
 predictions_path = osp.join(osp.dirname(__file__), "predictions").replace("\\", "/")
 log_save_path = osp.join(osp.dirname(__file__), "logs").replace("\\", "/")
-plot_size = 80
+plot_size = 20
 
 if not os.path.exists(predictions_path):
     os.makedirs(predictions_path)
@@ -191,6 +192,15 @@ if __name__ == "__main__":
                         deepcopy(pred_graph_nx), pred_graph_nx_r
                     )
 
+                    (complete_path, max_prob_path) = max_probability_walk(
+                        aggregated_nx, 0.01
+                    )
+                    print("Max Prob Path: ", max_prob_path)
+
+                    applied_nx = apply_path_on_graph(
+                        deepcopy(aggregated_nx), max_prob_path, True
+                    )
+
                     plot_name = (
                         predictions_path + f"/{raw_file_path}.{idx + 1}.{iidx + 1}"
                     )
@@ -206,13 +216,13 @@ if __name__ == "__main__":
                         )
 
                     print("Drawing comparison...")
-                    fig = plt.figure(figsize=(plot_size, plot_size))
+                    fig = plt.figure(figsize=(plot_size * 2, plot_size * 3))
                     draw_networkx(
                         "Truth",
                         fig,
                         graph_nx,
                         1,
-                        4,
+                        5,
                         per_row=2,
                     )
                     draw_networkx(
@@ -220,7 +230,7 @@ if __name__ == "__main__":
                         fig,
                         pred_graph_nx,
                         2,
-                        4,
+                        5,
                         "probability",
                         "probability",
                         per_row=2,
@@ -230,7 +240,7 @@ if __name__ == "__main__":
                         fig,
                         pred_graph_nx_r,
                         3,
-                        4,
+                        5,
                         "probability",
                         "probability",
                         per_row=2,
@@ -241,8 +251,19 @@ if __name__ == "__main__":
                         fig,
                         aggregated_nx,
                         4,
-                        4,
+                        5,
                         "probability",
+                        "probability",
+                        per_row=2,
+                    )
+
+                    draw_networkx(
+                        "Max Prob Walk",
+                        fig,
+                        applied_nx,
+                        5,
+                        5,
+                        "default",
                         "probability",
                         per_row=2,
                     )
@@ -251,7 +272,6 @@ if __name__ == "__main__":
                     plt.clf()
                     print("Image saved at ", plot_name)
 
-                    print("Max Prob Path: ", max_probability_walk(aggregated_nx, 0.01))
                     # input("Press enter to predict another graph")
     except Exception as e:
         predict_logger.exception(e)
