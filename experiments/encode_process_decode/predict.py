@@ -188,17 +188,32 @@ if __name__ == "__main__":
                         ]
                     )
 
+                    (complete_path, max_prob_path) = max_probability_walk(
+                        deepcopy(pred_graph_nx), 0.01
+                    )
+
+                    print("Max Prob Path on Pred: ", complete_path, max_prob_path)
+
+                    applied_nx = apply_path_on_graph(
+                        deepcopy(pred_graph_nx), max_prob_path, True
+                    )
+
                     aggregated_nx = aggregate_results(
                         deepcopy(pred_graph_nx), pred_graph_nx_r
                     )
 
-                    (complete_path, max_prob_path) = max_probability_walk(
-                        aggregated_nx, 0.01
+                    (complete_path_a, max_prob_path_a) = max_probability_walk(
+                        deepcopy(aggregated_nx), 0.01
                     )
-                    print("Max Prob Path: ", max_prob_path)
 
-                    applied_nx = apply_path_on_graph(
-                        deepcopy(aggregated_nx), max_prob_path, True
+                    print(
+                        "Max Prob Path on Aggregated: ",
+                        complete_path_a,
+                        max_prob_path_a,
+                    )
+
+                    applied_nx_a = apply_path_on_graph(
+                        deepcopy(aggregated_nx), max_prob_path_a, True
                     )
 
                     plot_name = (
@@ -222,7 +237,7 @@ if __name__ == "__main__":
                         fig,
                         graph_nx,
                         1,
-                        5,
+                        6,
                         per_row=2,
                     )
                     draw_networkx(
@@ -230,7 +245,7 @@ if __name__ == "__main__":
                         fig,
                         pred_graph_nx,
                         2,
-                        5,
+                        6,
                         "probability",
                         "probability",
                         per_row=2,
@@ -240,7 +255,7 @@ if __name__ == "__main__":
                         fig,
                         pred_graph_nx_r,
                         3,
-                        5,
+                        6,
                         "probability",
                         "probability",
                         per_row=2,
@@ -251,18 +266,29 @@ if __name__ == "__main__":
                         fig,
                         aggregated_nx,
                         4,
-                        5,
+                        6,
                         "probability",
                         "probability",
                         per_row=2,
                     )
 
                     draw_networkx(
-                        "Max Prob Walk",
+                        "Max Prob Walk on Pred",
                         fig,
                         applied_nx,
                         5,
-                        5,
+                        6,
+                        "default",
+                        "probability",
+                        per_row=2,
+                    )
+
+                    draw_networkx(
+                        "Max Prob Walk on Aggregated",
+                        fig,
+                        applied_nx_a,
+                        6,
+                        6,
                         "default",
                         "probability",
                         per_row=2,
