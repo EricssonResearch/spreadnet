@@ -18,4 +18,4 @@ data:
   num_node_min_test: 51
   num_node_max_test: 100
   starting_theta_test: 25 # the higher the less edge
-  dataset_size_test: 100
+  dataset_size_test: 3
