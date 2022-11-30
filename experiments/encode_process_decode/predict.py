@@ -300,6 +300,7 @@ if __name__ == "__main__":
                         per_row=2,
                     )
 
+                    fig.tight_layout()
                     plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
                     plt.clf()
                     print("Image saved at ", plot_name)
