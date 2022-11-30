@@ -112,7 +112,7 @@ def aggregate_results(g1: nx.DiGraph, g2: nx.DiGraph):
     return g1
 
 
-def _max_probability_walk(
+def _exhaustive_probability_walk(
     G: nx.DiGraph,
     nodes: nx.DiGraph.nodes,
     current_node: int,
@@ -141,7 +141,7 @@ def _max_probability_walk(
         if v == end_node:
             return new_path
 
-        result = _max_probability_walk(
+        result = _exhaustive_probability_walk(
             G, nodes, v, end_node, new_path, visited, not idx, prob_treshold
         )
 
@@ -154,7 +154,7 @@ def _max_probability_walk(
     return False
 
 
-def max_probability_walk(G: nx.DiGraph, prob_treshold: float):
+def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability.
 
@@ -180,7 +180,7 @@ def max_probability_walk(G: nx.DiGraph, prob_treshold: float):
         if start_node != -1 and end_node != -1:
             break
 
-    path = _max_probability_walk(
+    path = _exhaustive_probability_walk(
         G, nodes, start_node, end_node, [start_node], [], True, prob_treshold
     )
 

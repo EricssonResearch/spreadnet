@@ -29,7 +29,7 @@ from spreadnet.utils.post_processor import (
     process_prediction,
     swap_start_end,
     aggregate_results,
-    max_probability_walk,
+    exhaustive_probability_walk,
     apply_path_on_graph,
 )
 
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                         ]
                     )
 
-                    (complete_path, max_prob_path) = max_probability_walk(
+                    (complete_path, max_prob_path) = exhaustive_probability_walk(
                         deepcopy(pred_graph_nx), 0.01
                     )
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                         deepcopy(pred_graph_nx), pred_graph_nx_r
                     )
 
-                    (complete_path_a, max_prob_path_a) = max_probability_walk(
+                    (complete_path_a, max_prob_path_a) = exhaustive_probability_walk(
                         deepcopy(aggregated_nx), 0.01
                     )
 
