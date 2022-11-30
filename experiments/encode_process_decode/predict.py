@@ -273,7 +273,7 @@ if __name__ == "__main__":
                     )
 
                     draw_networkx(
-                        "Max Prob Walk on Pred",
+                        "Prob Walk on Pred",
                         fig,
                         applied_nx,
                         5,
@@ -284,7 +284,7 @@ if __name__ == "__main__":
                     )
 
                     draw_networkx(
-                        "Max Prob Walk on Aggregated",
+                        "Prob Walk on Aggregated",
                         fig,
                         applied_nx_a,
                         6,
