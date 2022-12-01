@@ -41,6 +41,7 @@ def draw_networkx(
         None
     """
 
+    print(f"Processing {title}...")
     ax = figure.add_subplot(
         math.ceil(num_graphs_to_draw / per_row),
         num_graphs_to_draw if num_graphs_to_draw <= per_row else per_row,
@@ -109,6 +110,7 @@ def draw_networkx(
 
     pos = nx.get_node_attributes(graph, "pos")
 
+    print(f"Drawing {title}...")
     nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=500)
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True, width=0.2)
     nx.draw_networkx_edges(

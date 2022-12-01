@@ -114,13 +114,15 @@ def _exhaustive_probability_walk(
     visited: list,
     is_strongest: bool,
     prob_treshold: float,
+    edge_probability_ratio=2,
 ):
     """Recursive child for max_probability_walk."""
     visited.append(current_node)
     out_edges = list()
     for (u, v, d) in G.out_edges(current_node, data=True):
-        d["probability"] += nodes[v]["probability"]
-        d["probability"] /= 2
+        d["probability"] = (
+            nodes[v]["probability"] + (d["probability"] * edge_probability_ratio)
+        ) / 2
 
         if d["probability"] > prob_treshold and v not in visited:
             out_edges.append((u, v, d))

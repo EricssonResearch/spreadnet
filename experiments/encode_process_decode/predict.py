@@ -151,6 +151,7 @@ if __name__ == "__main__":
                 for iidx, graph_json in enumerate(graphs_json):
                     print("\n\n")
                     print("Graph idx: ", f"{idx + 1}.{iidx + 1}")
+                    print(raw_file_path)
 
                     [graph_nx, graph_nx_r] = Parallel(
                         n_jobs=2, backend="multiprocessing", batch_size=1
@@ -222,16 +223,14 @@ if __name__ == "__main__":
                         max_prob_path_a,
                     )
 
-                    plot_name = (
-                        predictions_path + f"/{raw_file_path}.{idx + 1}.{iidx + 1}"
-                    )
+                    plot_name = predictions_path + f"/pred.{raw_file_path}"
 
                     with open(f"{plot_name}.json", "w") as outfile:
                         json.dump(
                             [nx.node_link_data(pred_graph_nx)], outfile, cls=NpEncoder
                         )
 
-                    with open(f"{plot_name}_r.json", "w") as outfile:
+                    with open(f"{plot_name}.r.json", "w") as outfile:
                         json.dump(
                             [nx.node_link_data(pred_graph_nx_r)], outfile, cls=NpEncoder
                         )
@@ -301,6 +300,8 @@ if __name__ == "__main__":
                     )
 
                     fig.tight_layout()
+
+                    print("Saving image...")
                     plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
                     plt.clf()
                     print("Image saved at ", plot_name)
