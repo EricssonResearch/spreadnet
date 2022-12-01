@@ -7,7 +7,7 @@ train:
   batch_size: 64
   train_ratio: 0.7
   shuffle: False
-  plot_after_epochs: 100
+  plot_after_epochs: 10
 
   adam_lr: !!float 1e-4
   adam_weight_decay: !!float 5e-4

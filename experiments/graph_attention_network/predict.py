@@ -18,9 +18,10 @@ import matplotlib.pyplot as plt
 from spreadnet.pyg_gnn.models import SPGATNet
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
-from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
+from spreadnet.datasets.data_utils.processor import process_nx
 from spreadnet.datasets.data_utils.draw import draw_networkx
 from spreadnet.datasets.data_utils.encoder import NpEncoder
+from spreadnet.utils.post_processor import process_prediction
 
 default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
@@ -156,11 +157,9 @@ if __name__ == "__main__":
                 (
                     pred_graph_nx,
                     truth_total_weight,
-                    pred_total_weight,
                 ) = process_prediction(graph_nx, preds, infers)
 
                 print(f"Truth weights: {truth_total_weight}")
-                print(f"Pred weights: {pred_total_weight}")
 
                 plot_name = predictions_path + f"/{raw_file_path}.{idx + 1}"
 
@@ -172,14 +171,14 @@ if __name__ == "__main__":
                 print("Drawing comparison...")
                 fig = plt.figure(figsize=(80, 40))
                 draw_networkx(
-                    f"Truth, total edg weights: {round(truth_total_weight, 2)}",
+                    "Truth",
                     fig,
                     graph_nx,
                     1,
                     2,
                 )
                 draw_networkx(
-                    f"Prediction, total edg weights: {round(pred_total_weight, 2)}",
+                    "Prediction",
                     fig,
                     pred_graph_nx,
                     2,
