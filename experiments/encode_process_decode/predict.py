@@ -193,34 +193,34 @@ if __name__ == "__main__":
 
                     print("Truth Edge Weights: ", round(truth_total_weight, 3))
 
-                    (is_path_complete, max_prob_path) = exhaustive_probability_walk(
+                    (is_path_complete, prob_path) = exhaustive_probability_walk(
                         deepcopy(pred_graph_nx), 0.001
                     )
 
                     applied_nx, pred_edge_weights = apply_path_on_graph(
-                        deepcopy(pred_graph_nx), max_prob_path, True
+                        deepcopy(pred_graph_nx), prob_path, True
                     )
 
                     print(
-                        "Max Prob Path on Pred: ",
+                        "Prob Path on Pred: ",
                         is_path_complete,
                         round(pred_edge_weights, 3),
-                        max_prob_path,
+                        prob_path,
                     )
 
-                    (is_path_complete_a, max_prob_path_a) = exhaustive_probability_walk(
+                    (is_path_complete_a, prob_path_a) = exhaustive_probability_walk(
                         deepcopy(aggregated_nx), 0.001
                     )
 
                     applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
-                        deepcopy(aggregated_nx), max_prob_path_a, True
+                        deepcopy(aggregated_nx), prob_path_a, True
                     )
 
                     print(
-                        "Max Prob Path on Aggregated: ",
+                        "Prob Path on Aggregated: ",
                         is_path_complete_a,
                         round(pred_edge_weights_a, 3),
-                        max_prob_path_a,
+                        prob_path_a,
                     )
 
                     plot_name = predictions_path + f"/pred.{raw_file_path}"
