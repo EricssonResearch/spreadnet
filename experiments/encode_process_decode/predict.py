@@ -150,7 +150,7 @@ if __name__ == "__main__":
                 graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
                 for iidx, graph_json in enumerate(graphs_json):
                     print("\n\n")
-                    print("Graph idx: ", f"{idx + 1}.{iidx + 1}")
+                    print("Graph: ", f"{idx + 1}.{iidx + 1}")
                     print(raw_file_path)
 
                     [graph_nx, graph_nx_r] = Parallel(
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                     )
 
                     (complete_path, max_prob_path) = exhaustive_probability_walk(
-                        deepcopy(pred_graph_nx), 0.01
+                        deepcopy(pred_graph_nx), 0.001
                     )
 
                     applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                     )
 
                     (complete_path_a, max_prob_path_a) = exhaustive_probability_walk(
-                        deepcopy(aggregated_nx), 0.01
+                        deepcopy(aggregated_nx), 0.001
                     )
 
                     applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
@@ -310,4 +310,4 @@ if __name__ == "__main__":
     except Exception as e:
         predict_logger.exception(e)
 
-    logging.shutdown(handlerList="train_local_logger")
+    logging.shutdown()
