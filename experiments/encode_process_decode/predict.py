@@ -187,7 +187,13 @@ if __name__ == "__main__":
                         ]
                     )
 
-                    (complete_path, max_prob_path) = exhaustive_probability_walk(
+                    aggregated_nx = aggregate_results(
+                        deepcopy(pred_graph_nx), pred_graph_nx_r
+                    )
+
+                    print("Truth Edge Weights: ", round(truth_total_weight, 3))
+
+                    (is_path_complete, max_prob_path) = exhaustive_probability_walk(
                         deepcopy(pred_graph_nx), 0.001
                     )
 
@@ -195,20 +201,14 @@ if __name__ == "__main__":
                         deepcopy(pred_graph_nx), max_prob_path, True
                     )
 
-                    print("Truth Edge Weights: ", round(truth_total_weight, 3))
-
                     print(
                         "Max Prob Path on Pred: ",
-                        complete_path,
+                        is_path_complete,
                         round(pred_edge_weights, 3),
                         max_prob_path,
                     )
 
-                    aggregated_nx = aggregate_results(
-                        deepcopy(pred_graph_nx), pred_graph_nx_r
-                    )
-
-                    (complete_path_a, max_prob_path_a) = exhaustive_probability_walk(
+                    (is_path_complete_a, max_prob_path_a) = exhaustive_probability_walk(
                         deepcopy(aggregated_nx), 0.001
                     )
 
@@ -218,7 +218,7 @@ if __name__ == "__main__":
 
                     print(
                         "Max Prob Path on Aggregated: ",
-                        complete_path_a,
+                        is_path_complete_a,
                         round(pred_edge_weights_a, 3),
                         max_prob_path_a,
                     )
