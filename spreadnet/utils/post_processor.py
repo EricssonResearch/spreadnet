@@ -113,7 +113,7 @@ def _exhaustive_probability_walk(
     path: list,
     visited: list,
     is_strongest: bool,
-    prob_treshold: float,
+    prob_threshold: float,
 ):
     """Recursive child for max_probability_walk."""
     visited.append(current_node)
@@ -122,7 +122,7 @@ def _exhaustive_probability_walk(
         d["probability"] += nodes[v]["probability"]
         d["probability"] /= 2
 
-        if d["probability"] > prob_treshold and v not in visited:
+        if d["probability"] > prob_threshold and v not in visited:
             out_edges.append((u, v, d))
 
     out_edges.sort(key=lambda x: x[2]["probability"], reverse=True)
@@ -135,7 +135,7 @@ def _exhaustive_probability_walk(
             return new_path
 
         result = _exhaustive_probability_walk(
-            G, nodes, v, end_node, new_path, visited, not idx, prob_treshold
+            G, nodes, v, end_node, new_path, visited, not idx, prob_threshold
         )
 
         if result:
@@ -147,7 +147,7 @@ def _exhaustive_probability_walk(
     return False
 
 
-def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
+def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold: float):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability.
 
@@ -155,7 +155,7 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
         G: Output Graph
         start_node int: Start node.
         end_node int: End node.
-        prob_treshold: float (0,1]
+        prob_threshold: float (0,1]
     Returns:
         is_complete, node_path: list of nodes or False if there is no path.
     """
@@ -164,6 +164,7 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
     start_node = -1
     end_node = -1
 
+    # check if start and end node are not the same
     for (n, d) in nodes:
         if d["is_start"]:
             start_node = n
@@ -172,9 +173,9 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
 
         if start_node != -1 and end_node != -1:
             break
-
+    # start exhaustive walk
     path = _exhaustive_probability_walk(
-        G, nodes, start_node, end_node, [start_node], [], True, prob_treshold
+        G, nodes, start_node, end_node, [start_node], [], True, prob_threshold
     )
 
     return path[-1] == end_node, path
@@ -192,7 +193,7 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
     """
 
     nodes = G.nodes(data=True)
-
+    # clear all prev paths and weights from graph
     if require_clean:
         for (n, d) in nodes:
             d["is_in_path"] = False
@@ -201,6 +202,7 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
 
     edge_weights = 0.0
 
+    # assign only the given nodes and edges in path to a clean graph
     for idx, node in enumerate(path):
         nodes[node]["is_in_path"] = True
 
