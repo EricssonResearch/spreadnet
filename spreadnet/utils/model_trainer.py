@@ -533,7 +533,7 @@ class ModelTrainer:
 
         epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
+        best_acc = -1.0
 
         epochs = self.train_configs["epochs"]
         plot_after_epochs = self.train_configs["plot_after_epochs"]
@@ -1091,7 +1091,7 @@ class WAndBModelTrainer(ModelTrainer):
 
         epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
+        best_acc = -1.0
 
         epochs = self.train_configs["epochs"]
 
