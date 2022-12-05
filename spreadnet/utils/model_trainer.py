@@ -668,7 +668,7 @@ class ModelTrainer:
         train_local_logger.info(
             f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )
-        logging.shutdown(handlerList="train_local_logger")
+        logging.shutdown()
 
 
 class WAndBModelTrainer(ModelTrainer):
