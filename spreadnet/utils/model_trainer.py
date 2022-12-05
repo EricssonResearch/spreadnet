@@ -533,7 +533,7 @@ class ModelTrainer:
 
         epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
+        best_acc = -1.0
 
         epochs = self.train_configs["epochs"]
         plot_after_epochs = self.train_configs["plot_after_epochs"]
@@ -594,6 +594,10 @@ class ModelTrainer:
                 if validation_acc > best_acc:
                     best_acc = validation_acc
                     best_model_wts = copy.deepcopy(self.model.state_dict())
+                    weight_name = self.train_configs["best_weight_name"]
+                    torch.save(
+                        best_model_wts, os.path.join(self.model_save_path, weight_name)
+                    )
 
                 if epoch % self.train_configs["weight_save_freq"] == 0:
                     weight_name = f"model_weights_ep_{epoch}.pth"
@@ -651,8 +655,6 @@ class ModelTrainer:
                 if epoch % plot_after_epochs == 0:
                     self.create_plot(plot_name)
 
-            weight_name = self.train_configs["best_weight_name"]
-            torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
             train_local_logger.info("Finalizing training plot...")
             self.create_plot(plot_name)
             self.save_training_state(
@@ -1089,7 +1091,7 @@ class WAndBModelTrainer(ModelTrainer):
 
         epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
+        best_acc = -1.0
 
         epochs = self.train_configs["epochs"]
 
@@ -1189,6 +1191,11 @@ class WAndBModelTrainer(ModelTrainer):
             if validation_acc > best_acc:
                 best_acc = validation_acc
                 best_model_wts = copy.deepcopy(self.model.state_dict())
+                weight_name = self.train_configs["best_weight_name"]
+                torch.save(
+                    best_model_wts, os.path.join(self.model_save_path, weight_name)
+                )
+                self.wandb_model_log(run, artifact_name, weight_name)
 
             if epoch % self.train_configs["weight_save_freq"] == 0:
                 weight_name = f"model_weights_ep_{epoch}.pth"
@@ -1210,9 +1217,6 @@ class WAndBModelTrainer(ModelTrainer):
                 os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
             )
 
-        weight_name = self.train_configs["best_weight_name"]
-        torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
-        self.wandb_model_log(run, artifact_name, weight_name)
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
         )
