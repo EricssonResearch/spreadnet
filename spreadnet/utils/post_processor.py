@@ -200,8 +200,12 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
     )
 
     is_complete = path and path[-1] == end_node
+    final_path = path if is_complete else strongest_path
 
-    return is_complete, path if is_complete else strongest_path
+    print("Prob walk explored: ", len(visited))
+    print("Found path len: ", len(final_path))
+
+    return is_complete, final_path
 
 
 def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
