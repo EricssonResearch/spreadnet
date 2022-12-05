@@ -111,16 +111,19 @@ def _exhaustive_probability_walk(
     current_node: int,
     end_node: int,
     path: list,
-    visited: list,
     is_strongest: bool,
+    strongest_path: list,
+    visited: list,
     prob_threshold: float,
+    edge_probability_ratio=2,
 ):
     """Recursive child for max_probability_walk."""
     visited.append(current_node)
     out_edges = list()
     for (u, v, d) in G.out_edges(current_node, data=True):
-        d["probability"] += nodes[v]["probability"]
-        d["probability"] /= 2
+        d["probability"] = (
+            nodes[v]["probability"] + (d["probability"] * edge_probability_ratio)
+        ) / 2
 
         if d["probability"] > prob_threshold and v not in visited:
             out_edges.append((u, v, d))
@@ -131,18 +134,26 @@ def _exhaustive_probability_walk(
         new_path = deepcopy(path)
         new_path.append(v)
 
+        if is_strongest:
+            strongest_path.append(v)
+
         if v == end_node:
             return new_path
 
         result = _exhaustive_probability_walk(
-            G, nodes, v, end_node, new_path, visited, not idx, prob_threshold
+            G,
+            nodes,
+            v,
+            end_node,
+            new_path,
+            not idx,
+            strongest_path,
+            visited,
+            prob_threshold,
         )
 
         if result:
             return result
-
-    if is_strongest:
-        return path
 
     return False
 
@@ -173,12 +184,29 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold: float):
 
         if start_node != -1 and end_node != -1:
             break
-    # start exhaustive walk
+
+    strongest_path = [start_node]  # in case incomplete
+    visited = []
+
     path = _exhaustive_probability_walk(
-        G, nodes, start_node, end_node, [start_node], [], True, prob_threshold
+        G,
+        nodes,
+        start_node,
+        end_node,
+        [start_node],
+        True,
+        strongest_path,
+        visited,
+        prob_threshold,
     )
 
-    return path[-1] == end_node, path
+    is_complete = path and path[-1] == end_node
+    final_path = path if is_complete else strongest_path
+
+    print("Prob walk explored: ", len(visited))
+    print("Found path len: ", len(final_path))
+
+    return is_complete, final_path
 
 
 def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):

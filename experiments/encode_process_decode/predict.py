@@ -150,7 +150,8 @@ if __name__ == "__main__":
                 graphs_json = list(json.load(open(raw_path + "/" + raw_file_path)))
                 for iidx, graph_json in enumerate(graphs_json):
                     print("\n\n")
-                    print("Graph idx: ", f"{idx + 1}.{iidx + 1}")
+                    print("Graph: ", f"{idx + 1}.{iidx + 1}")
+                    print(raw_file_path)
 
                     [graph_nx, graph_nx_r] = Parallel(
                         n_jobs=2, backend="multiprocessing", batch_size=1
@@ -186,52 +187,50 @@ if __name__ == "__main__":
                         ]
                     )
 
-                    (complete_path, max_prob_path) = exhaustive_probability_walk(
-                        deepcopy(pred_graph_nx), 0.01
-                    )
-
-                    applied_nx, pred_edge_weights = apply_path_on_graph(
-                        deepcopy(pred_graph_nx), max_prob_path, True
-                    )
-
-                    print("Truth Edge Weights: ", round(truth_total_weight, 3))
-
-                    print(
-                        "Max Prob Path on Pred: ",
-                        complete_path,
-                        round(pred_edge_weights, 3),
-                        max_prob_path,
-                    )
-
                     aggregated_nx = aggregate_results(
                         deepcopy(pred_graph_nx), pred_graph_nx_r
                     )
 
-                    (complete_path_a, max_prob_path_a) = exhaustive_probability_walk(
-                        deepcopy(aggregated_nx), 0.01
+                    print("Truth Edge Weights: ", round(truth_total_weight, 3))
+
+                    (is_path_complete, prob_path) = exhaustive_probability_walk(
+                        deepcopy(pred_graph_nx), 0.001
                     )
 
-                    applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
-                        deepcopy(aggregated_nx), max_prob_path_a, True
+                    applied_nx, pred_edge_weights = apply_path_on_graph(
+                        deepcopy(pred_graph_nx), prob_path, True
                     )
 
                     print(
-                        "Max Prob Path on Aggregated: ",
-                        complete_path_a,
-                        round(pred_edge_weights_a, 3),
-                        max_prob_path_a,
+                        "Prob Path on Pred: ",
+                        is_path_complete,
+                        round(pred_edge_weights, 3),
+                        prob_path,
                     )
 
-                    plot_name = (
-                        predictions_path + f"/{raw_file_path}.{idx + 1}.{iidx + 1}"
+                    (is_path_complete_a, prob_path_a) = exhaustive_probability_walk(
+                        deepcopy(aggregated_nx), 0.001
                     )
+
+                    applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
+                        deepcopy(aggregated_nx), prob_path_a, True
+                    )
+
+                    print(
+                        "Prob Path on Aggregated: ",
+                        is_path_complete_a,
+                        round(pred_edge_weights_a, 3),
+                        prob_path_a,
+                    )
+
+                    plot_name = predictions_path + f"/pred.{raw_file_path}"
 
                     with open(f"{plot_name}.json", "w") as outfile:
                         json.dump(
                             [nx.node_link_data(pred_graph_nx)], outfile, cls=NpEncoder
                         )
 
-                    with open(f"{plot_name}_r.json", "w") as outfile:
+                    with open(f"{plot_name}.r.json", "w") as outfile:
                         json.dump(
                             [nx.node_link_data(pred_graph_nx_r)], outfile, cls=NpEncoder
                         )
@@ -301,6 +300,8 @@ if __name__ == "__main__":
                     )
 
                     fig.tight_layout()
+
+                    print("Saving image...")
                     plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
                     plt.clf()
                     print("Image saved at ", plot_name)
@@ -309,4 +310,4 @@ if __name__ == "__main__":
     except Exception as e:
         predict_logger.exception(e)
 
-    logging.shutdown(handlerList="train_local_logger")
+    logging.shutdown()
