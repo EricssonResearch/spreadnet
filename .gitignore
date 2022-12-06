@@ -173,11 +173,11 @@ experiments/dataset/processed/*.tar
 weights/*.pth
 
 # training plots
-experiments/encode_process_decode/trainings/*.jpg
+experiments/*/trainings/*.jpg
 experiments/simple_behaviour_experiments/*.png
 # predictions
-experiments/encode_process_decode/predictions/*.jpg
-experiments/encode_process_decode/predictions/*.json
+experiments/*/predictions/*.jpg
+experiments/*/predictions/*.json
 
 # latex aux files
 *.aux
@@ -194,7 +194,7 @@ experiments/behaviour_experiments/increasing_size_experiment_data/*.json
 experiments/behaviour_experiments/increasing_size_predictions/*.json
 experiments/behaviour_experiments/same_g_mult_paths/*.json
 #wandb local run files
-experiments/encode_process_decode/wandb/
+experiments/*/wandb/
 experiments/wandb/
 artifacts
 
