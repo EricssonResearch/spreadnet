@@ -114,7 +114,7 @@ def _exhaustive_probability_walk(
     is_strongest: bool,
     strongest_path: list,
     visited: list,
-    prob_treshold: float,
+    prob_threshold: float,
     edge_probability_ratio=2,
 ):
     """Recursive child for max_probability_walk."""
@@ -125,7 +125,7 @@ def _exhaustive_probability_walk(
             nodes[v]["probability"] + (d["probability"] * edge_probability_ratio)
         ) / 2
 
-        if d["probability"] > prob_treshold and v not in visited:
+        if d["probability"] > prob_threshold and v not in visited:
             out_edges.append((u, v, d))
 
     out_edges.sort(key=lambda x: x[2]["probability"], reverse=True)
@@ -149,7 +149,7 @@ def _exhaustive_probability_walk(
             not idx,
             strongest_path,
             visited,
-            prob_treshold,
+            prob_threshold,
         )
 
         if result:
@@ -158,7 +158,7 @@ def _exhaustive_probability_walk(
     return False
 
 
-def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
+def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold: float):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability.
 
@@ -166,7 +166,7 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
         G: Output Graph
         start_node int: Start node.
         end_node int: End node.
-        prob_treshold: float (0,1]
+        prob_threshold: float (0,1]
     Returns:
         is_complete, node_path: list of nodes or False if there is no path.
     """
@@ -196,7 +196,7 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_treshold: float):
         True,
         strongest_path,
         visited,
-        prob_treshold,
+        prob_threshold,
     )
 
     is_complete = path and path[-1] == end_node
