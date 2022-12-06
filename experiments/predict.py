@@ -2,8 +2,8 @@
 
 Args:
     --model "MPNN|DeepGCN|GAT|DeepCoGCN"
-    --dataset-config dataset_config_path
-    --weight weight_file_name
+    --dataset-config dataset_config_path, defaults: ./dataset_configs.yaml
+    --weight weight_file_name, defaults: model_weights_best.pth
 """
 import argparse
 from os import path as osp
