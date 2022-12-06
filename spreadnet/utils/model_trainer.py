@@ -25,7 +25,7 @@ from spreadnet.pyg_gnn.utils import hybrid_loss
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 from spreadnet.pyg_gnn.utils.metrics import (
-    get_precise_corrects,
+    get_precise_and_f_score,
     get_corrects_in_path,
     get_correct_predictions,
 )
@@ -66,7 +66,11 @@ class ModelTrainer:
         self.accuracies_curve = []
         self.validation_accuracies_curve = []
         self.in_path_accuracies_curve = []
-        self.in_path_validation_accuracies_curve = []
+        self.validation_in_path_accuracies_curve = []
+        self.precise_accuracies_curve = []
+        self.validation_precise_accuracies_curve = []
+        self.score_curve = []
+        self.validation_score_curve = []
 
         if not os.path.exists(self.model_save_path):
             os.makedirs(self.model_save_path)
@@ -140,7 +144,11 @@ class ModelTrainer:
             self.accuracies_curve,
             self.validation_accuracies_curve,
             self.in_path_accuracies_curve,
-            self.in_path_validation_accuracies_curve,
+            self.validation_in_path_accuracies_curve,
+            self.precise_accuracies_curve,
+            self.validation_precise_accuracies_curve,
+            self.score_curve,
+            self.validation_score_curve,
             os.path.join(self.plots_save_path, f"{plot_name}"),
         )
 
@@ -197,7 +205,8 @@ class ModelTrainer:
         best_model_wts,
         best_acc,
     ):
-        ipvac = self.in_path_validation_accuracies_curve
+        vipac = self.validation_in_path_accuracies_curve
+        vpac = self.validation_precise_accuracies_curve
         torch.save(
             {
                 "epoch": epoch,
@@ -211,7 +220,11 @@ class ModelTrainer:
                 "accuracies_curve": self.accuracies_curve,
                 "validation_accuracies_curve": self.validation_accuracies_curve,
                 "in_path_accuracies_curve": self.in_path_accuracies_curve,
-                "in_path_validation_accuracies_curve": ipvac,
+                "validation_in_path_accuracies_curve": vipac,
+                "precise_accuracies_curve": self.precise_accuracies_curve,
+                "validation_precise_accuracies_curve": vpac,
+                "score_curve": self.score_curve,
+                "validation_score_curve": self.validation_score_curve,
             },
             self.checkpoint_path,
         )
@@ -228,7 +241,16 @@ class ModelTrainer:
             loss_func: loss function
 
         Returns:
-            nodes_loss, edges_loss, nodes_acc, edges_acc
+            nodes_loss,
+            edges_loss,
+            nodes_acc,
+            edges_acc,
+            node_in_path_acc,
+            edge_in_path_acc,
+            nodes_precise_acc,
+            edges_precise_acc,
+            nodes_score_avg,
+            edges_score_avg
         """
         is_training = mode == "train"
         if is_training:
@@ -243,8 +265,8 @@ class ModelTrainer:
         dataset_nodes_size, dataset_edges_size = 0, 0
         nodes_in_path_corrects, edges_in_path_corrects = 0, 0
         dataset_nodes_in_path_size, dataset_edges_in_path_size = 0, 0
-
-        precise_corrects = 0.0
+        nodes_precise_corrects, edges_precise_corrects = 0, 0
+        nodes_score, edges_score = 0.0, 0.0
 
         with torch.enable_grad() if is_training else torch.no_grad():
             batch = []
@@ -332,12 +354,22 @@ class ModelTrainer:
                 dataset_nodes_size += int(data.num_nodes)
                 dataset_edges_size += int(data.num_edges)
 
-                precise_corrects += get_precise_corrects(infers, data.y, graph_sizes)
-
                 nodes_in_path_corrects += node_correct_in_path
                 edges_in_path_corrects += edge_correct_in_path
                 dataset_nodes_in_path_size += total_node_in_path
                 dataset_edges_in_path_size += total_edge_in_path
+
+                (
+                    nodes_precise_corrects_batch,
+                    edges_precise_corrects_batch,
+                    nodes_score_batch,
+                    edges_score_batch,
+                ) = get_precise_and_f_score(infers, data.y, graph_sizes)
+
+                nodes_precise_corrects += nodes_precise_corrects_batch
+                edges_precise_corrects += edges_precise_corrects_batch
+                nodes_score += nodes_score_batch
+                edges_score += edges_score_batch
 
                 # python auto gc is not good enough to free the memory
                 del (
@@ -365,7 +397,10 @@ class ModelTrainer:
         node_in_path_acc = nodes_in_path_corrects / dataset_nodes_in_path_size
         edge_in_path_acc = edges_in_path_corrects / dataset_edges_in_path_size
 
-        precise_acc = precise_corrects / dataset_size
+        nodes_precise_acc = nodes_precise_corrects / dataset_size
+        edges_precise_acc = edges_precise_corrects / dataset_size
+        nodes_score_avg = nodes_score / dataset_size
+        edges_score_avg = edges_score / dataset_size
 
         return (
             nodes_loss,
@@ -374,7 +409,10 @@ class ModelTrainer:
             edges_acc,
             node_in_path_acc,
             edge_in_path_acc,
-            precise_acc,
+            nodes_precise_acc,
+            edges_precise_acc,
+            nodes_score_avg,
+            edges_score_avg,
         )
 
     def execute(self, epoch, total_epoch, dataset, dataset_size, loss_func):
@@ -402,7 +440,10 @@ class ModelTrainer:
             train_edges_acc,
             train_node_in_path_acc,
             train_edge_in_path_acc,
-            train_precise_acc,
+            train_nodes_precise_acc,
+            train_edges_precise_acc,
+            train_nodes_score,
+            train_edges_score,
         ) = self.sub_execute(
             "train", epoch, total_epoch, train_dataset, train_size, loss_func
         )
@@ -414,7 +455,10 @@ class ModelTrainer:
             validation_edges_acc,
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
-            validation_precise_acc,
+            validation_nodes_precise_acc,
+            validation_edges_precise_acc,
+            validation_nodes_score,
+            validation_edges_score,
         ) = self.sub_execute(
             "validation",
             epoch,
@@ -433,14 +477,12 @@ class ModelTrainer:
             {
                 "nodes": train_nodes_acc,
                 "edges": train_edges_acc,
-                "precise": train_precise_acc,
             }
         )
         self.validation_accuracies_curve.append(
             {
                 "nodes": validation_nodes_acc,
                 "edges": validation_edges_acc,
-                "precise": validation_precise_acc,
             }
         )
 
@@ -448,11 +490,30 @@ class ModelTrainer:
             {"nodes": train_node_in_path_acc, "edges": train_edge_in_path_acc}
         )
 
-        self.in_path_validation_accuracies_curve.append(
+        self.validation_in_path_accuracies_curve.append(
             {"nodes": validation_node_in_path_acc, "edges": validation_edge_in_path_acc}
         )
 
-        validation_acc = (validation_nodes_acc + validation_edges_acc) / 2
+        self.precise_accuracies_curve.append(
+            {"nodes": train_nodes_precise_acc, "edges": train_edges_precise_acc}
+        )
+
+        self.validation_precise_accuracies_curve.append(
+            {
+                "nodes": validation_nodes_precise_acc,
+                "edges": validation_edges_precise_acc,
+            }
+        )
+
+        self.score_curve.append(
+            {"nodes": train_nodes_score, "edges": train_edges_score}
+        )
+
+        self.validation_score_curve.append(
+            {"nodes": validation_nodes_score, "edges": validation_edges_score}
+        )
+
+        validation_acc = (validation_nodes_score + validation_edges_score) / 2
 
         return validation_acc
 
@@ -483,7 +544,7 @@ class ModelTrainer:
 
         epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
+        best_acc = -1.0
 
         epochs = self.train_configs["epochs"]
         plot_after_epochs = self.train_configs["plot_after_epochs"]
@@ -518,9 +579,17 @@ class ModelTrainer:
                     self.in_path_accuracies_curve = checkpoint[
                         "in_path_accuracies_curve"
                     ]
-                    self.in_path_validation_accuracies_curve = checkpoint[
-                        "in_path_validation_accuracies_curve"
+                    self.validation_in_path_accuracies_curve = checkpoint[
+                        "validation_in_path_accuracies_curve"
                     ]
+                    self.precise_accuracies_curve = checkpoint[
+                        "precise_accuracies_curve"
+                    ]
+                    self.validation_precise_accuracies_curve = checkpoint[
+                        "validation_precise_accuracies_curve"
+                    ]
+                    self.score_curve = checkpoint["score_curve"]
+                    self.validation_score_curve = checkpoint["validation_score_curve"]
         except Exception as exception:
             train_local_logger.exception(exception)
 
@@ -536,6 +605,10 @@ class ModelTrainer:
                 if validation_acc > best_acc:
                     best_acc = validation_acc
                     best_model_wts = copy.deepcopy(self.model.state_dict())
+                    weight_name = self.train_configs["best_weight_name"]
+                    torch.save(
+                        best_model_wts, os.path.join(self.model_save_path, weight_name)
+                    )
 
                 if epoch % self.train_configs["weight_save_freq"] == 0:
                     weight_name = f"model_weights_ep_{epoch}.pth"
@@ -550,11 +623,13 @@ class ModelTrainer:
 
                 if epoch % 10 == 1:
                     train_local_logger.info(
-                        f'{"Epoch":^8s}|{"Train Loss (Node,Edge)":^22s}|'
+                        f'{"Epoch":^7s}|{"Train Loss (Node,Edge)":^22s}|'
                         f'{"Validation Loss":^22s}|'
-                        f'{"Train Acc (Node,Edge,NodeInPath,EdgeInPath)":^45s}|'
-                        f'{"Validation Acc":^44s}|'
-                        f'{"Precise Acc":^22s} \n {"=" * 220}'
+                        f"Train Acc (Node,Edge,NodeInPath,EdgeInPath,"
+                        f"NodePrecise,EdgePrecise)|"
+                        f'{"Validation Acc":^67s}|'
+                        f'{"Train F-Score":^22s}|'
+                        f'{"Validation F-Score":^22s} \n {"=" * 266}'
                     )
                 lcn = self.losses_curve[-1]["nodes"]
                 lce = self.losses_curve[-1]["edges"]
@@ -566,24 +641,31 @@ class ModelTrainer:
                 ipace = self.in_path_accuracies_curve[-1]["edges"]
                 vacn = self.validation_accuracies_curve[-1]["nodes"]
                 vace = self.validation_accuracies_curve[-1]["edges"]
-                ipvacn = self.in_path_validation_accuracies_curve[-1]["nodes"]
-                ipvace = self.in_path_validation_accuracies_curve[-1]["edges"]
-                tpac = self.accuracies_curve[-1]["precise"]
-                vpac = self.validation_accuracies_curve[-1]["precise"]
+                vipacn = self.validation_in_path_accuracies_curve[-1]["nodes"]
+                vipace = self.validation_in_path_accuracies_curve[-1]["edges"]
+                pacn = self.precise_accuracies_curve[-1]["nodes"]
+                pace = self.precise_accuracies_curve[-1]["edges"]
+                vpacn = self.validation_precise_accuracies_curve[-1]["nodes"]
+                vpace = self.validation_precise_accuracies_curve[-1]["edges"]
+                scn = self.score_curve[-1]["nodes"]
+                sce = self.score_curve[-1]["edges"]
+                vscn = self.validation_score_curve[-1]["nodes"]
+                vsce = self.validation_score_curve[-1]["edges"]
 
                 train_local_logger.info(
                     f"{epoch:3}/{epochs}|"
                     f"{lcn:2.8f},{lce:2.8f} |"
                     f"{vlcn:2.8f},{vlce:2.8f} |"
-                    f"{accn:2.8f}, {ace:2.8f} {ipacn:2.8f},{ipace:2.8f} |"
-                    f"{vacn:2.8f}, {vace:2.8f} {ipvacn:2.8f},{ipvace:2.8f} |"
-                    f"{tpac:2.8f}, {vpac:2.8f}"
+                    f" {accn:2.8f},{ace:2.8f} {ipacn:2.8f},{ipace:2.8f} "
+                    f"{pacn:2.8f},{pace:2.8f} |"
+                    f" {vacn:2.8f},{vace:2.8f} {vipacn:2.8f},{vipace:2.8f} "
+                    f"{vpacn:2.8f},{vpace:2.8f} |"
+                    f"{scn:2.8f},{sce:2.8f} |"
+                    f"{vscn:2.8f},{vsce:2.8f}"
                 )
                 if epoch % plot_after_epochs == 0:
                     self.create_plot(plot_name)
 
-            weight_name = self.train_configs["best_weight_name"]
-            torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
             train_local_logger.info("Finalizing training plot...")
             self.create_plot(plot_name)
             self.save_training_state(
@@ -635,6 +717,10 @@ class WAndBModelTrainer(ModelTrainer):
         self.train_edges_acc = []
         self.train_nodes_in_path_acc = []
         self.train_edges_in_path_acc = []
+        self.train_nodes_precise_acc = []
+        self.train_edges_precise_acc = []
+        self.train_nodes_score = []
+        self.train_edges_score = []
 
         self.validation_nodes_loss = []
         self.validation_edges_loss = []
@@ -642,9 +728,10 @@ class WAndBModelTrainer(ModelTrainer):
         self.validation_edges_acc = []
         self.validation_nodes_in_path_acc = []
         self.validation_edges_in_path_acc = []
-
-        self.train_precise_acc = []
-        self.validation_precise_acc = []
+        self.validation_nodes_precise_acc = []
+        self.validation_edges_precise_acc = []
+        self.validation_nodes_score = []
+        self.validation_edges_score = []
 
     def save_training_state(
         self,
@@ -675,8 +762,14 @@ class WAndBModelTrainer(ModelTrainer):
                 "train_edges_in_path_acc": self.train_edges_in_path_acc,
                 "validation_nodes_in_path_acc": self.validation_nodes_in_path_acc,
                 "validation_edges_in_path_acc": self.validation_edges_in_path_acc,
-                "train_precise_acc": self.train_precise_acc,
-                "validation_precise_acc ": self.validation_precise_acc,
+                "train_nodes_precise_acc": self.train_nodes_precise_acc,
+                "train_edges_precise_acc": self.train_edges_precise_acc,
+                "validation_nodes_precise_acc": self.validation_nodes_precise_acc,
+                "validation_edges_precise_acc": self.validation_edges_precise_acc,
+                "train_nodes_score": self.train_nodes_score,
+                "train_edges_score": self.train_edges_score,
+                "validation_nodes_score": self.validation_nodes_score,
+                "validation_edges_score": self.validation_edges_score,
             },
             self.checkpoint_path,
         )
@@ -706,7 +799,10 @@ class WAndBModelTrainer(ModelTrainer):
             train_edges_acc,
             train_node_in_path_acc,
             train_edge_in_path_acc,
-            train_precise_acc,
+            train_node_precise_acc,
+            train_edge_precise_acc,
+            train_node_score,
+            train_edge_score,
         ) = self.sub_execute(
             "train", epoch, total_epoch, train_dataset, train_size, loss_func
         )
@@ -718,7 +814,10 @@ class WAndBModelTrainer(ModelTrainer):
             validation_edges_acc,
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
-            validation_precise_acc,
+            validation_node_precise_acc,
+            validation_edge_precise_acc,
+            validation_node_score,
+            validation_edge_score,
         ) = self.sub_execute(
             "validation",
             epoch,
@@ -737,7 +836,10 @@ class WAndBModelTrainer(ModelTrainer):
             "train_edges_acc": train_edges_acc,
             "train_nodes_in_path_acc": train_node_in_path_acc,
             "train_edges_in_path_acc": train_edge_in_path_acc,
-            "train_precise_acc": train_precise_acc,
+            "train_nodes_precise_acc": train_node_precise_acc,
+            "train_edges_precise_acc": train_edge_precise_acc,
+            "train_nodes_score": train_node_score,
+            "train_edges_score": train_edge_score,
         }
 
         validation_metrics = {
@@ -748,7 +850,10 @@ class WAndBModelTrainer(ModelTrainer):
             "validation_edges_acc": validation_edges_acc,
             "validation_nodes_in_path_acc": validation_node_in_path_acc,
             "validation_edges_in_path_acc": validation_edge_in_path_acc,
-            "validation_precise_acc": validation_precise_acc,
+            "validation_nodes_precise_acc": validation_node_precise_acc,
+            "validation_edges_precise_acc": validation_edge_precise_acc,
+            "validation_nodes_score": validation_node_score,
+            "validation_edges_score": validation_edge_score,
         }
 
         wandb.log({**train_metrics, **validation_metrics})
@@ -760,6 +865,10 @@ class WAndBModelTrainer(ModelTrainer):
         self.train_edges_acc.append(train_edges_acc)
         self.train_nodes_in_path_acc.append(train_node_in_path_acc)
         self.train_edges_in_path_acc.append(train_edge_in_path_acc)
+        self.train_nodes_precise_acc.append(train_node_precise_acc)
+        self.train_edges_precise_acc.append(train_edge_precise_acc)
+        self.train_nodes_score.append(train_node_score)
+        self.train_edges_score.append(train_edge_score)
 
         self.validation_nodes_loss.append(validation_nodes_loss)
         self.validation_edges_loss.append(validation_edges_loss)
@@ -767,9 +876,10 @@ class WAndBModelTrainer(ModelTrainer):
         self.validation_edges_acc.append(validation_edges_acc)
         self.validation_nodes_in_path_acc.append(validation_node_in_path_acc)
         self.validation_edges_in_path_acc.append(validation_edge_in_path_acc)
-
-        self.train_precise_acc.append(train_precise_acc)
-        self.validation_precise_acc.append(validation_precise_acc)
+        self.validation_nodes_precise_acc.append(validation_node_precise_acc)
+        self.validation_edges_precise_acc.append(validation_edge_precise_acc)
+        self.validation_nodes_score.append(validation_node_score)
+        self.validation_edges_score.append(validation_edge_score)
 
         wandb.log(
             {
@@ -842,14 +952,40 @@ class WAndBModelTrainer(ModelTrainer):
                 "train_valid_precise_acc": wandb.plot.line_series(
                     xs=self.epoch_lst,
                     ys=[
-                        self.train_precise_acc,
-                        self.validation_precise_acc,
+                        self.train_nodes_precise_acc,
+                        self.train_edges_precise_acc,
+                        self.validation_nodes_precise_acc,
+                        self.validation_edges_precise_acc,
                     ],
                     keys=[
-                        "train_precise_acc",
-                        "validation_precise_acc",
+                        "train_nodes_precise_acc",
+                        "train_edges_precise_acc",
+                        "validation_nodes_precise_acc",
+                        "validation_edges_precise_acc",
                     ],
                     title="Precise Accuracy",
+                    xname="epoch",
+                )
+            }
+        )
+
+        wandb.log(
+            {
+                "train_valid_score": wandb.plot.line_series(
+                    xs=self.epoch_lst,
+                    ys=[
+                        self.train_nodes_score,
+                        self.train_edges_score,
+                        self.validation_nodes_score,
+                        self.validation_edges_score,
+                    ],
+                    keys=[
+                        "train_nodes_score",
+                        "train_edges_score",
+                        "validation_nodes_score",
+                        "validation_edges_score",
+                    ],
+                    title="F-Score",
                     xname="epoch",
                 )
             }
@@ -882,12 +1018,18 @@ class WAndBModelTrainer(ModelTrainer):
             train_edges_acc,
             train_node_in_path_acc,
             train_edge_in_path_acc,
+            train_node_precise_acc,
+            train_edge_precise_acc,
+            train_node_score,
+            train_edge_score,
             validation_nodes_acc,
             validation_edges_acc,
             validation_node_in_path_acc,
             validation_edge_in_path_acc,
-            train_precise_acc,
-            validation_precise_acc,
+            validation_node_precise_acc,
+            validation_edge_precise_acc,
+            validation_node_score,
+            validation_edge_score,
         ]
         self.acc_data.append(cur_acc_data)
         wandb.log(
@@ -899,18 +1041,24 @@ class WAndBModelTrainer(ModelTrainer):
                         "train_edges_acc",
                         "train_nodes_in_path_acc",
                         "train_edges_in_path_acc",
+                        "train_nodes_precise_acc",
+                        "train_edges_precise_acc",
+                        "train_nodes_score",
+                        "train_edges_score",
                         "validation_nodes_acc",
                         "validation_edges_acc",
                         "validation_nodes_in_path_acc",
                         "validation_edges_in_path_acc",
-                        "train_precise_acc",
-                        "validation_precise_acc",
+                        "validation_nodes_precise_acc",
+                        "validation_edges_precise_acc",
+                        "validation_nodes_score",
+                        "validation_edges_score",
                     ],
                 )
             }
         )
 
-        validation_acc = (validation_nodes_acc + validation_edges_acc) / 2
+        validation_acc = (validation_node_score + validation_edge_score) / 2
 
         return validation_acc
 
@@ -960,7 +1108,7 @@ class WAndBModelTrainer(ModelTrainer):
 
         epoch = 1
         best_model_wts = copy.deepcopy(self.model.state_dict())
-        best_acc = 0.0
+        best_acc = -1.0
 
         epochs = self.train_configs["epochs"]
 
@@ -1010,6 +1158,18 @@ class WAndBModelTrainer(ModelTrainer):
                 self.validation_edges_in_path_acc = checkpoint[
                     "validation_edges_in_path_acc"
                 ]
+                self.train_nodes_precise_acc = checkpoint["train_nodes_precise_acc"]
+                self.train_edges_precise_acc = checkpoint["train_edges_precise_acc"]
+                self.validation_nodes_precise_acc = checkpoint[
+                    "validation_nodes_precise_acc"
+                ]
+                self.validation_edges_precise_acc = checkpoint[
+                    "validation_edges_precise_acc"
+                ]
+                self.train_nodes_score = checkpoint["train_nodes_score"]
+                self.train_edges_score = checkpoint["train_edges_score"]
+                self.validation_nodes_score = checkpoint["validation_nodes_score"]
+                self.validation_edges_score = checkpoint["validation_edges_score"]
             else:
                 self.wandb_id = wandb.util.generate_id()
                 run = wandb.init(
@@ -1048,6 +1208,11 @@ class WAndBModelTrainer(ModelTrainer):
             if validation_acc > best_acc:
                 best_acc = validation_acc
                 best_model_wts = copy.deepcopy(self.model.state_dict())
+                weight_name = self.train_configs["best_weight_name"]
+                torch.save(
+                    best_model_wts, os.path.join(self.model_save_path, weight_name)
+                )
+                self.wandb_model_log(run, artifact_name, weight_name)
 
             if epoch % self.train_configs["weight_save_freq"] == 0:
                 weight_name = f"model_weights_ep_{epoch}.pth"
@@ -1069,9 +1234,6 @@ class WAndBModelTrainer(ModelTrainer):
                 os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
             )
 
-        weight_name = self.train_configs["best_weight_name"]
-        torch.save(best_model_wts, os.path.join(self.model_save_path, weight_name))
-        self.wandb_model_log(run, artifact_name, weight_name)
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
         )

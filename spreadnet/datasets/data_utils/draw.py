@@ -41,6 +41,7 @@ def draw_networkx(
         None
     """
 
+    print(f"Processing {title}...")
     ax = figure.add_subplot(
         math.ceil(num_graphs_to_draw / per_row),
         num_graphs_to_draw if num_graphs_to_draw <= per_row else per_row,
@@ -109,6 +110,7 @@ def draw_networkx(
 
     pos = nx.get_node_attributes(graph, "pos")
 
+    print(f"Drawing {title}...")
     nx.draw_networkx_nodes(graph, pos, node_color=node_colors, node_size=500)
     nx.draw_networkx_edges(graph, pos, edgelist=normal_edges, arrows=True, width=0.2)
     nx.draw_networkx_edges(
@@ -155,16 +157,16 @@ def draw_networkx(
 def get_line_color(mode, type):
     if type == "nodes" and mode == "training":  # Dark blue
         return "#4682B4"
-    if type == "nodes" and mode == "validation":  # Dark red
-        return "#C60C30"
     if type == "edges" and mode == "training":  # Light blue
         return "#99D8F2"
+    if type == "nodes" and mode == "validation":  # Dark red
+        return "#C60C30"
     if type == "edges" and mode == "validation":  # Light red
         return "#FF8A8F"
-    if type == "precise" and mode == "training":  # Light green
-        return "#9FCF80"
-    if type == "precise" and mode == "validation":  # Dark green
-        return "#568203"
+    # if type == "precise" and mode == "training":  # Light green
+    #     return "#9FCF80"
+    # if type == "precise" and mode == "validation":  # Dark green
+    #     return "#568203"
 
 
 def plot_training_graph(
@@ -174,7 +176,11 @@ def plot_training_graph(
     accuracies_curve,
     validation_accuracies_curve,
     in_path_accuracies_curve,
-    in_path_validation_accuracies_curve,
+    validation_in_path_accuracies_curve,
+    precise_accuracies_curve,
+    validation_precise_accuracies_curve,
+    score_curve,
+    validation_score_curve,
     save_path,
     separate_training_testing=False,
     smoooth_window_half_width=3,
@@ -183,10 +189,16 @@ def plot_training_graph(
 
     Args:
         steps_curve: epoch iteration
-        losses_curve: nodes and edges losses on training set
-        validation_losses_curve: nodes and edges losses on validation set
-        accuracies_curve: nodes and edges accuracies on training set
+        losses_curve: losses on training set
+        validation_losses_curve: losses on validation set
+        accuracies_curve: accuracies on training set
         validation_accuracies_curve: nodes and edges accuracies on validation set
+        in_path_accuracies_curve: accuracies on training set
+        validation_in_path_accuracies_curve: accuracies on validation set
+        precise_accuracies_curve: accuracies on training set
+        validation_precise_accuracies_curve: accuracies on validation set
+        score_curve: accuracies on training set
+        validation_score_curve: accuracies on validation set
         save_path: folder and file name
         separate_training_testing: separate training and testing graph or merge
         smoooth_window_half_width: smoothen plot lines, the higher the smoother
@@ -195,43 +207,60 @@ def plot_training_graph(
         None
     """
 
+    legend_lines = [
+        Line2D([0], [0], color="#4682B4", lw=4),
+        Line2D([0], [0], color="#99D8F2", lw=4),
+        Line2D([0], [0], color="#C60C30", lw=4),
+        Line2D([0], [0], color="#FF8A8F", lw=4),
+    ]
+    legend_texts = [
+        "Train Node Acc",
+        "Train Edge Acc",
+        "Validation Node Acc",
+        "Validation Edge Acc",
+    ]
+
     if separate_training_testing:
-        fig, axes = plt.subplots(2, 4, figsize=(20, 10))
+        fig, axes = plt.subplots(2, 5, figsize=(25, 10))
         for ax, metric, data_list in zip(
             [
                 axes[0][0],
                 axes[0][1],
                 axes[0][2],
                 axes[0][3],
+                axes[0][4],
                 axes[1][0],
                 axes[1][1],
                 axes[1][2],
                 axes[1][3],
+                axes[1][4],
             ],
             [
                 "Training Loss",
                 "Training Accuracy",
                 "Training In-path Accuracy",
                 "Training Precise",
+                "Training F-Score",
                 "Validation Loss",
                 "Validation Accuracy",
                 "Validation In-path Accuracy",
                 "Validation Precise",
+                "Validation F-Score",
             ],
             [
                 losses_curve,
                 accuracies_curve,
                 in_path_accuracies_curve,
-                accuracies_curve,
+                precise_accuracies_curve,
+                score_curve,
                 validation_losses_curve,
                 validation_accuracies_curve,
-                in_path_validation_accuracies_curve,
-                validation_accuracies_curve,
+                validation_in_path_accuracies_curve,
+                validation_precise_accuracies_curve,
+                validation_score_curve,
             ],
         ):
-            legends = (
-                ["edges", "nodes"] if not metric.endswith("Precise") else ["precise"]
-            )
+            legends = ["edges", "nodes"]
 
             for k in legends:
                 x = steps_curve
@@ -250,7 +279,7 @@ def plot_training_graph(
             ax.set_title(metric)
             # ax.set_ylabel(metric)
             ax.set_xlabel("Training Iteration")
-            ax.legend()
+            ax.legend(legend_lines, legend_texts)
 
         axes[0][0].set_yscale("log")
         axes[1][0].set_yscale("log")
@@ -258,21 +287,20 @@ def plot_training_graph(
         axes[1][1].margins(0.02, 0.02)
         axes[0][2].margins(0.02, 0.02)
         axes[1][2].margins(0.02, 0.02)
-        axes[0][3].set_ylim(-0.005)
-        axes[1][3].set_ylim(-0.005)
     else:
-        fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+        fig, axes = plt.subplots(1, 5, figsize=(25, 5))
         for ax, metric, data_list in zip(
             axes,
-            ["Loss", "Accuracy", "In-path Accuracy", "Precise"],
+            ["Loss", "Accuracy", "In-path Accuracy", "Precise", "F-Score"],
             [
                 [losses_curve, validation_losses_curve],
                 [accuracies_curve, validation_accuracies_curve],
-                [in_path_accuracies_curve, in_path_validation_accuracies_curve],
-                [accuracies_curve, validation_accuracies_curve],
+                [in_path_accuracies_curve, validation_in_path_accuracies_curve],
+                [precise_accuracies_curve, validation_precise_accuracies_curve],
+                [score_curve, validation_score_curve],
             ],
         ):
-            legends = ["edges", "nodes"] if metric != "Precise" else ["precise"]
+            legends = ["edges", "nodes"]
 
             for k in legends:
                 x = steps_curve
@@ -297,12 +325,11 @@ def plot_training_graph(
             ax.set_title(metric)
             # ax.set_ylabel(metric)
             ax.set_xlabel("Training Iteration")
-            ax.legend()
+            ax.legend(legend_lines, legend_texts)
 
         axes[0].set_yscale("log")
         axes[1].margins(0.02, 0.02)
         axes[2].margins(0.02, 0.02)
-        axes[3].set_ylim(-0.005)
 
     plt.subplots_adjust(hspace=0.4)
     plt.savefig(save_path)
