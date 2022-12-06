@@ -58,7 +58,7 @@ def process_nx(graph_nx: DiGraph):
         x=x,
         edge_attr=edges_weight,
         y=(node_labels, edge_labels),
-        edge_data=edge_index_t,
+        # edge_data=edge_index_t,
     )
 
 

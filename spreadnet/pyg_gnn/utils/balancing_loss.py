@@ -21,7 +21,7 @@ class BalancingLoss:
         edge_true,
         edge_pred,
         edge_losses,
-        edge_data,
+        # edge_data,
         loss_type,
     ):
         self.node_true = node_true
@@ -30,7 +30,7 @@ class BalancingLoss:
         self.edge_true = edge_true
         self.edge_pred = edge_pred
         self.edge_losses = edge_losses
-        self.edge_data = edge_data
+        # self.edge_data = edge_data
 
         if loss_type == "s" or loss_type == "S" or loss_type == "w" or loss_type == "W":
             # getting the node and edge multiplication factor:
@@ -78,41 +78,42 @@ class BalancingLoss:
             "edges": torch.mean(self.updated_edge_losses),
         }
 
-    def get_sequence_weighted_loss(self):
-        for i in range(len(self.edge_data)):
-            (source_node, target_node) = self.edge_data[i]
+    # def get_sequence_weighted_loss(self):
+    #     for i in range(len(self.edge_data)):
+    #         (source_node, target_node) = self.edge_data[i]
 
-            # 1: if edge is correctly classified as "in path"
-            edge_prediction = self.edge_pred_classes[i]
-            edge_truth = self.edge_true[i]
+    #         # 1: if edge is correctly classified as "in path"
+    #         edge_prediction = self.edge_pred_classes[i]
+    #         edge_truth = self.edge_true[i]
 
-            if edge_prediction == 1 and (edge_prediction == edge_truth):
+    #         if edge_prediction == 1 and (edge_prediction == edge_truth):
 
-                # 1a: penalize the wrongly classified source node
-                # (which should be in path)
-                if self.node_pred_classes[source_node] == 0:
-                    self.updated_node_losses[source_node] *= self.node_mult_factor
+    #             # 1a: penalize the wrongly classified source node
+    #             # (which should be in path)
+    #             if self.node_pred_classes[source_node] == 0:
+    #                 self.updated_node_losses[source_node] *= self.node_mult_factor
 
-                # 1b: penalize the wrongly classified target node
-                # (which should be in path)
-                if self.node_pred_classes[target_node] == 0:
-                    self.updated_node_losses[target_node] *= self.node_mult_factor
+    #             # 1b: penalize the wrongly classified target node
+    #             # (which should be in path)
+    #             if self.node_pred_classes[target_node] == 0:
+    #                 self.updated_node_losses[target_node] *= self.node_mult_factor
 
-            # 2: if 2 neighbouring nodes are correctly classified to be "in path"
-            # penalize the wrongly classified edge (which should be in path)
-            if (
-                (self.node_pred_classes[source_node] == self.node_true[source_node])
-                and (self.node_pred_classes[target_node] == self.node_true[target_node])
-                and (self.node_true[source_node] == 1)
-                and (self.node_true[target_node] == 1)
-            ):
-                if self.edge_pred_classes[i] == 0:
-                    self.updated_edge_losses[i] *= self.edge_mult_factor
+    #         # 2: if 2 neighbouring nodes are correctly classified to be "in path"
+    #         # penalize the wrongly classified edge (which should be in path)
+    #         if (
+    #             (self.node_pred_classes[source_node] == self.node_true[source_node])
+    #             and (self.node_pred_classes[target_node] ==
+    # self.node_true[target_node])
+    #             and (self.node_true[source_node] == 1)
+    #             and (self.node_true[target_node] == 1)
+    #         ):
+    #             if self.edge_pred_classes[i] == 0:
+    #                 self.updated_edge_losses[i] *= self.edge_mult_factor
 
-        return {
-            "nodes": torch.mean(self.updated_node_losses),
-            "edges": torch.mean(self.updated_edge_losses),
-        }
+    #     return {
+    #         "nodes": torch.mean(self.updated_node_losses),
+    #         "edges": torch.mean(self.updated_edge_losses),
+    #     }
 
     def get_euclidean_weighted_loss(self):
         node_1 = self.node_pred[:, 1]

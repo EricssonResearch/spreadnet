@@ -166,9 +166,9 @@ class ModelTrainer:
         (node_true, edge_true) = data.y
         x, edge_index = data.x, data.edge_index
         edge_attr = data.edge_attr
-        edge_data = data.edge_data
+        # edge_data = data.edge_data
 
-        return (x, edge_index, edge_attr, edge_data), (node_true, edge_true)
+        return (x, edge_index, edge_attr), (node_true, edge_true)
 
     def construct_dataset(self):
         """Construct datasets.
@@ -295,7 +295,7 @@ class ModelTrainer:
                 batch.clear()
                 gc.collect()
 
-                (x, edge_index, edge_attr, edge_data), (
+                (x, edge_index, edge_attr), (
                     node_true,
                     edge_true,
                 ) = self.data_preprocessor(data)
@@ -322,7 +322,7 @@ class ModelTrainer:
                     node_true,
                     edge_true,
                     self.loss_type,
-                    edge_data,
+                    # edge_data,
                 )
                 nodes_loss += float(losses["nodes"].item()) * num_graphs
                 edges_loss += float(losses["edges"].item()) * num_graphs

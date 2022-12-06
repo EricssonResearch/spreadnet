@@ -8,7 +8,7 @@ import torch
 from spreadnet.pyg_gnn.utils.balancing_loss import BalancingLoss
 
 
-def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type, edge_data):
+def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type):
     """A hybrid cross entropy loss combining edges and nodes.
 
     Args:
@@ -18,7 +18,7 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type, edge_data
         edge_true: the ground-truth edge label
         loss_type: to use the original loss (d), the weighted loss (w),
                    or the sequenced weighted loss (s)
-        edge_data: source and target nodes for each edge
+        edge_data: source and target nodes for each edge xx removed for the time being
 
     Returns:
         losses: { nodes: loss, edges: loss }
@@ -42,7 +42,7 @@ def hybrid_loss(node_pred, edge_pred, node_true, edge_true, loss_type, edge_data
             edge_true,
             edge_pred,
             losses_tensor["edges"],
-            edge_data,
+            # edge_data,
             loss_type,
         )
         if loss_type == "w" or loss_type == "W":
