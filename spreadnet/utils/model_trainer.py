@@ -37,6 +37,7 @@ class ModelTrainer:
         dataset_path: str,
         dataset_configs: dict,
         model_save_path: str,
+        loss_type: str,
     ):
         self.model_configs = model_configs
         self.model_name = self.model_configs["model_name"]
@@ -47,6 +48,8 @@ class ModelTrainer:
 
         self.model_save_path = model_save_path
         self.checkpoint_path = os.path.join(model_save_path, "train_state.pth")
+
+        self.loss_type = loss_type
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -237,7 +240,14 @@ class ModelTrainer:
 
                 (node_true, edge_true) = batch_data.y
                 # Losses
-                losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+                losses = loss_func(
+                    node_pred,
+                    edge_pred,
+                    node_true,
+                    edge_true,
+                    self.loss_type,
+                    # edge_data,
+                )
                 nodes_loss += float(losses["nodes"].item()) * num_graphs
                 edges_loss += float(losses["edges"].item()) * num_graphs
 
@@ -605,9 +615,15 @@ class WAndBModelTrainer(ModelTrainer):
         dataset_path: str,
         dataset_configs: dict,
         model_save_path: str,
+        loss_type: str,
     ):
         super(WAndBModelTrainer, self).__init__(
-            model_configs, train_configs, dataset_path, dataset_configs, model_save_path
+            model_configs,
+            train_configs,
+            dataset_path,
+            dataset_configs,
+            model_save_path,
+            loss_type,
         )
         self.checkpoint_path = os.path.join(model_save_path, "wandb_train_state.pth")
         self.wandb_id = 0
