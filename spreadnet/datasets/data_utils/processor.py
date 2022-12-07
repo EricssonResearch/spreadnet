@@ -45,9 +45,11 @@ def process_nx(graph_nx: DiGraph):
         [data["weight"] for data in edges_data], dtype=torch.float
     ).view(-1, 1)
 
-    # get edge_index from graph_nx
+    # get edge source and target nodes
     edge_index_data = [list(tpl) for tpl in graph_nx.edges]
     edge_index_t = torch.tensor(edge_index_data, dtype=torch.long)
+
+    # get edge_index from graph_nx
     edge_index = edge_index_t.t().contiguous()
 
     return Data(
@@ -56,6 +58,7 @@ def process_nx(graph_nx: DiGraph):
         x=x,
         edge_attr=edges_weight,
         y=(node_labels, edge_labels),
+        # edge_data=edge_index_t,
     )
 
 

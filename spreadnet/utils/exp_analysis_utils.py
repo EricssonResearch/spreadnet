@@ -19,7 +19,7 @@ class AccuracyMetrics:
 
         return start_node, end_node
 
-    def max_probability_walk(self, G, prob_treshold):
+    def max_probability_walk(self, G, prob_threshold):
         """Takes an output graph with a start and end node, outputs the nodes
         and edges if we take the maximum probability, either node or edge.
 
@@ -27,7 +27,7 @@ class AccuracyMetrics:
             G (_type_): Oruput Graph
             start_node int: Start node.
             end_node int: End node.
-            prob_treshold: float (0,1]
+            prob_threshold: float (0,1]
         Returns:
             _type_: Max probability nodes and edges list.
 
@@ -45,7 +45,7 @@ class AccuracyMetrics:
         while current_node != end_node:
             edges = G.out_edges(current_node, data=True)
 
-            max_probability_edge = prob_treshold
+            max_probability_edge = prob_threshold
             chosen_edge = None
             for e in edges:
 
@@ -62,7 +62,7 @@ class AccuracyMetrics:
 
             if chosen_edge is None:
                 chosen_node = None
-                max_probability_node = prob_treshold
+                max_probability_node = prob_threshold
                 for e in edges:
 
                     probability_node = np.round(
@@ -115,8 +115,8 @@ class AccuracyMetrics:
         pred_dir = "increasing_size_predictions"
         datasets = list()
 
-        # prob_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
-        prob_treshold = [0.5, 0.25, 0.01]
+        # prob_threshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
+        prob_threshold = [0.5, 0.25, 0.01]
         for path in os.listdir(pred_dir):
             # check if current path is a file
             if os.path.isfile(os.path.join(pred_dir, path)):
@@ -128,7 +128,7 @@ class AccuracyMetrics:
 
             graphs = json.load(file_raw)
 
-            for pt in prob_treshold:
+            for pt in prob_threshold:
 
                 pred = []
                 no_ground_truth_nodes = 0
@@ -209,7 +209,7 @@ class AccuracyMetrics:
                     accuracy_node_and_edge.append(sum(pred) / len(pred))
         self.to_df_format(
             datasets,
-            prob_threshold=prob_treshold,
+            prob_threshold=prob_threshold,
             accuracy=accuracy_node_and_edge,
             name=file_name,
         )
@@ -220,7 +220,7 @@ class AccuracyMetrics:
         pred_dir = "increasing_size_predictions"
         datasets = list()
 
-        # prob_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
+        # prob_threshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
         prob_threshold = [0.5, 0.25, 0.01]
         for path in os.listdir(pred_dir):
             # check if current path is a file
@@ -288,7 +288,7 @@ class AccuracyMetrics:
         pred_dir = "increasing_size_predictions"
         datasets = list()
 
-        # prob_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
+        # prob_threshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
 
         for path in os.listdir(pred_dir):
             # check if current path is a file
@@ -357,14 +357,14 @@ class AccuracyMetrics:
     def to_df_format(self, datasets, prob_threshold, accuracy, name):
         df = pd.DataFrame()
 
-        prob_treshold_df = []
+        prob_threshold_df = []
         model_type = []
         g_size = []
 
         for ds in datasets:
             for pt in prob_threshold:
 
-                prob_treshold_df.append(pt)
+                prob_threshold_df.append(pt)
                 # The following line is an abomination
                 ds_clean = (
                     ds.replace("increasing_size_", "")
@@ -378,7 +378,7 @@ class AccuracyMetrics:
 
         df["Graph Size"] = g_size
         df["Model Type"] = model_type
-        df["Probabiltiy Threshold"] = prob_treshold_df
+        df["Probabiltiy Threshold"] = prob_threshold_df
 
         df["Accuracy"] = accuracy
 

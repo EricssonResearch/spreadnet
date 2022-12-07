@@ -21,15 +21,13 @@ from codecarbon import EmissionsTracker
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
-from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.pyg_gnn.utils import hybrid_loss
-from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
-from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 from spreadnet.pyg_gnn.utils.metrics import (
     get_precise_and_f_score,
     get_corrects_in_path,
     get_correct_predictions,
 )
+from spreadnet.utils.model_loader import load_model
 
 
 class ModelTrainer:
@@ -40,6 +38,7 @@ class ModelTrainer:
         dataset_path: str,
         dataset_configs: dict,
         model_save_path: str,
+        loss_type: str,
     ):
         self.model_configs = model_configs
         self.model_name = self.model_configs["model_name"]
@@ -50,6 +49,8 @@ class ModelTrainer:
 
         self.model_save_path = model_save_path
         self.checkpoint_path = os.path.join(model_save_path, "train_state.pth")
+
+        self.loss_type = loss_type
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -77,61 +78,7 @@ class ModelTrainer:
             os.makedirs(self.plots_save_path)
 
     def construct_model(self):
-        if self.model_name == "MPNN":
-            self.model = EncodeProcessDecode(
-                node_in=self.model_configs["node_in"],
-                edge_in=self.model_configs["edge_in"],
-                node_out=self.model_configs["node_out"],
-                edge_out=self.model_configs["edge_out"],
-                latent_size=self.model_configs["latent_size"],
-                num_message_passing_steps=self.model_configs[
-                    "num_message_passing_steps"
-                ],
-                num_mlp_hidden_layers=self.model_configs["num_mlp_hidden_layers"],
-                mlp_hidden_size=self.model_configs["mlp_hidden_size"],
-            ).to(self.device)
-        elif self.model_name == "DeepCoGCN":
-            self.model = SPCoDeepGCNet(
-                node_in=self.model_configs["node_in"],
-                edge_in=self.model_configs["edge_in"],
-                gcn_hidden_channels=self.model_configs["gcn_hidden_channels"],
-                gcn_num_layers=self.model_configs["gcn_num_layers"],
-                mlp_hidden_channels=self.model_configs["mlp_hidden_channels"],
-                mlp_hidden_layers=self.model_configs["mlp_hidden_layers"],
-                node_out=self.model_configs["node_out"],
-                edge_out=self.model_configs["edge_out"],
-            ).to(self.device)
-        elif self.model_name == "GAT":
-            self.model = SPGATNet(
-                num_hidden_layers=self.model_configs["num_hidden_layers"],
-                in_channels=self.model_configs["in_channels"],
-                hidden_channels=self.model_configs["hidden_channels"],
-                out_channels=self.model_configs["out_channels"],
-                heads=self.model_configs["heads"],
-                # dropout=model_configs[""],
-                add_self_loops=self.model_configs["add_self_loops"],
-                bias=self.model_configs["bias"],
-                edge_hidden_channels=self.model_configs["edge_hidden_channels"],
-                edge_out_channels=self.model_configs["edge_out_channels"],
-                edge_num_layers=self.model_configs["edge_num_layers"],
-                edge_bias=self.model_configs["edge_bias"],
-                encode_node_in=self.model_configs["encode_node_in"],
-                encode_edge_in=self.model_configs["encode_edge_in"],
-                encode_node_out=self.model_configs["encode_node_out"],
-                encode_edge_out=self.model_configs["encode_edge_out"],
-            ).to(self.device)
-        elif self.model_name == "DeepGCN":
-            self.model = SPDeepGCN(
-                node_in=self.model_configs["node_in"],
-                edge_in=self.model_configs["edge_in"],
-                encoder_hidden_channels=self.model_configs["encoder_hidden_channels"],
-                encoder_layers=self.model_configs["encoder_layers"],
-                gcn_hidden_channels=self.model_configs["gcn_hidden_channels"],
-                gcn_layers=self.model_configs["gcn_layers"],
-                decoder_hidden_channels=self.model_configs["decoder_hidden_channels"],
-                decoder_layers=self.model_configs["decoder_layers"],
-            ).to(self.device)
-
+        self.model = load_model(self.model_name, self.model_configs, self.device)
         return self.model
 
     def create_plot(self, plot_name):
@@ -149,23 +96,6 @@ class ModelTrainer:
             self.validation_score_curve,
             os.path.join(self.plots_save_path, f"{plot_name}"),
         )
-
-    def data_preprocessor(self, data):
-        """Preprocess the data from dataset.
-
-        Args:
-            data: PyTorch Geometric data
-
-        Returns:
-            1. the inputs for the GCN model
-            2. the ground-truth labels
-        """
-
-        (node_true, edge_true) = data.y
-        x, edge_index = data.x, data.edge_index
-        edge_attr = data.edge_attr
-
-        return (x, edge_index, edge_attr), (node_true, edge_true)
 
     def construct_dataset(self):
         """Construct datasets.
@@ -288,32 +218,37 @@ class ModelTrainer:
                     continue
 
                 num_graphs = len(batch)
-                data = Batch.from_data_list(batch).to(self.device)
+                batch_data = Batch.from_data_list(batch).to(self.device)
                 batch.clear()
                 gc.collect()
-
-                (x, edge_index, edge_attr), (
-                    node_true,
-                    edge_true,
-                ) = self.data_preprocessor(data)
 
                 if is_training:
                     self.optimizer.zero_grad()
 
                 if self.model_name == "GAT":
                     (node_pred, edge_pred) = self.model(
-                        data.x,
-                        data.edge_index,
-                        data.edge_attr,
+                        batch_data.x,
+                        batch_data.edge_index,
+                        batch_data.edge_attr,
                         return_attention_weights=self.model_configs[
                             "return_attention_weights"
                         ],
                     )
                 else:
-                    (node_pred, edge_pred) = self.model(x, edge_index, edge_attr)
+                    (node_pred, edge_pred) = self.model(
+                        batch_data.x, batch_data.edge_index, batch_data.edge_attr
+                    )
 
+                (node_true, edge_true) = batch_data.y
                 # Losses
-                losses = loss_func(node_pred, edge_pred, node_true, edge_true)
+                losses = loss_func(
+                    node_pred,
+                    edge_pred,
+                    node_true,
+                    edge_true,
+                    self.loss_type,
+                    # edge_data,
+                )
                 nodes_loss += float(losses["nodes"].item()) * num_graphs
                 edges_loss += float(losses["edges"].item()) * num_graphs
 
@@ -341,8 +276,8 @@ class ModelTrainer:
                 # Accuracies
                 nodes_corrects += int(corrects["nodes"].cpu().numpy().item())
                 edges_corrects += int(corrects["edges"].cpu().numpy().item())
-                dataset_nodes_size += int(data.num_nodes)
-                dataset_edges_size += int(data.num_edges)
+                dataset_nodes_size += int(batch_data.num_nodes)
+                dataset_edges_size += int(batch_data.num_edges)
 
                 nodes_in_path_corrects += node_correct_in_path
                 edges_in_path_corrects += edge_correct_in_path
@@ -354,7 +289,7 @@ class ModelTrainer:
                     edges_precise_corrects_batch,
                     nodes_score_batch,
                     edges_score_batch,
-                ) = get_precise_and_f_score(infers, data.y, graph_sizes)
+                ) = get_precise_and_f_score(infers, batch_data.y, graph_sizes)
 
                 nodes_precise_corrects += nodes_precise_corrects_batch
                 edges_precise_corrects += edges_precise_corrects_batch
@@ -366,6 +301,7 @@ class ModelTrainer:
                     node_pred,
                     edge_pred,
                     data,
+                    batch_data,
                     losses,
                     infers,
                     corrects,
@@ -681,9 +617,15 @@ class WAndBModelTrainer(ModelTrainer):
         dataset_path: str,
         dataset_configs: dict,
         model_save_path: str,
+        loss_type: str,
     ):
         super(WAndBModelTrainer, self).__init__(
-            model_configs, train_configs, dataset_path, dataset_configs, model_save_path
+            model_configs,
+            train_configs,
+            dataset_path,
+            dataset_configs,
+            model_save_path,
+            loss_type,
         )
         self.checkpoint_path = os.path.join(model_save_path, "wandb_train_state.pth")
         self.wandb_id = 0

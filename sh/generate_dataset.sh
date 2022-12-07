@@ -4,4 +4,4 @@
 #SBATCH -A uppmax2022-2-23 -M snowy
 
 cd ../experiments
-singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu116.sif python generate_dataset.py
+singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu117.sif python generate_dataset.py
