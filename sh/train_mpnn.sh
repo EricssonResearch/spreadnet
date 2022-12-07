@@ -7,5 +7,5 @@
 # export WANDB_API_KEY=
 
 cd ../experiments
-singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu116.sif python train.py --model="MPNN" --resume
-# singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu116.sif python train.py --model="MPNN" --wandb --project="SpreadNet-Train" --resume
+singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu117.sif python train.py --model="MPNN" --resume
+# singularity exec --nv /proj/uppmax2022-2-23/spreadnet-runner-py3-pyg-cu117.sif python train.py --model="MPNN" --wandb --project="SpreadNet-Train" --resume
