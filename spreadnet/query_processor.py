@@ -287,9 +287,8 @@ class QueryProcessor:
             + ", dijkstra_full=True|False"
         )
         print("To exit, enter: exit")
-        print(f"{bcolors.OKCYAN}Enter a json graph path")
-        user_input = input(f"{bcolors.OKGREEN}>{bcolors.ENDC} ")
-        print(bcolors.ENDC, end="")
+        print(f"{bcolors.OKCYAN}Enter a json graph path{bcolors.ENDC}")
+        user_input = input("> ")
 
         if user_input.lower() == "exit":
             exit()
