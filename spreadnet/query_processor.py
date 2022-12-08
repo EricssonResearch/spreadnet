@@ -59,11 +59,20 @@ class QueryProcessor:
     runtime_start = -1
     runtime_end = -1
 
-    def __init__(self, mode: str, model: str, bidirectional: bool, logger, exp_path):
+    def __init__(
+        self,
+        mode: str,
+        model: str,
+        bidirectional: bool,
+        dijkstra_full: bool,
+        logger,
+        exp_path,
+    ):
         print(f"{bcolors.HEADER}{bcolors.BOLD}Query Processor!{bcolors.ENDC}")
         self.which_mode = mode
         self.which_model = model
         self.bidirectional = bidirectional
+        self.dijkstra_full = dijkstra_full
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.qpl = logger
         self.exp_path = exp_path
@@ -128,9 +137,11 @@ class QueryProcessor:
         (start, end) = get_start_end_nodes(graph_nx.nodes(data=True))
         graph_hash = dijkstra_runner.hash_graph_weisfeiler(graph_nx)
         self.runtime_start = time()
-        best_path = dijkstra_runner.shortest_path_single(
-            graph_nx, graph_hash, start, end
-        )
+        best_path = (
+            dijkstra_runner.shortest_path
+            if self.dijkstra_full
+            else dijkstra_runner.shortest_path_single
+        )(graph_nx, graph_hash, start, end)
         self.runtime_end = time()
         (best_path_graph, best_path_weight) = apply_path_on_graph(
             graph_nx, best_path, True
@@ -263,13 +274,17 @@ class QueryProcessor:
                 f"GNN Model: {self.which_model}, "
                 + f" Bidirectional: {self.bidirectional}"
             )
+        if self.which_mode != "GNN":
+            print(f"Dijkstra Full: {self.dijkstra_full}")
+
         print(
             f"{bcolors.GRAY}To change settings, enter: "
             + "mode="
             + "|".join(self.modes)
-            + " or model="
+            + ", model="
             + "|".join(self.models)
-            + " or bidirectional=True|False"
+            + ", bidirectional=True|False"
+            + ", dijkstra_full=True|False"
         )
         print("To exit, enter: exit")
         print(f"{bcolors.OKCYAN}Enter a json graph path")
@@ -296,8 +311,11 @@ class QueryProcessor:
             else:
                 self.qpl.error("Invalid model or model not trained")
         elif user_input.startswith("bidirectional="):
-            self.bidirectional = json.loads(user_input.split("=")[-1].lower())
+            self.bidirectional = bool(json.loads(user_input.split("=")[-1].lower()))
             self.qpl.info(f"GNN bidirectional set to: {self.bidirectional}")
+        elif user_input.startswith("dijkstra_full="):
+            self.dijkstra_full = bool(json.loads(user_input.split("=")[-1].lower()))
+            self.qpl.info(f"dijkstra_full search set to: {self.dijkstra_full}")
         else:
             self.qpl.info(f"Selected mode: {self.which_mode}")
             self.qpl.info(f"Graph path: {user_input}")

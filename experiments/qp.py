@@ -3,6 +3,8 @@
 Args:
     --mode "AUTO|DIJKSTRA|GNN", defaults: "AUTO"
     --model "MPNN|DeepGCN|GAT|DeepCoGCN", defaults: "MPNN"
+    --bidirectional "True|False", defaults: "False"
+    --dijkstra-full "True|False", defaults: "False"
 
 Example:
     python qp.py --mode "GNN"
@@ -25,10 +27,15 @@ parser.add_argument(
     + " Options: MPNN|DeepGCN|GAT|DeepCoGCN",
     default="MPNN",
 )
-
 parser.add_argument(
     "--bidirectional",
     help="Toggle bidirectional GNN",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--dijkstra-full",
+    help="Toggle dijkstra full path search",
     action="store_true",
     default=False,
 )
@@ -43,7 +50,12 @@ if __name__ == "__main__":
 
     try:
         qp = QueryProcessor(
-            args.mode, args.model, args.bidirectional, qpl, os.path.dirname(__file__)
+            args.mode,
+            args.model,
+            args.bidirectional,
+            args.dijkstra_full,
+            qpl,
+            os.path.dirname(__file__),
         )
         while True:
             qp.read_input()
