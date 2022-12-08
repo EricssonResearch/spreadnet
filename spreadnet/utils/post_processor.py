@@ -36,13 +36,12 @@ def swap_start_end(graph_nx: nx.DiGraph):
     return graph_nx
 
 
-def process_prediction(input_graph_nx: nx.DiGraph, preds, infers):
+def process_prediction(input_graph_nx: nx.DiGraph, preds, in_path_threshold=0.5):
     """Construct networkx graph from prediction results.
 
     Args:
         input_graph_nx: original graph
         preds: nodes and edges prediction
-        infers: nodes and edges infers
 
     Returns:
         (predicted, truth_total_edge_weight)
@@ -55,19 +54,17 @@ def process_prediction(input_graph_nx: nx.DiGraph, preds, infers):
     truth_total_weight = 0.0
 
     for i, (n, data) in enumerate(pred_graph_nx.nodes(data=True)):
-        data["is_in_path"] = bool(infers["nodes"][i])
-
         probability = softmax(node_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
+        data["is_in_path"] = bool(probability > in_path_threshold)
 
     for i, (u, v, data) in enumerate(pred_graph_nx.edges(data=True)):
         if data["is_in_path"]:
             truth_total_weight += data["weight"]
 
-        data["is_in_path"] = bool(infers["edges"][i])
-
         probability = softmax(edge_pred[i], dim=-1).numpy()[1]
         data["probability"] = probability
+        data["is_in_path"] = bool(probability > in_path_threshold)
 
     return pred_graph_nx, truth_total_weight
 
@@ -158,6 +155,20 @@ def _exhaustive_probability_walk(
     return False
 
 
+def get_start_end_nodes(nodes: nx.DiGraph.nodes):
+    start_node = -1
+    end_node = -1
+
+    for (n, d) in nodes:
+        if d["is_start"]:
+            start_node = n
+        elif d["is_end"]:
+            end_node = n
+
+        if start_node != -1 and end_node != -1:
+            return (start_node, end_node)
+
+
 def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold: float):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability.
@@ -170,19 +181,8 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold: float):
     Returns:
         is_complete, node_path: list of nodes or False if there is no path.
     """
-
     nodes = G.nodes(data=True)
-    start_node = -1
-    end_node = -1
-
-    for (n, d) in nodes:
-        if d["is_start"]:
-            start_node = n
-        elif d["is_end"]:
-            end_node = n
-
-        if start_node != -1 and end_node != -1:
-            break
+    (start_node, end_node) = get_start_end_nodes(nodes)
 
     strongest_path = [start_node]  # in case incomplete
     visited = []
@@ -202,8 +202,8 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold: float):
     is_complete = path and path[-1] == end_node
     final_path = path if is_complete else strongest_path
 
-    print("Prob walk explored: ", len(visited))
-    print("Found path len: ", len(final_path))
+    # print("Prob walk explored: ", len(visited))
+    # print("Found path len: ", len(final_path))
 
     return is_complete, final_path
 
