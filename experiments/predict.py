@@ -27,7 +27,7 @@ from spreadnet.utils.post_processor import (
     process_prediction,
     swap_start_end,
     aggregate_results,
-    exhaustive_probability_walk,
+    probability_first_search,
     apply_path_on_graph,
 )
 from spreadnet.utils.model_loader import load_model
@@ -210,8 +210,8 @@ if __name__ == "__main__":
 
                     print("Truth Edge Weights: ", round(truth_total_weight, 3))
 
-                    (is_path_complete, prob_path) = exhaustive_probability_walk(
-                        deepcopy(pred_graph_nx), 0.001
+                    (is_path_complete, prob_path) = probability_first_search(
+                        deepcopy(pred_graph_nx)
                     )
 
                     applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -225,8 +225,8 @@ if __name__ == "__main__":
                         prob_path,
                     )
 
-                    (is_path_complete_a, prob_path_a) = exhaustive_probability_walk(
-                        deepcopy(aggregated_nx), 0.001
+                    (is_path_complete_a, prob_path_a) = probability_first_search(
+                        deepcopy(aggregated_nx)
                     )
 
                     applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
@@ -323,7 +323,7 @@ if __name__ == "__main__":
                     plt.clf()
                     print("Image saved at ", plot_name)
 
-                    input("Press enter to predict another graph")
+                    # input("Press enter to predict another graph")
     except Exception as e:
         predict_logger.exception(e)
 

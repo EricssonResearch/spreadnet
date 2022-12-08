@@ -17,7 +17,7 @@ from spreadnet.utils.post_processor import (
     process_prediction,
     swap_start_end,
     aggregate_results,
-    exhaustive_probability_walk,
+    probability_first_search,
     apply_path_on_graph,
     get_start_end_nodes,
 )
@@ -216,16 +216,16 @@ class QueryProcessor:
 
             aggregated_nx = aggregate_results(deepcopy(pred_graph_nx), pred_graph_nx_r)
 
-            (is_path_complete, prob_path) = exhaustive_probability_walk(
-                deepcopy(pred_graph_nx), 0.001
+            (is_path_complete, prob_path) = probability_first_search(
+                deepcopy(pred_graph_nx)
             )
 
             applied_nx, pred_edge_weights = apply_path_on_graph(
                 deepcopy(pred_graph_nx), prob_path, True
             )
 
-            (is_path_complete_a, prob_path_a) = exhaustive_probability_walk(
-                deepcopy(aggregated_nx), 0.001
+            (is_path_complete_a, prob_path_a) = probability_first_search(
+                deepcopy(aggregated_nx)
             )
 
             applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
@@ -257,8 +257,8 @@ class QueryProcessor:
 
             (pred_graph_nx, _) = process_prediction(graph_nx, preds)
 
-            (is_path_complete, prob_path) = exhaustive_probability_walk(
-                deepcopy(pred_graph_nx), 0.001
+            (is_path_complete, prob_path) = probability_first_search(
+                deepcopy(pred_graph_nx)
             )
 
             applied_nx, pred_edge_weights = apply_path_on_graph(

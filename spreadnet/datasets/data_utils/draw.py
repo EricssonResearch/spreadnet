@@ -83,7 +83,7 @@ def draw_networkx(
             elif (e, s) not in path_edges:
                 normal_edges.append((s, e))
 
-                if edge_label_key != "weight" and label > 0.00:
+                if edge_label_key != "weight" and label > 0.1:
                     highlight_edge_labels[(s, e)] = label
                 else:
                     normal_edge_labels[(s, e)] = label
