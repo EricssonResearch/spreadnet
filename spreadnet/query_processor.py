@@ -352,5 +352,5 @@ class QueryProcessor:
             fig.tight_layout()
             plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
             plt.clf()
-            self.qpl.info(f"Result saved at {plot_name}")
+            self.qpl.info(f"Result saved at {plot_name}.jpg|json")
             print("\n")
