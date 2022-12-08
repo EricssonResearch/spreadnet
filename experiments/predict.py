@@ -27,15 +27,13 @@ from spreadnet.utils.post_processor import (
     process_prediction,
     swap_start_end,
     aggregate_results,
-    exhaustive_probability_walk,
+    probability_first_search,
     apply_path_on_graph,
 )
 from spreadnet.utils.model_loader import load_model
 
 torch.multiprocessing.set_start_method("spawn", force=True)
 
-default_yaml_path = osp.join(osp.dirname(__file__), "configs.yaml")
-default_dataset_yaml_path = osp.join(osp.dirname(__file__), "dataset_configs.yaml")
 parser = argparse.ArgumentParser(description="Do predictions.")
 
 parser.add_argument(
@@ -43,7 +41,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--dataset-config",
-    default=default_dataset_yaml_path,
+    default=osp.join(osp.dirname(__file__), "dataset_configs.yaml"),
     help="Specify the path of the dataset config file. ",
 )
 parser.add_argument(
@@ -81,7 +79,6 @@ log_save_path = osp.join(osp.dirname(__file__), folder, "logs").replace("\\", "/
 
 configs = yaml_parser(yaml_path)
 dataset_configs = yaml_parser(dataset_yaml_path)
-train_configs = configs.train
 model_configs = configs.model
 data_configs = dataset_configs.data
 dataset_path = osp.join(osp.dirname(__file__), data_configs["dataset_path"]).replace(
@@ -93,41 +90,39 @@ if not os.path.exists(predictions_path):
     os.makedirs(predictions_path)
 
 
-def predict(model, graph):
+def predict(model, data):
     """Make prediction.
 
     :param model: model to be used
-    :param graph: graph to predict
+    :param data: graph data to predict
 
     :return: predictions, infers
     """
-    graph = graph.to(device)
-
-    node_true, edge_true = graph.y
+    node_true, edge_true = data.y
 
     # predict
     if which_model == "GAT":
         (node_pred, edge_pred) = model(
-            graph.x,
-            graph.edge_index,
-            graph.edge_attr,
+            data.x,
+            data.edge_index,
+            data.edge_attr,
             return_attention_weights=model_configs["return_attention_weights"],
         )
     else:
-        (node_pred, edge_pred) = model(graph.x, graph.edge_index, graph.edge_attr)
+        (node_pred, edge_pred) = model(data.x, data.edge_index, data.edge_attr)
 
     (infers, corrects) = get_correct_predictions(
         node_pred, edge_pred, node_true, edge_true
     )
 
-    node_acc = corrects["nodes"] / graph.num_nodes
-    edge_acc = corrects["edges"] / graph.num_edges
+    node_acc = corrects["nodes"] / data.num_nodes
+    edge_acc = corrects["edges"] / data.num_edges
 
     preds = {"nodes": node_pred, "edges": edge_pred}
 
     print("\n--- Accuracies ---")
-    print(f"Nodes: {corrects['nodes']}/{graph.num_nodes} = {node_acc}")
-    print(f"Edges: {int(corrects['edges'])}/{graph.num_edges} = {edge_acc}\n")
+    print(f"Nodes: {corrects['nodes']}/{data.num_nodes} = {node_acc}")
+    print(f"Edges: {int(corrects['edges'])}/{data.num_edges} = {edge_acc}\n")
 
     return preds, infers
 
@@ -166,16 +161,30 @@ if __name__ == "__main__":
                     )(
                         [
                             delayed(nx.node_link_graph)(graph_json),
-                            delayed(swap_start_end)(nx.node_link_graph(graph_json)),
+                            delayed(nx.node_link_graph)(graph_json),
                         ]
                     )
+
+                    swap_start_end(graph_nx_r)
+
+                    [graph_data, graph_data_r] = Parallel(
+                        n_jobs=2, backend="multiprocessing", batch_size=1
+                    )(
+                        [
+                            delayed(process_nx)(graph_nx),
+                            delayed(process_nx)(graph_nx_r),
+                        ]
+                    )
+
+                    graph_data.to(device)
+                    graph_data_r.to(device)
 
                     [(preds, infers), (preds_r, infers_r)] = Parallel(
                         n_jobs=2, backend="multiprocessing", batch_size=1
                     )(
                         [
-                            delayed(predict)(model, process_nx(graph_nx)),
-                            delayed(predict)(model, process_nx(graph_nx_r)),
+                            delayed(predict)(model, graph_data),
+                            delayed(predict)(model, graph_data_r),
                         ]
                     )
 
@@ -190,8 +199,8 @@ if __name__ == "__main__":
                         ),
                     ] = Parallel(n_jobs=2, backend="multiprocessing", batch_size=1)(
                         [
-                            delayed(process_prediction)(graph_nx, preds, infers),
-                            delayed(process_prediction)(graph_nx_r, preds_r, infers_r),
+                            delayed(process_prediction)(graph_nx, preds),
+                            delayed(process_prediction)(graph_nx_r, preds_r),
                         ]
                     )
 
@@ -201,8 +210,8 @@ if __name__ == "__main__":
 
                     print("Truth Edge Weights: ", round(truth_total_weight, 3))
 
-                    (is_path_complete, prob_path) = exhaustive_probability_walk(
-                        deepcopy(pred_graph_nx), 0.001
+                    (is_path_complete, prob_path) = probability_first_search(
+                        deepcopy(pred_graph_nx)
                     )
 
                     applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -216,8 +225,8 @@ if __name__ == "__main__":
                         prob_path,
                     )
 
-                    (is_path_complete_a, prob_path_a) = exhaustive_probability_walk(
-                        deepcopy(aggregated_nx), 0.001
+                    (is_path_complete_a, prob_path_a) = probability_first_search(
+                        deepcopy(aggregated_nx)
                     )
 
                     applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
@@ -314,7 +323,7 @@ if __name__ == "__main__":
                     plt.clf()
                     print("Image saved at ", plot_name)
 
-                    input("Press enter to predict another graph")
+                    # input("Press enter to predict another graph")
     except Exception as e:
         predict_logger.exception(e)
 

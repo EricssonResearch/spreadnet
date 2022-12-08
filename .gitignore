@@ -178,6 +178,7 @@ experiments/simple_behaviour_experiments/*.png
 # predictions
 experiments/*/predictions/*.jpg
 experiments/*/predictions/*.json
+experiments/qp_out/*
 
 # latex aux files
 *.aux

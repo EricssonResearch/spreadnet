@@ -313,7 +313,7 @@ def encode_process_decode_runtime(all_graphs):
                 pred_graph_nx,
                 truth_total_weight,
                 pred_total_weight,
-            ) = process_prediction(g["nxdata"], preds, infers)
+            ) = process_prediction(g["nxdata"], preds)
     message_passing_runtime_list.append(runtime_list)
     message_passing_walltime_list.append(walltime_list)
 
@@ -354,7 +354,7 @@ def encode_process_decode_runtime_pretest_run(all_graphs):
             pred_graph_nx,
             truth_total_weight,
             pred_total_weight,
-        ) = process_prediction(g["nxdata"], preds, infers)
+        ) = process_prediction(g["nxdata"], preds)
 
 
 def main():
