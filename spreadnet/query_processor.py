@@ -2,7 +2,6 @@ import networkx as nx
 import json
 import os
 import matplotlib.pyplot as plt
-from joblib import Parallel, delayed
 from copy import deepcopy
 import readline
 import torch
@@ -169,50 +168,23 @@ class QueryProcessor:
         best_path_weight = -1
 
         with torch.no_grad():
-            [graph_nx, graph_nx_r] = Parallel(
-                n_jobs=2, backend="multiprocessing", batch_size=1
-            )(
-                [
-                    delayed(nx.node_link_graph)(graph_json),
-                    delayed(nx.node_link_graph)(graph_json),
-                ]
-            )
-
+            graph_nx = nx.node_link_graph(graph_json)
+            graph_nx_r = deepcopy(graph_nx)
             swap_start_end(graph_nx_r)
 
-            [graph_data, graph_data_r] = Parallel(
-                n_jobs=2, backend="multiprocessing", batch_size=1
-            )(
-                [
-                    delayed(process_nx)(graph_nx),
-                    delayed(process_nx)(graph_nx_r),
-                ]
-            )
+            graph_data = process_nx(graph_nx)
+            graph_data_r = process_nx(graph_nx_r)
 
             graph_data.to(self.device)
             graph_data_r.to(self.device)
 
             self.runtime_start = time()
-            [preds, preds_r] = Parallel(
-                n_jobs=2, backend="multiprocessing", batch_size=1
-            )(
-                [
-                    delayed(self.predict)(graph_data),
-                    delayed(self.predict)(graph_data_r),
-                ]
-            )
+            preds = self.predict(graph_data)
+            preds_r = self.predict(graph_data_r)
             self.runtime_end = time()
 
-            [(pred_graph_nx, _,), (pred_graph_nx_r, _,)] = Parallel(
-                n_jobs=2,
-                backend="multiprocessing",
-                batch_size=1,
-            )(
-                [
-                    delayed(process_prediction)(graph_nx, preds),
-                    delayed(process_prediction)(graph_nx_r, preds_r),
-                ]
-            )
+            (pred_graph_nx, _) = process_prediction(graph_nx, preds)
+            (pred_graph_nx_r, _) = process_prediction(graph_nx_r, preds_r)
 
             aggregated_nx = aggregate_results(deepcopy(pred_graph_nx), pred_graph_nx_r)
 
