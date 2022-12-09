@@ -27,6 +27,7 @@ from spreadnet.utils.post_processor import (
     swap_start_end,
     aggregate_results,
     probability_first_search,
+    get_start_end_nodes,
     apply_path_on_graph,
 )
 from spreadnet.utils.model_loader import load_model
@@ -152,10 +153,13 @@ if __name__ == "__main__":
                     print("\n\n")
                     print("Graph: ", f"{idx + 1}.{iidx + 1}")
                     print(raw_file_path)
-
                     graph_nx = nx.node_link_graph(graph_json)
                     graph_nx_r = deepcopy(graph_nx)
-                    swap_start_end(graph_nx_r)
+
+                    (start_node, end_node) = get_start_end_nodes(
+                        graph_nx.nodes(data=True)
+                    )
+                    swap_start_end(graph_nx_r, start_node, end_node)
 
                     graph_data = process_nx(graph_nx)
                     graph_data_r = process_nx(graph_nx_r)
@@ -180,7 +184,7 @@ if __name__ == "__main__":
                     print("Truth Edge Weights: ", round(truth_total_weight, 3))
 
                     (is_path_complete, prob_path) = probability_first_search(
-                        deepcopy(pred_graph_nx)
+                        deepcopy(pred_graph_nx), start_node, end_node
                     )
 
                     applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -195,7 +199,7 @@ if __name__ == "__main__":
                     )
 
                     (is_path_complete_a, prob_path_a) = probability_first_search(
-                        deepcopy(aggregated_nx)
+                        deepcopy(aggregated_nx), start_node, end_node
                     )
 
                     applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
