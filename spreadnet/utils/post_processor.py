@@ -197,6 +197,7 @@ def probability_first_search(
     visited=False,
     prob_threshold=0.1,
     edge_probability_ratio=1,
+    force_my_way_if_no_path_found=True,
 ):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability. Hybrid of BFS and DFS.
@@ -239,7 +240,7 @@ def probability_first_search(
                 new_path.append(v)
                 heappush(queue, (1 - prob, new_path, is_strong and prob > 0.5))
 
-    if len(visited) == G.number_of_nodes:
+    if len(visited) == G.number_of_nodes or not force_my_way_if_no_path_found:
         return False, strongest_path
 
     (c_is_complete, c_node_path) = probability_first_search(
