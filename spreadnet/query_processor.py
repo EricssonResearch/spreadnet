@@ -42,7 +42,7 @@ class bcolors:
 
 
 class ModelFolders(enum.Enum):
-    MPNN = "encode_process_decode"
+    MPNN = "message_passing_network"
     DeepCoGCN = "co_graph_conv_network"
     DeepGCN = "deep_graph_conv_network"
     GAT = "graph_attention_network"

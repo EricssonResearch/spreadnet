@@ -13,7 +13,7 @@ TODO: make the class not change the working dirrectory
 
 from spreadnet.utils.config_parser import yaml_parser
 
-from spreadnet.pyg_gnn.models import EncodeProcessDecode
+from spreadnet.pyg_gnn.models import MPNN
 
 
 from spreadnet.tf_gnn.tf_utils.tf_utils import TfGNNUtils
@@ -156,7 +156,7 @@ class ExperimentUtils:
             configs = yaml_parser(yaml_path)
 
             model_configs = configs.model
-            trained_model = EncodeProcessDecode(
+            trained_model = MPNN(
                 node_in=model_configs["node_in"],
                 edge_in=model_configs["edge_in"],
                 node_out=model_configs["node_out"],

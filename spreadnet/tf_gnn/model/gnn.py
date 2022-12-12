@@ -171,8 +171,8 @@ def build_mlp(
     return mlp
 
 
-class EncodeProcessDecode(tf.keras.layers.Layer):
-    """Implements EncodeProcessDecode from https://arxiv.org/abs/2002.09405.
+class MPNN(tf.keras.layers.Layer):
+    """Implements MPNN from https://arxiv.org/abs/2002.09405.
 
     It is extended to:
     * run with global updates.
@@ -196,7 +196,7 @@ class EncodeProcessDecode(tf.keras.layers.Layer):
         shared_processors: bool,
         reduce_type_to_nodes: str = "sum",
         reduce_type_to_context: str = "sum",
-        name: str = "encode_process_decode",
+        name: str = "message_passing_network",
     ):
         super().__init__(name=name)
 

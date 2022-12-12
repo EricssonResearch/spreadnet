@@ -59,7 +59,7 @@ which_model = args.model
 which_weight = args.weight
 
 if which_model == "MPNN":
-    folder = "encode_process_decode"
+    folder = "message_passing_network"
 elif which_model == "DeepCoGCN":
     folder = "co_graph_conv_network"
 elif which_model == "DeepGCN":
