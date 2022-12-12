@@ -9,11 +9,11 @@ requirements = [
     "webdataset",
     "matplotlib",
     "tqdm",
-    "tensorflow_gnn",
-    "tensorflow",
     "pandas",
     "joblib",
     "wandb",
+    "tensorflow_gnn",
+    "tensorflow",
 ]
 setup(
     name="spreadnet",
