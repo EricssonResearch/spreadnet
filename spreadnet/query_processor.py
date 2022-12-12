@@ -2,7 +2,6 @@ import networkx as nx
 import json
 import os
 import matplotlib.pyplot as plt
-from joblib import Parallel, delayed
 from copy import deepcopy
 import readline
 import torch
@@ -169,55 +168,30 @@ class QueryProcessor:
         best_path_weight = -1
 
         with torch.no_grad():
-            [graph_nx, graph_nx_r] = Parallel(
-                n_jobs=2, backend="multiprocessing", batch_size=1
-            )(
-                [
-                    delayed(nx.node_link_graph)(graph_json),
-                    delayed(nx.node_link_graph)(graph_json),
-                ]
-            )
+            graph_nx = nx.node_link_graph(graph_json)
+            graph_nx_r = deepcopy(graph_nx)
 
-            swap_start_end(graph_nx_r)
+            (start_node, end_node) = get_start_end_nodes(graph_nx.nodes(data=True))
+            swap_start_end(graph_nx_r, start_node, end_node)
 
-            [graph_data, graph_data_r] = Parallel(
-                n_jobs=2, backend="multiprocessing", batch_size=1
-            )(
-                [
-                    delayed(process_nx)(graph_nx),
-                    delayed(process_nx)(graph_nx_r),
-                ]
-            )
+            graph_data = process_nx(graph_nx)
+            graph_data_r = process_nx(graph_nx_r)
 
             graph_data.to(self.device)
             graph_data_r.to(self.device)
 
             self.runtime_start = time()
-            [preds, preds_r] = Parallel(
-                n_jobs=2, backend="multiprocessing", batch_size=1
-            )(
-                [
-                    delayed(self.predict)(graph_data),
-                    delayed(self.predict)(graph_data_r),
-                ]
-            )
+            preds = self.predict(graph_data)
+            preds_r = self.predict(graph_data_r)
             self.runtime_end = time()
 
-            [(pred_graph_nx, _,), (pred_graph_nx_r, _,)] = Parallel(
-                n_jobs=2,
-                backend="multiprocessing",
-                batch_size=1,
-            )(
-                [
-                    delayed(process_prediction)(graph_nx, preds),
-                    delayed(process_prediction)(graph_nx_r, preds_r),
-                ]
-            )
+            (pred_graph_nx, _) = process_prediction(graph_nx, preds)
+            (pred_graph_nx_r, _) = process_prediction(graph_nx_r, preds_r)
 
             aggregated_nx = aggregate_results(deepcopy(pred_graph_nx), pred_graph_nx_r)
 
             (is_path_complete, prob_path) = probability_first_search(
-                deepcopy(pred_graph_nx)
+                deepcopy(pred_graph_nx), start_node, end_node
             )
 
             applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -225,7 +199,7 @@ class QueryProcessor:
             )
 
             (is_path_complete_a, prob_path_a) = probability_first_search(
-                deepcopy(aggregated_nx)
+                deepcopy(aggregated_nx), start_node, end_node
             )
 
             applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
@@ -248,6 +222,8 @@ class QueryProcessor:
 
         with torch.no_grad():
             graph_nx = nx.node_link_graph(graph_json)
+            (start_node, end_node) = get_start_end_nodes(graph_nx.nodes(data=True))
+
             graph_data = process_nx(graph_nx)
             graph_data.to(self.device)
 
@@ -258,7 +234,7 @@ class QueryProcessor:
             (pred_graph_nx, _) = process_prediction(graph_nx, preds)
 
             (is_path_complete, prob_path) = probability_first_search(
-                deepcopy(pred_graph_nx)
+                deepcopy(pred_graph_nx), start_node, end_node
             )
 
             applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -316,6 +292,10 @@ class QueryProcessor:
             self.dijkstra_full = bool(json.loads(user_input.split("=")[-1].lower()))
             self.qpl.info(f"dijkstra_full search set to: {self.dijkstra_full}")
         else:
+            if not os.path.exists(user_input):
+                self.qpl.error(f"Input file does not exist, {user_input}\n")
+                return
+
             self.qpl.info(f"Selected mode: {self.which_mode}")
             self.qpl.info(f"Graph path: {user_input}")
 

@@ -4,7 +4,7 @@ from torch.nn.functional import softmax
 from heapq import heappop, heappush
 
 
-def swap_start_end(graph_nx: nx.DiGraph):
+def swap_start_end(graph_nx: nx.DiGraph, start: int, end: int):
     """Swap start and end node for bidirectional inference.
 
     :param graph_nx: networkx graph to predict
@@ -12,29 +12,13 @@ def swap_start_end(graph_nx: nx.DiGraph):
     :return: swapped graph
     """
 
-    swapped = 0
-    for (_, data) in graph_nx.nodes(data=True):
-        if data["is_start"]:
-            data["is_end"] = True
-            data["is_start"] = False
-            swapped += 1
-        elif data["is_end"]:
-            data["is_start"] = True
-            data["is_end"] = False
-            swapped += 1
+    nodes = graph_nx.nodes(data=True)
+    nodes[start]["is_end"] = True
+    nodes[start]["is_start"] = False
+    nodes[end]["is_start"] = True
+    nodes[end]["is_end"] = False
 
-        if swapped == 2:
-            break
-
-    rev_edges = []
-
-    for (u, v, d) in graph_nx.edges(data=True):
-        if not graph_nx.has_edge(v, u):
-            rev_edges.append((v, u, {"weight": d["weight"], "is_in_path": False}))
-
-    graph_nx.add_edges_from(rev_edges)
-
-    return graph_nx
+    return graph_nx.reverse()
 
 
 def process_prediction(input_graph_nx: nx.DiGraph, preds, in_path_threshold=0.5):
@@ -170,7 +154,9 @@ def _exhaustive_probability_walk(
     return False
 
 
-def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold=0.1):
+def exhaustive_probability_walk(
+    G: nx.DiGraph, start_node: float, end_node: float, prob_threshold=0.1
+):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability.
 
@@ -183,8 +169,6 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold=0.1):
         is_complete, node_path: list of nodes or False if there is no path.
     """
     nodes = G.nodes(data=True)
-    (start_node, end_node) = get_start_end_nodes(nodes)
-
     strongest_path = [start_node]  # in case incomplete
     visited = []
 
@@ -207,7 +191,13 @@ def exhaustive_probability_walk(G: nx.DiGraph, prob_threshold=0.1):
 
 
 def probability_first_search(
-    G: nx.DiGraph, prob_threshold=0.1, edge_probability_ratio=1
+    G: nx.DiGraph,
+    start_node: float,
+    end_node: float,
+    visited=False,
+    prob_threshold=0.1,
+    edge_probability_ratio=1,
+    force_my_way_if_no_path_found=True,
 ):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability. Hybrid of BFS and DFS.
@@ -222,9 +212,8 @@ def probability_first_search(
         is_complete, node_path: list of nodes or False if there is no path.
     """
     nodes = G.nodes(data=True)
-    (start_node, end_node) = get_start_end_nodes(nodes)
-
-    visited = []
+    if not visited:
+        visited = []
     strongest_path = [start_node]  # in case incomplete
     queue = []
     heappush(queue, (0, [start_node], True))  # (priority, path, is_strong)
@@ -251,7 +240,14 @@ def probability_first_search(
                 new_path.append(v)
                 heappush(queue, (1 - prob, new_path, is_strong and prob > 0.5))
 
-    return False, strongest_path
+    if len(visited) == G.number_of_nodes or not force_my_way_if_no_path_found:
+        return False, strongest_path
+
+    (c_is_complete, c_node_path) = probability_first_search(
+        G, strongest_path.pop(), end_node, visited, -1
+    )
+    strongest_path.extend(c_node_path)
+    return c_is_complete, strongest_path
 
 
 def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):

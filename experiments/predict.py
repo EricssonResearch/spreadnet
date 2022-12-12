@@ -14,7 +14,6 @@ import os
 from glob import glob
 import matplotlib.pyplot as plt
 import logging
-from joblib import Parallel, delayed
 from copy import deepcopy
 
 from spreadnet.pyg_gnn.utils import get_correct_predictions
@@ -28,6 +27,7 @@ from spreadnet.utils.post_processor import (
     swap_start_end,
     aggregate_results,
     probability_first_search,
+    get_start_end_nodes,
     apply_path_on_graph,
 )
 from spreadnet.utils.model_loader import load_model
@@ -96,7 +96,7 @@ def predict(model, data):
     :param model: model to be used
     :param data: graph data to predict
 
-    :return: predictions, infers
+    :return: predictions
     """
     node_true, edge_true = data.y
 
@@ -111,9 +111,7 @@ def predict(model, data):
     else:
         (node_pred, edge_pred) = model(data.x, data.edge_index, data.edge_attr)
 
-    (infers, corrects) = get_correct_predictions(
-        node_pred, edge_pred, node_true, edge_true
-    )
+    (_, corrects) = get_correct_predictions(node_pred, edge_pred, node_true, edge_true)
 
     node_acc = corrects["nodes"] / data.num_nodes
     edge_acc = corrects["edges"] / data.num_edges
@@ -124,7 +122,7 @@ def predict(model, data):
     print(f"Nodes: {corrects['nodes']}/{data.num_nodes} = {node_acc}")
     print(f"Edges: {int(corrects['edges'])}/{data.num_edges} = {edge_acc}\n")
 
-    return preds, infers
+    return preds
 
 
 if __name__ == "__main__":
@@ -155,53 +153,28 @@ if __name__ == "__main__":
                     print("\n\n")
                     print("Graph: ", f"{idx + 1}.{iidx + 1}")
                     print(raw_file_path)
+                    graph_nx = nx.node_link_graph(graph_json)
+                    graph_nx_r = deepcopy(graph_nx)
 
-                    [graph_nx, graph_nx_r] = Parallel(
-                        n_jobs=2, backend="multiprocessing", batch_size=1
-                    )(
-                        [
-                            delayed(nx.node_link_graph)(graph_json),
-                            delayed(nx.node_link_graph)(graph_json),
-                        ]
+                    (start_node, end_node) = get_start_end_nodes(
+                        graph_nx.nodes(data=True)
                     )
+                    swap_start_end(graph_nx_r, start_node, end_node)
 
-                    swap_start_end(graph_nx_r)
-
-                    [graph_data, graph_data_r] = Parallel(
-                        n_jobs=2, backend="multiprocessing", batch_size=1
-                    )(
-                        [
-                            delayed(process_nx)(graph_nx),
-                            delayed(process_nx)(graph_nx_r),
-                        ]
-                    )
+                    graph_data = process_nx(graph_nx)
+                    graph_data_r = process_nx(graph_nx_r)
 
                     graph_data.to(device)
                     graph_data_r.to(device)
 
-                    [(preds, infers), (preds_r, infers_r)] = Parallel(
-                        n_jobs=2, backend="multiprocessing", batch_size=1
-                    )(
-                        [
-                            delayed(predict)(model, graph_data),
-                            delayed(predict)(model, graph_data_r),
-                        ]
-                    )
+                    preds = predict(model, graph_data)
+                    preds_r = predict(model, graph_data_r)
 
-                    [
-                        (
-                            pred_graph_nx,
-                            truth_total_weight,
-                        ),
-                        (
-                            pred_graph_nx_r,
-                            truth_total_weight_r,
-                        ),
-                    ] = Parallel(n_jobs=2, backend="multiprocessing", batch_size=1)(
-                        [
-                            delayed(process_prediction)(graph_nx, preds),
-                            delayed(process_prediction)(graph_nx_r, preds_r),
-                        ]
+                    (pred_graph_nx, truth_total_weight) = process_prediction(
+                        graph_nx, preds
+                    )
+                    (pred_graph_nx_r, truth_total_weight_r) = process_prediction(
+                        graph_nx_r, preds_r
                     )
 
                     aggregated_nx = aggregate_results(
@@ -211,7 +184,7 @@ if __name__ == "__main__":
                     print("Truth Edge Weights: ", round(truth_total_weight, 3))
 
                     (is_path_complete, prob_path) = probability_first_search(
-                        deepcopy(pred_graph_nx)
+                        deepcopy(pred_graph_nx), start_node, end_node
                     )
 
                     applied_nx, pred_edge_weights = apply_path_on_graph(
@@ -226,7 +199,7 @@ if __name__ == "__main__":
                     )
 
                     (is_path_complete_a, prob_path_a) = probability_first_search(
-                        deepcopy(aggregated_nx)
+                        deepcopy(aggregated_nx), start_node, end_node
                     )
 
                     applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
