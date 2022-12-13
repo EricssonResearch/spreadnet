@@ -3,10 +3,10 @@ import json
 import os
 import matplotlib.pyplot as plt
 from copy import deepcopy
-import readline
 import torch
 from time import time
 import enum
+import platform
 
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.processor import process_nx
@@ -23,8 +23,16 @@ from spreadnet.utils.post_processor import (
 from spreadnet.utils.model_loader import load_model
 from spreadnet.dijkstra_memoization import dijkstra_runner
 
-readline.set_auto_history(True)
 torch.multiprocessing.set_start_method("spawn", force=True)
+
+if platform.system() == "Windows":
+    import pyreadline3
+
+    pyreadline3.modes
+else:
+    import readline
+
+    readline.set_auto_history(True)
 
 
 class bcolors:
@@ -42,7 +50,7 @@ class bcolors:
 
 
 class ModelFolders(enum.Enum):
-    MPNN = "encode_process_decode"
+    MPNN = "message_passing_network"
     DeepCoGCN = "co_graph_conv_network"
     DeepGCN = "deep_graph_conv_network"
     GAT = "graph_attention_network"
@@ -88,16 +96,24 @@ class QueryProcessor:
 
         if self.get_weight(ModelFolders.MPNN.value):
             self.models.append("MPNN")
-            self.qpl.info(f"MPNN {bcolors.OKGREEN}✓{bcolors.ENDC}")
+            self.qpl.info(f"{bcolors.OKGREEN}MPNN{bcolors.ENDC}")
+        else:
+            self.qpl.info(f"{bcolors.FAIL}MPNN{bcolors.ENDC}")
         if self.get_weight(ModelFolders.DeepCoGCN.value):
             self.models.append("DeepCoGCN")
-            self.qpl.info(f"DeepCoGCN {bcolors.OKGREEN}✓{bcolors.ENDC}")
+            self.qpl.info(f"{bcolors.OKGREEN}DeepCoGCN{bcolors.ENDC}")
+        else:
+            self.qpl.info(f"{bcolors.FAIL}DeepCoGCN{bcolors.ENDC}")
         if self.get_weight(ModelFolders.DeepGCN.value):
             self.models.append("DeepGCN")
-            self.qpl.info(f"DeepGCN {bcolors.OKGREEN}✓{bcolors.ENDC}")
+            self.qpl.info(f"{bcolors.OKGREEN}DeepGCN{bcolors.ENDC}")
+        else:
+            self.qpl.info(f"{bcolors.FAIL}DeepGCN{bcolors.ENDC}")
         if self.get_weight(ModelFolders.GAT.value):
             self.models.append("GAT")
-            self.qpl.info(f"GAT {bcolors.OKGREEN}✓{bcolors.ENDC}")
+            self.qpl.info(f"{bcolors.OKGREEN}GAT{bcolors.ENDC}")
+        else:
+            self.qpl.info(f"{bcolors.FAIL}GAT{bcolors.ENDC}")
 
         if len(self.models) == 0:
             raise Exception("Please train one of the models")

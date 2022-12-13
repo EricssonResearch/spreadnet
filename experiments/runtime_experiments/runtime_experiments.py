@@ -39,7 +39,7 @@ import pandas as pd
 import argparse
 from os import path as osp
 import torch
-from spreadnet.pyg_gnn.models import EncodeProcessDecode
+from spreadnet.pyg_gnn.models import MPNN
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
 from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
@@ -47,7 +47,7 @@ from spreadnet.datasets.data_utils.processor import process_nx, process_predicti
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 default_yaml_path = osp.join(
-    osp.dirname(__file__), "../encode_process_decode/configs.yaml"
+    osp.dirname(__file__), "../message_passing_network/configs.yaml"
 )
 default_dataset_yaml_path = osp.join(osp.dirname(__file__), "../dataset_configs.yaml")
 parser = argparse.ArgumentParser(description="Do predictions.")
@@ -180,7 +180,7 @@ def start_your_engines(all_graphs):
         dijkstra_runner.shortest_path(
             g["nxdata"], g["hashed_graph"], g["start"], g["end"]
         )
-        encode_process_decode_runtime_pretest_run(all_graphs)
+        message_passing_network_runtime_pretest_run(all_graphs)
 
 
 def hashing_graphs_runtime(all_graphs):
@@ -278,8 +278,8 @@ def shortest_path_memoization_table_search_runtime(all_graphs):
     memotable_walltime.append(walltime_list)
 
 
-def encode_process_decode_runtime(all_graphs):
-    model = EncodeProcessDecode(
+def message_passing_network_runtime(all_graphs):
+    model = MPNN(
         node_in=model_configs["node_in"],
         edge_in=model_configs["edge_in"],
         node_out=model_configs["node_out"],
@@ -293,7 +293,7 @@ def encode_process_decode_runtime(all_graphs):
     weight_base_path = osp.join(
         osp.dirname(__file__),
         "..",
-        "encode_process_decode",
+        "message_passing_network",
         train_configs["weight_base_path"],
     )
     model_path = osp.join(weight_base_path, which_model)
@@ -318,8 +318,8 @@ def encode_process_decode_runtime(all_graphs):
     message_passing_walltime_list.append(walltime_list)
 
 
-def encode_process_decode_runtime_pretest_run(all_graphs):
-    model = EncodeProcessDecode(
+def message_passing_network_runtime_pretest_run(all_graphs):
+    model = MPNN(
         node_in=model_configs["node_in"],
         edge_in=model_configs["edge_in"],
         node_out=model_configs["node_out"],
@@ -333,7 +333,7 @@ def encode_process_decode_runtime_pretest_run(all_graphs):
     weight_base_path = osp.join(
         osp.dirname(__file__),
         "..",
-        "encode_process_decode",
+        "message_passing_network",
         train_configs["weight_base_path"],
     )
     model_path = osp.join(weight_base_path, which_model)
@@ -414,7 +414,7 @@ def main():
             shortest_path_dijkstra_all_paths_memoization_runtime(all_graphs)
             shortest_path_memoization_table_search_runtime(all_graphs)
             dijkstra_runner.clear_memo_table()
-            encode_process_decode_runtime(all_graphs)
+            message_passing_network_runtime(all_graphs)
 
     gd = pd.DataFrame(graph_data)
     gd.to_csv(r"runtime_test_results.csv", index=False, header=True)
