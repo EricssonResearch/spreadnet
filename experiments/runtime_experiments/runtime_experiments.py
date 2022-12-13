@@ -42,7 +42,8 @@ import torch
 from spreadnet.pyg_gnn.models import MPNN
 from spreadnet.pyg_gnn.utils import get_correct_predictions
 from spreadnet.utils import yaml_parser
-from spreadnet.datasets.data_utils.processor import process_nx, process_prediction
+from spreadnet.datasets.data_utils.processor import process_nx
+from spreadnet.utils.post_processor import process_prediction
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
