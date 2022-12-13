@@ -12,6 +12,7 @@ requirements = [
     "pandas",
     "joblib",
     "wandb",
+    "pyreadline3",
     "tensorflow_gnn",
     "tensorflow",
 ]
