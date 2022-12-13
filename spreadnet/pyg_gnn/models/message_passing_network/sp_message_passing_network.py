@@ -1,10 +1,10 @@
-"""EncodeProcessDecode Model.
+"""MPNN Model.
 
 @Time    : 9/15/2022 11:27 PM
 @Author  : Haodong Zhao
 """
 
-__all__ = ["EncodeProcessDecode"]
+__all__ = ["MPNN"]
 from typing import Optional
 
 from torch import nn
@@ -13,8 +13,8 @@ from torch_geometric.nn import MessagePassing
 from .sp_modules import SPMLP, SPGNN
 
 
-class EncodeProcessDecode(nn.Module):
-    """The encode-process-decode model.
+class MPNN(nn.Module):
+    """The message-passing model using encode-process-decode architecture.
 
     It combines `Encoder`, `Processor`  and `Decoder`.
     """
@@ -44,7 +44,7 @@ class EncodeProcessDecode(nn.Module):
             node_in: the input size of the node features
             edge_in:  the input size of the edge features
         """
-        super(EncodeProcessDecode, self).__init__()
+        super(MPNN, self).__init__()
         self._encoder = Encoder(
             node_in=node_in,
             node_out=latent_size,

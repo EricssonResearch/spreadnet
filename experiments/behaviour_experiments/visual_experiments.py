@@ -24,9 +24,9 @@ from spreadnet.utils.visualization_utils import VisualUtils
 from spreadnet.tf_gnn.model import gnn
 
 
-from spreadnet.pyg_gnn.models import EncodeProcessDecode
+from spreadnet.pyg_gnn.models import MPNN
 
-sys.modules["EncodeProcessDecode"] = EncodeProcessDecode
+sys.modules["MPNN"] = MPNN
 sys.modules["gnn"] = gnn
 
 

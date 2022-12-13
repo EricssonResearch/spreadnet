@@ -4,7 +4,7 @@ Usage:
     python train.py --model model_name [--wandb] [--resume]
 
     model_name:
-        1. MPNN: EncodeProcessDecode
+        1. MPNN: Message Passing Network
         2. DeepCoGCN: Co-embedding Deep GCN
         3. DeepGCN: DeepGCN
         4. GAT: Graph Attention Network
@@ -96,10 +96,10 @@ model = args.model
 yaml_path, model_save_path = "", ""
 if model == "MPNN":
     yaml_path = os.path.join(
-        os.path.dirname(__file__), "encode_process_decode", "configs.yaml"
+        os.path.dirname(__file__), "message_passing_network", "configs.yaml"
     )
     model_save_path = os.path.join(
-        os.path.dirname(__file__), "encode_process_decode", "weights"
+        os.path.dirname(__file__), "message_passing_network", "weights"
     )
 elif model == "DeepCoGCN":
     yaml_path = os.path.join(

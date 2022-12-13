@@ -30,7 +30,8 @@ def undirected_linegraph_index(edge_index, edge_attr, num_nodes):
 
 
 class SPCoDeepGCNet(torch.nn.Module):
-    """Co-embedding Deep GENConv Network. Similar to Encode-Process-Decode.
+    """Co-embedding Deep GENConv Network using Encode Process Decode
+    architecture.
 
     Add mechanisms in DeepGCNLayer: normalize, residual, dropout, etc.
     """

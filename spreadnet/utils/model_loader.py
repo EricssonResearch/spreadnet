@@ -1,4 +1,4 @@
-from spreadnet.pyg_gnn.models import SPCoDeepGCNet, EncodeProcessDecode
+from spreadnet.pyg_gnn.models import SPCoDeepGCNet, MPNN
 from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 
@@ -10,7 +10,7 @@ def load_model(model_name, model_configs, device):
     :return: the loaded model
     """
     if model_name == "MPNN":
-        return EncodeProcessDecode(
+        return MPNN(
             node_in=model_configs["node_in"],
             edge_in=model_configs["edge_in"],
             node_out=model_configs["node_out"],

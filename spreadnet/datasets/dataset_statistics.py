@@ -37,7 +37,7 @@ class DatasetStatistics:
         self.parse_yaml(
             [
                 project_folder + "/experiments/dataset_configs.yaml",
-                project_folder + "/experiments/encode_process_decode/configs.yaml",
+                project_folder + "/experiments/message_passing_network/configs.yaml",
             ]
         )
 

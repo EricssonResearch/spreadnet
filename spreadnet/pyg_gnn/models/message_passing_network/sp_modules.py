@@ -1,5 +1,5 @@
 """
-    The basic Blocks for EncodeProcessDecode:
+    The basic Blocks for MPNN:
     1. SPMLP: simple multi-layer Perceptron
     2. SPGNN: GNN Block
 
