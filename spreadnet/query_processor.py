@@ -59,7 +59,7 @@ class ModelFolders(enum.Enum):
 class QueryProcessor:
     modes = ["AUTO", "DIJKSTRA", "GNN"]
     models = ["MPNN", "DeepGCN", "GAT", "DeepCoGCN"]
-    use_gnn_if_nodes_above = 40
+    use_gnn_if_nodes_above = 4000
     which_weight = "model_weights_best.pth"
     plot_size = 20
 
