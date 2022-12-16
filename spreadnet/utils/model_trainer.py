@@ -989,7 +989,11 @@ class WAndBModelTrainer(ModelTrainer):
             }
         )
 
-        # validation_acc = (validation_node_score + validation_edge_score) / 2
+        validation_acc = (validation_node_score + validation_edge_score) / 2
+
+        co2_emissions = tracker.stop()
+
+        return validation_acc, co2_emissions
 
     def wandb_model_log(self, run, artifact_name, weight_name):
         model_artifact = wandb.Artifact(
@@ -1019,16 +1023,16 @@ class WAndBModelTrainer(ModelTrainer):
 
         start_time = time.time()
 
-        # TODO: specify artifact_name.
-        #       Maybe we can extract some features from dataset
-        #       and specify artifact_name like: MPNN_nodes_8-17
-        artifact_name = f"{self.model_name}"
-
         self.construct_model()
 
         # TODO:
         #  We can override `construct_dataset()` after setting the dataset in wandb
         dataset, dataset_size = self.construct_dataset()
+
+        # TODO: specify artifact_name.
+        #       Maybe we can extract some features from dataset
+        #       and specify artifact_name like: MPNN_nodes_8-17
+        artifact_name = f"{self.model_name}_{dataset_size}"
 
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
@@ -1129,6 +1133,8 @@ class WAndBModelTrainer(ModelTrainer):
         train_console_logger.info("Start training")
 
         tot_co2_emission = 0
+        emissions_table = wandb.Table(columns=["epoch", "co2_emissions"])
+
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)
 
@@ -1154,7 +1160,19 @@ class WAndBModelTrainer(ModelTrainer):
                 # log weights
                 self.wandb_model_log(run, artifact_name, weight_name)
 
-                tot_co2_emission += co2_emissions
+            emissions_table.add_data(epoch, co2_emissions)
+
+            wandb.run.log(
+                {
+                    "Co2_emissions": wandb.plot.line(
+                        emissions_table,
+                        "epoch",
+                        "kg co2.eq/KWh",
+                        title="Co2 Emissions per Epoch",
+                    )
+                }
+            )
+            tot_co2_emission += co2_emissions
 
             # log states each epoch
             self.save_training_state(
@@ -1166,7 +1184,7 @@ class WAndBModelTrainer(ModelTrainer):
                 self.checkpoint_path,
                 os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
             )
-            wandb.run.log({"Co2_emissions (Kg)": co2_emissions})
+            wandb.run.log({"Co2 Emissions (in Kg)": tot_co2_emission})
 
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
@@ -1177,6 +1195,7 @@ class WAndBModelTrainer(ModelTrainer):
             self.checkpoint_path,
             os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
         )
+
         train_console_logger.info(
             f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )

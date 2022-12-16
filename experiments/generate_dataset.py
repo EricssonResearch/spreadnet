@@ -72,7 +72,6 @@ def generate_task_graph(
         file_name: output file name
         seed: graph seed to override
         idx: index
-
     Returns:
         None
     """
@@ -121,7 +120,6 @@ def generate(name, seed, size, nodes_min_max, starting_theta):
         nodes_min_max: (min, max)
         starting_theta: theta to be passed to graph generator
         increase_theta_rate: gradual increase in theta after a certain iteration
-
     Returns:
         None
     """
@@ -145,7 +143,7 @@ def generate(name, seed, size, nodes_min_max, starting_theta):
     )
 
     random_state = np.random.RandomState(seed)
-    seeds = random_state.randint(np.info(np.int32).max, size=size)
+    seeds = random_state.randint(np.iinfo(np.int32).max, size=size)
 
     Parallel(n_jobs=-1, backend="multiprocessing", batch_size=4)(
         delayed(generate_task_graph)(

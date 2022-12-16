@@ -13,7 +13,7 @@ train:
   weight_save_freq: 50
   best_weight_name: "model_weights_best.pth"
 
-  epochs: 2000
+  epochs: 2
   batch_size: 32
   shuffle: True
 
