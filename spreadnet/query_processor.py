@@ -59,7 +59,7 @@ class ModelFolders(enum.Enum):
 class QueryProcessor:
     modes = ["AUTO", "DIJKSTRA", "GNN"]
     models = ["MPNN", "DeepGCN", "GAT", "DeepCoGCN"]
-    use_gnn_if_nodes_above = 40
+    use_gnn_if_nodes_above = 4000
     which_weight = "model_weights_best.pth"
     plot_size = 20
 
@@ -128,6 +128,10 @@ class QueryProcessor:
             return p
         else:
             return False
+
+    def get_fig_title(self, mode, best_path_weight):
+        full_mode = mode if mode == "DIJKSTRA" else f"{mode} {self.which_model}"
+        return f"Path found using {full_mode}, Edge Weights: {best_path_weight}"
 
     def load_config(self):
         if self.which_model not in self.models:
@@ -201,7 +205,7 @@ class QueryProcessor:
             preds_r = self.predict(graph_data_r)
             self.runtime_end = time()
 
-            (pred_graph_nx, _) = process_prediction(graph_nx, preds)
+            (pred_graph_nx, truth_total_weight) = process_prediction(graph_nx, preds)
             (pred_graph_nx_r, _) = process_prediction(graph_nx_r, preds_r)
 
             aggregated_nx = aggregate_results(deepcopy(pred_graph_nx), pred_graph_nx_r)
@@ -230,6 +234,71 @@ class QueryProcessor:
                 best_path = prob_path_a
                 best_path_graph = applied_nx_a
                 best_path_weight = pred_edge_weights_a
+
+            fig = plt.figure(figsize=(self.plot_size * 2, self.plot_size * 3))
+            fig.suptitle(self.get_fig_title("GNN", best_path_weight))
+            draw_networkx(
+                f"Truth, Edge Weights: {truth_total_weight}",
+                fig,
+                graph_nx,
+                1,
+                6,
+                per_row=2,
+            )
+            draw_networkx(
+                "Pred",
+                fig,
+                pred_graph_nx,
+                2,
+                6,
+                "probability",
+                "probability",
+                per_row=2,
+            )
+            draw_networkx(
+                "Pred Rev",
+                fig,
+                pred_graph_nx_r,
+                3,
+                6,
+                "probability",
+                "probability",
+                per_row=2,
+            )
+
+            draw_networkx(
+                "Aggregated",
+                fig,
+                aggregated_nx,
+                4,
+                6,
+                "probability",
+                "probability",
+                per_row=2,
+            )
+
+            draw_networkx(
+                f"Prob Walk on Pred, Edge Weights: {pred_edge_weights}",
+                fig,
+                applied_nx,
+                5,
+                6,
+                "default",
+                "probability",
+                per_row=2,
+            )
+
+            draw_networkx(
+                f"Prob Walk on Aggregated, Edge Weights: {pred_edge_weights_a}",
+                fig,
+                applied_nx_a,
+                6,
+                6,
+                "default",
+                "probability",
+                per_row=2,
+            )
+            fig.tight_layout(pad=5)
 
         return best_path_weight, best_path, best_path_graph
 
@@ -350,19 +419,19 @@ class QueryProcessor:
                 json.dump([nx.node_link_data(best_path_graph)], outfile, cls=NpEncoder)
 
             self.qpl.info("Drawing result...")
-            fig = plt.figure(figsize=(self.plot_size, self.plot_size))
 
-            full_mode = mode if mode == "DIJKSTRA" else f"{mode} {self.which_model}"
-            draw_networkx(
-                f"Path found using {full_mode}, Edge Weights: {best_path_weight}",
-                fig,
-                best_path_graph,
-                1,
-                1,
-                per_row=1,
-            )
+            if not (self.bidirectional and mode == "GNN"):
+                fig = plt.figure(figsize=(self.plot_size, self.plot_size))
+                draw_networkx(
+                    self.get_fig_title(mode, best_path_weight),
+                    fig,
+                    best_path_graph,
+                    1,
+                    1,
+                    per_row=1,
+                )
+                fig.tight_layout()
 
-            fig.tight_layout()
             plt.savefig(f"{plot_name}.jpg", pad_inches=0, bbox_inches="tight")
             plt.clf()
             self.qpl.info(f"Result saved at {plot_name}.jpg|json")
