@@ -420,7 +420,7 @@ class QueryProcessor:
 
             self.qpl.info("Drawing result...")
 
-            if not self.bidirectional:
+            if not (self.bidirectional and mode == "GNN"):
                 fig = plt.figure(figsize=(self.plot_size, self.plot_size))
                 draw_networkx(
                     self.get_fig_title(mode, best_path_weight),
