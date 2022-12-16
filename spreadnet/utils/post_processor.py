@@ -196,8 +196,8 @@ def probability_first_search(
     end_node: float,
     visited=False,
     prob_threshold=0.1,
-    edge_probability_ratio=1,
     force_my_way_if_no_path_found=True,
+    edge_probability_ratio=1,
 ):
     """Takes an output graph with a start and end node, outputs the nodes path
     prioritizing highest probability. Hybrid of BFS and DFS.
@@ -213,7 +213,7 @@ def probability_first_search(
     """
     nodes = G.nodes(data=True)
     if not visited:
-        visited = []
+        visited = [start_node]
     strongest_path = [start_node]  # in case incomplete
     queue = []
     heappush(queue, (0, [start_node], True))  # (priority, path, is_strong)
@@ -234,20 +234,16 @@ def probability_first_search(
             prob = (
                 nodes[v]["probability"] + (d["probability"] * edge_probability_ratio)
             ) / 2
-            if v not in visited and prob > prob_threshold:
+
+            if v not in visited and (
+                prob > prob_threshold or force_my_way_if_no_path_found
+            ):
                 new_path = list(path)
                 visited.append(v)
                 new_path.append(v)
                 heappush(queue, (1 - prob, new_path, is_strong and prob > 0.5))
 
-    if len(visited) == G.number_of_nodes or not force_my_way_if_no_path_found:
-        return False, strongest_path
-
-    (c_is_complete, c_node_path) = probability_first_search(
-        G, strongest_path.pop(), end_node, visited, -1
-    )
-    strongest_path.extend(c_node_path)
-    return c_is_complete, strongest_path
+    return False, strongest_path
 
 
 def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
