@@ -11,11 +11,11 @@ data:
   random_seed_train: 0
   num_node_min_train: 8
   num_node_max_train: 50
-  starting_theta_train: 17 # the higher the less edge
-  dataset_size_train: 5120 # training and validation set, specify ratio in train.py
+  starting_theta_train: 17 #inversely proportional to the number of edges
+  dataset_size_train: 500 # training and validation set, specify ratio in train.py
 
   random_seed_test: 1
   num_node_min_test: 51
   num_node_max_test: 100
-  starting_theta_test: 25 # the higher the less edge
-  dataset_size_test: 3
+  starting_theta_test: 25 # inversely proportional to the number of edges
+  dataset_size_test: 50

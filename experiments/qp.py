@@ -64,7 +64,10 @@ if __name__ == "__main__":
         while True:
             qp.read_input()
             co2_emissions_final = co2_emissions.stop()
-            qpl.info(f"Co2 Emissions: {co2_emissions_final} kg co2.eq/KWh")
+            qpl.info(
+                f"Co2 Emissions: {co2_emissions_final} kg co2.eq/KWh."
+                f"For more data see emissions.csv"
+            )
 
     except Exception as e:
         qpl.exception(e)

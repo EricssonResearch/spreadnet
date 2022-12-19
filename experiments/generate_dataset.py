@@ -1,5 +1,6 @@
 import os
 import json
+from codecarbon import EmissionsTracker
 import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -165,6 +166,8 @@ if __name__ == "__main__":
     # Train and validation set
     dataset_logger.info(f"use_wandb:{use_wandb}")
     dataset_logger.info("Generating training and validation set...")
+    co2_emissions = EmissionsTracker()
+    co2_emissions.start()
 
     start_time = time.time()
     try:
@@ -205,4 +208,10 @@ if __name__ == "__main__":
             #                                 entity="pbs",
             #                                 project="artifacts-testing",
             #                                 job_type="data-download")
+
+    co2_emissions_final = co2_emissions.stop()
     dataset_logger.info(f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}')
+    dataset_logger.info(
+        f"Co2 Emissions: {co2_emissions_final} kg co2.eq/KWh"
+        f"For more data see emissions.csv"
+    )

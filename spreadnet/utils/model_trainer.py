@@ -1133,7 +1133,7 @@ class WAndBModelTrainer(ModelTrainer):
         train_console_logger.info("Start training")
 
         tot_co2_emission = 0
-        emissions_table = wandb.Table(columns=["epoch", "co2_emissions"])
+        emi_table = wandb.Table(columns=["epoch", "emissions"])
 
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)
@@ -1160,19 +1160,9 @@ class WAndBModelTrainer(ModelTrainer):
                 # log weights
                 self.wandb_model_log(run, artifact_name, weight_name)
 
-            emissions_table.add_data(epoch, co2_emissions)
-
-            wandb.run.log(
-                {
-                    "Co2_emissions": wandb.plot.line(
-                        emissions_table,
-                        "epoch",
-                        "kg co2.eq/KWh",
-                        title="Co2 Emissions per Epoch",
-                    )
-                }
-            )
             tot_co2_emission += co2_emissions
+            emi_table.add_data(epoch, co2_emissions)
+            wandb.log({"Co2_emissions_per_epoch": co2_emissions, "epoch": epoch})
 
             # log states each epoch
             self.save_training_state(
@@ -1184,8 +1174,16 @@ class WAndBModelTrainer(ModelTrainer):
                 self.checkpoint_path,
                 os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
             )
-            wandb.run.log({"Co2 Emissions (in Kg)": tot_co2_emission})
 
+        wandb.run.log({"Cumulative Co2 Emissions (in Kg)": tot_co2_emission})
+
+        wandb.run.log(
+            {
+                "emissions_table": wandb.plot.line(
+                    emi_table, x="epoch", y="co2_emissions", title="damn plot"
+                )
+            }
+        )
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
         )
@@ -1195,7 +1193,10 @@ class WAndBModelTrainer(ModelTrainer):
             self.checkpoint_path,
             os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
         )
-
+        train_console_logger.info(
+            f"Total Co2 emissions: {tot_co2_emission} kg co2.eq/KWh."
+            f"Find more data in emissions.csv"
+        )
         train_console_logger.info(
             f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'
         )
