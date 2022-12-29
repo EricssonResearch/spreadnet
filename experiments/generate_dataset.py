@@ -1,5 +1,6 @@
 import os
 import json
+from codecarbon import EmissionsTracker
 import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -72,7 +73,6 @@ def generate_task_graph(
         file_name: output file name
         seed: graph seed to override
         idx: index
-
     Returns:
         None
     """
@@ -121,7 +121,6 @@ def generate(name, seed, size, nodes_min_max, starting_theta):
         nodes_min_max: (min, max)
         starting_theta: theta to be passed to graph generator
         increase_theta_rate: gradual increase in theta after a certain iteration
-
     Returns:
         None
     """
@@ -167,6 +166,8 @@ if __name__ == "__main__":
     # Train and validation set
     dataset_logger.info(f"use_wandb:{use_wandb}")
     dataset_logger.info("Generating training and validation set...")
+    co2_emissions = EmissionsTracker()
+    co2_emissions.start()
 
     start_time = time.time()
     try:
@@ -207,4 +208,10 @@ if __name__ == "__main__":
             #                                 entity="pbs",
             #                                 project="artifacts-testing",
             #                                 job_type="data-download")
+
+    co2_emissions_final = co2_emissions.stop()
     dataset_logger.info(f'Time elapsed = {(time.time()-start_time)} sec \n {"=":176s}')
+    dataset_logger.info(
+        f"Co2 Emissions: {co2_emissions_final} kg co2.eq/KWh"
+        f"For more data see emissions.csv"
+    )
