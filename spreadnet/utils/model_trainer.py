@@ -195,7 +195,10 @@ class ModelTrainer:
         nodes_precise_corrects, edges_precise_corrects = 0, 0
         nodes_score, edges_score = 0.0, 0.0
 
-        with torch.enable_grad() if is_training else torch.no_grad():
+        with torch.enable_grad() if is_training else torch.no_grad(), torch.autocast(
+            enabled=self.train_configs["autocast"],
+            device_type=str(self.device),
+        ):
             batch = []
             batch_size = self.train_configs["batch_size"]
             graph_sizes = []

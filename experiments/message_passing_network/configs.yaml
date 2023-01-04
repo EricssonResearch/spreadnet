@@ -10,6 +10,7 @@ train:
 
   adam_lr: !!float 1e-4
   adam_weight_decay: !!float 5e-4
+  autocast: False
 
 model:
   model_name: MPNN
