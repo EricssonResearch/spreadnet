@@ -13,6 +13,7 @@ requirements = [
     "joblib",
     "wandb",
     "pyreadline3",
+    "codecarbon",
     "tensorflow_gnn",
     "tensorflow",
 ]
