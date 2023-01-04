@@ -17,7 +17,6 @@ import time
 from glob import glob
 from torch_geometric.data import Batch
 import gc
-from codecarbon import EmissionsTracker
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -355,7 +354,6 @@ class ModelTrainer:
         Returns:
             accuracy
         """
-
         train_size = int(self.train_configs["train_ratio"] * dataset_size)
         validation_size = dataset_size - train_size
         train_dataset = islice(dataset, 0, train_size)
@@ -715,10 +713,6 @@ class WAndBModelTrainer(ModelTrainer):
         Returns:
             accuracy
         """
-
-        tracker = EmissionsTracker()
-        tracker.start()
-
         train_size = int(self.train_configs["train_ratio"] * dataset_size)
         validation_size = dataset_size - train_size
         train_dataset = islice(dataset, 0, train_size)
@@ -991,9 +985,7 @@ class WAndBModelTrainer(ModelTrainer):
 
         validation_acc = (validation_node_score + validation_edge_score) / 2
 
-        co2_emissions = tracker.stop()
-
-        return validation_acc, co2_emissions
+        return validation_acc
 
     def wandb_model_log(self, run, artifact_name, weight_name):
         model_artifact = wandb.Artifact(
@@ -1013,7 +1005,6 @@ class WAndBModelTrainer(ModelTrainer):
         run.log_artifact(model_artifact)
 
     def train(self, resume):
-
         date = datetime.now().strftime("%H:%M:%S_%d-%m-%Y")
         experiment_name = f"train_{self.model_name}_{date}"
 
@@ -1023,16 +1014,16 @@ class WAndBModelTrainer(ModelTrainer):
 
         start_time = time.time()
 
+        # TODO: specify artifact_name.
+        #       Maybe we can extract some features from dataset
+        #       and specify artifact_name like: MPNN_nodes_8-17
+        artifact_name = f"{self.model_name}"
+
         self.construct_model()
 
         # TODO:
         #  We can override `construct_dataset()` after setting the dataset in wandb
         dataset, dataset_size = self.construct_dataset()
-
-        # TODO: specify artifact_name.
-        #       Maybe we can extract some features from dataset
-        #       and specify artifact_name like: MPNN_nodes_8-17
-        artifact_name = f"{self.model_name}_{dataset_size}"
 
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
@@ -1132,13 +1123,10 @@ class WAndBModelTrainer(ModelTrainer):
         train_console_logger.info(f"Using {self.device} device...")
         train_console_logger.info("Start training")
 
-        tot_co2_emission = 0
-        emi_table = wandb.Table(columns=["epoch", "emissions"])
-
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)
 
-            validation_acc, co2_emissions = self.execute(
+            validation_acc = self.execute(
                 epoch, epochs, dataset, dataset_size, hybrid_loss
             )
 
@@ -1160,10 +1148,6 @@ class WAndBModelTrainer(ModelTrainer):
                 # log weights
                 self.wandb_model_log(run, artifact_name, weight_name)
 
-            tot_co2_emission += co2_emissions
-            emi_table.add_data(epoch, co2_emissions)
-            wandb.log({"Co2_emissions_per_epoch": co2_emissions, "epoch": epoch})
-
             # log states each epoch
             self.save_training_state(
                 epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
@@ -1175,15 +1159,6 @@ class WAndBModelTrainer(ModelTrainer):
                 os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
             )
 
-        wandb.run.log({"Cumulative Co2 Emissions (in Kg)": tot_co2_emission})
-
-        wandb.run.log(
-            {
-                "emissions_table": wandb.plot.line(
-                    emi_table, x="epoch", y="co2_emissions", title="damn plot"
-                )
-            }
-        )
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
         )
@@ -1192,10 +1167,6 @@ class WAndBModelTrainer(ModelTrainer):
         shutil.copy(
             self.checkpoint_path,
             os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
-        )
-        train_console_logger.info(
-            f"Total Co2 emissions: {tot_co2_emission} kg co2.eq/KWh."
-            f"Find more data in emissions.csv"
         )
         train_console_logger.info(
             f'Time elapsed = {(time.time() - start_time)} sec \n {"=":176s}'

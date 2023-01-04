@@ -258,7 +258,7 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
     """
 
     nodes = G.nodes(data=True)
-    # clear all prev paths and weights from graph
+
     if require_clean:
         for (n, d) in nodes:
             d["is_in_path"] = False
@@ -267,7 +267,6 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
 
     edge_weights = 0.0
 
-    # assign only the given nodes and edges in path to a clean graph
     for idx, node in enumerate(path):
         nodes[node]["is_in_path"] = True
 
