@@ -15,7 +15,6 @@ import logging
 
 import spreadnet.utils.log_utils as log_utils
 from spreadnet.query_processor import QueryProcessor
-from codecarbon import EmissionsTracker
 
 parser = argparse.ArgumentParser(description="Query Processor")
 
@@ -49,8 +48,6 @@ if __name__ == "__main__":
     ).replace("\\", "/")
     qpl = log_utils.init_file_console_logger("qpl", log_save_path, "qp")
 
-    co2_emissions = EmissionsTracker()
-    co2_emissions.start()
     try:
         qp = QueryProcessor(
             args.mode,
@@ -60,14 +57,8 @@ if __name__ == "__main__":
             qpl,
             os.path.dirname(__file__),
         )
-
         while True:
             qp.read_input()
-            co2_emissions_final = co2_emissions.stop()
-            qpl.info(
-                f"Co2 Emissions: {co2_emissions_final} kg co2.eq/KWh."
-                f"For more data see emissions.csv"
-            )
 
     except Exception as e:
         qpl.exception(e)

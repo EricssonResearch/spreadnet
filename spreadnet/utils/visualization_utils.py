@@ -202,7 +202,7 @@ class VisualUtils:
         and edges if we take the maximum probability, either node or edge.
 
         Args:
-            G (_type_): Output Graph
+            G (_type_): Oruput Graph
             start_node int: Start node.
             end_node int: End node.
 
@@ -268,7 +268,7 @@ class VisualUtils:
 
         return max_prob_walk_nodes, max_prob_walk_edges
 
-    def plot_graph(self, df, pb_threshold, model_name, title):
+    def plot_graph(self, df, pb_treshold, model_name, title):
 
         df.drop(
             [
@@ -278,12 +278,12 @@ class VisualUtils:
             inplace=True,
         )
 
-        for pb in pb_threshold:
-            df_tr = df[df["Probability Threshold"] == pb]
+        for pb in pb_treshold:
+            df_tr = df[df["Probabiltiy Threshold"] == pb]
             plt.scatter(df_tr["Graph Size"], df_tr["Accuracy"])
 
-        plt.yticks(np.arrange(0, df_tr["Accuracy"].max() + 0.1, 0.05))
-        plt.legend(df["Probability Threshold"], title="Probability Threshold")
+        plt.yticks(np.arange(0, df_tr["Accuracy"].max() + 0.1, 0.05))
+        plt.legend(df["Probabiltiy Threshold"], title="Probability Threshold")
         plt.xlabel("Graph Size")
         plt.ylabel("Accuracy Nodes")
         plt.title(title + model_name)
@@ -297,8 +297,8 @@ class VisualUtils:
         df = df.sort_values(["Graph Size", "Model Type"])
         pd.set_option("display.max_rows", None)
         # print(df)
-        # pb_threshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
-        pb_threshold = [0.5, 0.25, 0.01]
+        # pb_treshold = [0.5, 0.45, 0.4, 0.35, 0.30, 0.25, 0.2, 0.15, 0.1, 0.05]
+        pb_treshold = [0.5, 0.25, 0.01]
 
         models_shortname = df["Model Type"].unique()
         print(models_shortname)
@@ -307,8 +307,5 @@ class VisualUtils:
             df_single_model = df[df["Model Type"] == m_name]
             print(df_single_model)
             self.plot_graph(
-                df_single_model,
-                pb_threshold=pb_threshold,
-                model_name=m_name,
-                title=title,
+                df_single_model, pb_treshold=pb_treshold, model_name=m_name, title=title
             )
