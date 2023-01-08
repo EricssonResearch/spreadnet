@@ -660,6 +660,9 @@ class WAndBModelTrainer(ModelTrainer):
         self.validation_nodes_score = []
         self.validation_edges_score = []
 
+        self.tot_co2_emission = 0
+        self.co2_emissions = []
+
     def save_training_state(
         self,
         epoch,
@@ -697,6 +700,8 @@ class WAndBModelTrainer(ModelTrainer):
                 "train_edges_score": self.train_edges_score,
                 "validation_nodes_score": self.validation_nodes_score,
                 "validation_edges_score": self.validation_edges_score,
+                "tot_co2_emission": self.tot_co2_emission,
+                "co2_emissions": self.co2_emissions,
             },
             self.checkpoint_path,
         )
@@ -1104,6 +1109,11 @@ class WAndBModelTrainer(ModelTrainer):
                 self.train_edges_score = checkpoint["train_edges_score"]
                 self.validation_nodes_score = checkpoint["validation_nodes_score"]
                 self.validation_edges_score = checkpoint["validation_edges_score"]
+
+                if "tot_co2_emission" in checkpoint:
+                    self.tot_co2_emission = checkpoint["tot_co2_emission"]
+                if "co2_emissions" in checkpoint:
+                    self.co2_emissions = checkpoint["co2_emissions"]
             else:
                 self.wandb_id = wandb.util.generate_id()
                 run = wandb.init(
@@ -1132,9 +1142,6 @@ class WAndBModelTrainer(ModelTrainer):
         train_console_logger.info(f"Using {self.device} device...")
         train_console_logger.info("Start training")
 
-        tot_co2_emission = 0
-        emi_table = wandb.Table(columns=["epoch", "emissions"])
-
         for epoch in range(epoch, epochs + 1):
             self.epoch_lst.append(epoch)
 
@@ -1160,9 +1167,8 @@ class WAndBModelTrainer(ModelTrainer):
                 # log weights
                 self.wandb_model_log(run, artifact_name, weight_name)
 
-            tot_co2_emission += co2_emissions
-            emi_table.add_data(epoch, co2_emissions)
-            wandb.log({"Co2_emissions_per_epoch": co2_emissions, "epoch": epoch})
+            self.tot_co2_emission += co2_emissions
+            self.co2_emissions.append(co2_emissions)
 
             # log states each epoch
             self.save_training_state(
@@ -1175,15 +1181,21 @@ class WAndBModelTrainer(ModelTrainer):
                 os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
             )
 
-        wandb.run.log({"Cumulative Co2 Emissions (in Kg)": tot_co2_emission})
+            wandb.log({"Co2_emissions_per_epoch": co2_emissions, "epoch": epoch})
+            wandb.log(
+                {
+                    "emissions_table": wandb.plot.line_series(
+                        xs=self.epoch_lst,
+                        ys=[self.co2_emissions],
+                        keys=["co2_emissions"],
+                        title="Co2 Emissions",
+                        xname="epoch",
+                    )
+                }
+            )
 
-        wandb.run.log(
-            {
-                "emissions_table": wandb.plot.line(
-                    emi_table, x="epoch", y="co2_emissions", title="damn plot"
-                )
-            }
-        )
+        wandb.run.log({"Cumulative Co2 Emissions (in Kg)": self.tot_co2_emission})
+
         self.save_training_state(
             epoch=epoch, best_model_wts=best_model_wts, best_acc=best_acc
         )
@@ -1194,7 +1206,7 @@ class WAndBModelTrainer(ModelTrainer):
             os.path.join(wandb.run.dir, self.wandb_checkpoint_name),
         )
         train_console_logger.info(
-            f"Total Co2 emissions: {tot_co2_emission} kg co2.eq/KWh."
+            f"Total Co2 emissions: {self.tot_co2_emission} kg co2.eq/KWh."
             f"Find more data in emissions.csv"
         )
         train_console_logger.info(
