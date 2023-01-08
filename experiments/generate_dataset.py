@@ -1,6 +1,6 @@
 import os
 import json
-from codecarbon import EmissionsTracker
+from codecarbon import OfflineEmissionsTracker
 import networkx as nx
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # Train and validation set
     dataset_logger.info(f"use_wandb:{use_wandb}")
     dataset_logger.info("Generating training and validation set...")
-    co2_emissions = EmissionsTracker()
+    co2_emissions = OfflineEmissionsTracker(country_iso_code="SWE")
     co2_emissions.start()
 
     start_time = time.time()

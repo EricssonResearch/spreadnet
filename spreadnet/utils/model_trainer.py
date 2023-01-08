@@ -17,7 +17,7 @@ import time
 from glob import glob
 from torch_geometric.data import Batch
 import gc
-from codecarbon import EmissionsTracker
+from codecarbon import OfflineEmissionsTracker
 
 from spreadnet.datasets.data_utils.decoder import pt_decoder
 from spreadnet.datasets.data_utils.draw import plot_training_graph
@@ -721,7 +721,7 @@ class WAndBModelTrainer(ModelTrainer):
             accuracy
         """
 
-        tracker = EmissionsTracker()
+        tracker = OfflineEmissionsTracker(country_iso_code="SWE")
         tracker.start()
 
         train_size = int(self.train_configs["train_ratio"] * dataset_size)

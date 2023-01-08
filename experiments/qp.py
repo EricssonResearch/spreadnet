@@ -15,7 +15,7 @@ import logging
 
 import spreadnet.utils.log_utils as log_utils
 from spreadnet.query_processor import QueryProcessor
-from codecarbon import EmissionsTracker
+from codecarbon import OfflineEmissionsTracker
 
 parser = argparse.ArgumentParser(description="Query Processor")
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     ).replace("\\", "/")
     qpl = log_utils.init_file_console_logger("qpl", log_save_path, "qp")
 
-    co2_emissions = EmissionsTracker()
+    co2_emissions = OfflineEmissionsTracker(country_iso_code="SWE")
     co2_emissions.start()
     try:
         qp = QueryProcessor(
