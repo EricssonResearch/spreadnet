@@ -1188,7 +1188,7 @@ class WAndBModelTrainer(ModelTrainer):
                         xs=self.epoch_lst,
                         ys=[self.co2_emissions],
                         keys=["co2_emissions"],
-                        title="Co2 Emissions",
+                        title="Co2 Emissions (Kg/Epoch)",
                         xname="epoch",
                     )
                 }
