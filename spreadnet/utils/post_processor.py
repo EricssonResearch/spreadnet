@@ -277,3 +277,163 @@ def apply_path_on_graph(G: nx.DiGraph, path: list, require_clean: bool):
             edge_weights += edge["weight"]
 
     return G, edge_weights
+
+
+def extract_path(G):
+    """Extracts nodes and edges in the graph as per probabilities predicted by
+    GNN.
+
+    Args:
+        G (nx.DiGraph): graph to operate on
+    Returns:
+        sp_path: nodes that are in path
+        sp_edges: edges that are in path
+    """
+    sp_path = []
+    sp_path_edges = []
+
+    for i in range(0, len(G.nodes)):
+        if G.nodes[i]["is_in_path"]:
+            sp_path.append(i)
+
+    edges_list = list(G.edges(data=True))
+
+    for e in edges_list:
+        if e[2]["is_in_path"]:
+            sp_path_edges.append([e[0], e[1]])
+
+    return sp_path, sp_path_edges
+
+
+def look_ahead_without_potentials(G, node_idx):
+    """For a given node in graph, look ahead at all out-going edges and returns
+    a list based on their connection status.
+
+    Potential nodes and edges are not
+    taken into account, instead counted as point of disconnect.
+    Args:
+        G (nx.DiGraph): graph to operate on
+        node_idx (int): index for the node in G
+    Returns:
+        in_cont_path (list(int,int,str)): list of edges from current node
+    """
+
+    in_cont_path = []
+    node_out_edges = list(G.out_edges(node_idx, data=True))
+
+    for u, v, data in node_out_edges:
+
+        e_frm_u = data["is_in_path"]
+        next_node_v = G.nodes[v]["is_in_path"]
+
+        if G.nodes[v]["is_end"]:
+            in_cont_path.append(tuple((u, v, "end_is_connected")))
+            break
+        else:
+
+            if e_frm_u and next_node_v:
+                # confirmed link between u,v where uv are also in path
+                in_cont_path.append(tuple((u, v, "is_connected")))
+
+            elif not e_frm_u and not next_node_v:
+                # neither edge or node is in path; not required
+                in_cont_path.append(tuple((u, v, "is_disconnected")))
+
+    return in_cont_path
+
+
+def path_continuos_traversal(G, start_node_idx):
+    """Traverses a simple path based on probabilities in a given graph G;
+    starting form given node start_node_idx.
+
+    This node can be any node in graph, but the traversal will only
+    look ahead for nodes and edges that are "is_in_path"
+    Args:
+            G (nx.DiGraph): graph to operate on
+            start_node_idx (int): index for the node in G
+    Returns:
+            visited (list[int]): ordered nodes from start node index
+            disconnected (list(int)): nodes which have no in_path
+            nodes or edges; broken path
+    """
+    visited = [start_node_idx]
+    next_visit = visited[-1]
+
+    disconnected = []
+    flag = True
+
+    while flag and G.nodes[next_visit]["is_in_path"]:
+        in_cont_path = look_ahead_without_potentials(G, next_visit)
+        for u, v, status in in_cont_path:
+            # check_v_in_path = G.nodes[v]["is_in_path"]
+            if status == "is_connected" or status == "end_is_connected":
+                visited.append(v)
+                next_visit = visited[-1]
+                flag = True
+                break
+
+        else:
+            if status == "is_disconnected":
+                if G.nodes[u]["is_end"]:
+                    print(f"{u} end node")
+                else:
+                    disconnected.append(u)
+
+            break
+
+    return visited, disconnected
+
+
+def eval_path(G):
+    """Evaluate/walk the path from starting node until a disconnected node is
+    encountered.
+
+    Args:
+       G (nx.DiGraph): graph to operate on
+    Returns:
+        start_node: given start node in G
+        end_node: given end node in G
+        visited (list[int]): list of node indexes that
+        are visited continuously until disconnect
+    """
+    G_cpy = deepcopy(G)
+    # Separate start and end node indexes for further computation
+    G_nodes, G_edges = extract_path(G_cpy)
+
+    for (node, data) in G_cpy.nodes(data=True):
+        if data["is_start"]:
+            start_node_idx = node
+
+        if data["is_end"]:
+            end_node_idx = node
+
+    if start_node_idx == end_node_idx:
+        print("invalid path")
+    else:
+
+        visited, disconnected = path_continuos_traversal(G_cpy, start_node_idx)
+
+    return start_node_idx, end_node_idx, visited
+
+
+def hybrid_complete_path(G):
+    """Complete path from last known node from visited chain of nodes in
+    evaluation step.
+
+    Args:
+        G (nx.DiGraph): graph to operate on
+        end_node_idx (int): given end node index
+        visited (list[int]): list of node indexes
+        that are visited continuously until disconnect
+    Return:
+        completed_pth (list[int]): completed path with dijkstra
+    """
+    G_cpy = deepcopy(G)
+
+    start_node_idx, end_node_idx, visited = eval_path(G_cpy)
+
+    remaining_path = nx.shortest_path(G, source=visited[-1], target=end_node_idx)
+    completed_pth = [*visited, *remaining_path[1:]]
+
+    # print(nx.is_path(G,completed_pth))
+    return completed_pth
