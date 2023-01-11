@@ -40,6 +40,12 @@ parser.add_argument(
     action="store_true",
     default=False,
 )
+parser.add_argument(
+    "--hybrid",
+    help="Toggle hybrid full path search",
+    action="store_true",
+    default=False,
+)
 
 args = parser.parse_args()
 
@@ -57,6 +63,7 @@ if __name__ == "__main__":
             args.model,
             args.bidirectional,
             args.dijkstra_full,
+            args.hybrid,
             qpl,
             os.path.dirname(__file__),
         )

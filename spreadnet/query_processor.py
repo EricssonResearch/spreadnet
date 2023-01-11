@@ -19,6 +19,7 @@ from spreadnet.utils.post_processor import (
     probability_first_search,
     apply_path_on_graph,
     get_start_end_nodes,
+    hybrid_complete_path,
 )
 from spreadnet.utils.model_loader import load_model
 from spreadnet.dijkstra_memoization import dijkstra_runner
@@ -72,6 +73,7 @@ class QueryProcessor:
         model: str,
         bidirectional: bool,
         dijkstra_full: bool,
+        hybrid: bool,
         logger,
         exp_path,
     ):
@@ -80,6 +82,7 @@ class QueryProcessor:
         self.which_model = model
         self.bidirectional = bidirectional
         self.dijkstra_full = dijkstra_full
+        self.hybrid = hybrid
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.qpl = logger
         self.exp_path = exp_path
@@ -210,17 +213,25 @@ class QueryProcessor:
 
             aggregated_nx = aggregate_results(deepcopy(pred_graph_nx), pred_graph_nx_r)
 
-            (is_path_complete, prob_path) = probability_first_search(
-                deepcopy(pred_graph_nx), start_node, end_node
-            )
+            if self.hybrid:
+                is_path_complete = True
+                (prob_path) = hybrid_complete_path(deepcopy(pred_graph_nx))
+            else:
+                (is_path_complete, prob_path) = probability_first_search(
+                    deepcopy(pred_graph_nx), start_node, end_node
+                )
 
             applied_nx, pred_edge_weights = apply_path_on_graph(
                 deepcopy(pred_graph_nx), prob_path, True
             )
 
-            (is_path_complete_a, prob_path_a) = probability_first_search(
-                deepcopy(aggregated_nx), start_node, end_node
-            )
+            if self.hybrid:
+                is_path_complete_a = True
+                (prob_path_a) = hybrid_complete_path(deepcopy(aggregated_nx))
+            else:
+                (is_path_complete_a, prob_path_a) = probability_first_search(
+                    deepcopy(aggregated_nx), start_node, end_node
+                )
 
             applied_nx_a, pred_edge_weights_a = apply_path_on_graph(
                 deepcopy(aggregated_nx), prob_path_a, True
@@ -318,9 +329,12 @@ class QueryProcessor:
 
             (pred_graph_nx, _) = process_prediction(graph_nx, preds)
 
-            (is_path_complete, prob_path) = probability_first_search(
-                deepcopy(pred_graph_nx), start_node, end_node
-            )
+            if self.hybrid:
+                (prob_path) = hybrid_complete_path(deepcopy(pred_graph_nx))
+            else:
+                (_, prob_path) = probability_first_search(
+                    deepcopy(pred_graph_nx), start_node, end_node
+                )
 
             applied_nx, pred_edge_weights = apply_path_on_graph(
                 deepcopy(pred_graph_nx), prob_path, True
@@ -333,7 +347,8 @@ class QueryProcessor:
         if self.which_mode != "DIJKSTRA":
             print(
                 f"GNN Model: {self.which_model}, "
-                + f" Bidirectional: {self.bidirectional}"
+                + f" Bidirectional: {self.bidirectional}, "
+                + f" Hybrid: {self.hybrid}"
             )
         if self.which_mode != "GNN":
             print(f"Dijkstra Full: {self.dijkstra_full}")
@@ -346,6 +361,7 @@ class QueryProcessor:
             + "|".join(self.models)
             + ", bidirectional=True|False"
             + ", dijkstra_full=True|False"
+            + ", hybrid=True|False"
         )
         print("To exit, enter: exit")
         print(f"{bcolors.OKCYAN}Enter a json graph path{bcolors.ENDC}")
@@ -376,6 +392,9 @@ class QueryProcessor:
         elif user_input.startswith("dijkstra_full="):
             self.dijkstra_full = bool(json.loads(user_input.split("=")[-1].lower()))
             self.qpl.info(f"dijkstra_full search set to: {self.dijkstra_full}")
+        elif user_input.startswith("hybrid="):
+            self.hybrid = bool(json.loads(user_input.split("=")[-1].lower()))
+            self.qpl.info(f"Hybrid path finding set to: {self.hybrid}")
         else:
             if not os.path.exists(user_input):
                 self.qpl.error(f"Input file does not exist, {user_input}\n")
