@@ -116,18 +116,34 @@ class BalancingLoss:
     #     }
 
     def get_euclidean_weighted_loss(self):
-        node_1 = self.node_pred[:, 1]
-        edge_1 = self.edge_pred[:, 1]
+        # change dimensions to fit function
+        node_true_0 = torch.where(self.node_true == 0, 1, 0)
+        node_true_1 = self.node_true.unsqueeze(1)
+        node_true_0 = node_true_0.unsqueeze(1)
 
-        node_true_logits = torch.where(self.node_true == 0, -5, 5)
-        edge_true_logits = torch.where(self.edge_true == 0, -5, 5)
+        edge_true_0 = torch.where(self.edge_true == 0, 1, 0)
+        edge_true_1 = self.edge_true.unsqueeze(1)
+        edge_true_0 = edge_true_0.unsqueeze(1)
 
-        # calculates the euclidean distance from the ground truth
-        node_euc_dist = abs(torch.sub(node_1, node_true_logits))
-        edge_euc_dist = abs(torch.sub(edge_1, edge_true_logits))
+        node_true = torch.cat((node_true_0, node_true_1), -1).type(torch.float)
+        edge_true = torch.cat((edge_true_0, edge_true_1), -1).type(torch.float)
 
-        updated_node_losses = torch.mul(node_euc_dist, self.node_losses)
-        updated_edge_losses = torch.mul(edge_euc_dist, self.edge_losses)
+        # convert logits into softmax
+        node_pre_softmax = torch.nn.functional.softmax(self.node_pred, dim=-1)
+        edge_pre_softmax = torch.nn.functional.softmax(self.edge_pred, dim=-1)
+
+        # calculate the euclidean distance from the ground truth
+        # put it through the exp function
+        multiplication_factor_nodes = torch.exp(
+            torch.diag(torch.cdist(node_true, node_pre_softmax, p=2))
+        )
+        multiplication_factor_edges = torch.exp(
+            torch.diag(torch.cdist(edge_true, edge_pre_softmax, p=2))
+        )
+
+        # multiply this multiplication factor with the losses
+        updated_node_losses = torch.mul(multiplication_factor_nodes, self.node_losses)
+        updated_edge_losses = torch.mul(multiplication_factor_edges, self.edge_losses)
 
         return {
             "nodes": torch.mean(updated_node_losses),
