@@ -7,6 +7,8 @@ import copy
 import os
 from datetime import datetime
 from itertools import islice
+from math import ceil
+
 import torch
 import wandb
 import shutil
@@ -27,7 +29,7 @@ from spreadnet.pyg_gnn.utils.metrics import (
     get_corrects_in_path,
     get_correct_predictions,
 )
-from spreadnet.utils.model_loader import load_model
+from spreadnet.utils.model_loader import load_model, load_adaptive_model
 
 
 class ModelTrainer:
@@ -79,6 +81,12 @@ class ModelTrainer:
 
     def construct_model(self):
         self.model = load_model(self.model_name, self.model_configs, self.device)
+        return self.model
+
+    def construct_adaptive_model(self, avg_num_nodes):
+        self.model = load_adaptive_model(
+            self.model_name, self.model_configs, avg_num_nodes, self.device
+        )
         return self.model
 
     def create_plot(self, plot_name):
@@ -461,10 +469,30 @@ class ModelTrainer:
             os.makedirs(self.plots_save_path)
 
         dataset, dataset_size = self.construct_dataset()
-
         plot_name = f"training-size-{dataset_size}-at-{date}.jpg"
 
-        self.construct_model()
+        if self.model_name == "AdaptiveMPNN":
+            total_nodes = sum([len(d.y[0]) for (d,) in dataset])
+            # print(total_nodes)
+            total_graph = sum([1 for _ in dataset])
+            # print(total_graph)
+            # print(total_nodes / total_graph)
+
+            avg_num_nodes = total_nodes / total_graph
+            ratio_node_path = self.model_configs["ratio_node_path"]
+
+            train_local_logger.info(f"Average num of nodes: {avg_num_nodes}")
+            train_local_logger.info(
+                f'Basic num of MPNN layers: {self.model_configs["basic_num_mpnn"]}'
+            )
+            train_local_logger.info(
+                f"Adaptive Repeats: {ceil(avg_num_nodes / ratio_node_path)}"
+            )
+
+            self.construct_adaptive_model(avg_num_nodes=avg_num_nodes)
+
+        else:
+            self.construct_model()
 
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),
@@ -1031,8 +1059,6 @@ class WAndBModelTrainer(ModelTrainer):
 
         start_time = time.time()
 
-        self.construct_model()
-
         # TODO:
         #  We can override `construct_dataset()` after setting the dataset in wandb
         dataset, dataset_size = self.construct_dataset()
@@ -1041,6 +1067,21 @@ class WAndBModelTrainer(ModelTrainer):
         #       Maybe we can extract some features from dataset
         #       and specify artifact_name like: MPNN_nodes_8-17
         artifact_name = f"{self.model_name}_{dataset_size}"
+
+        if self.model_name == "AdaptiveMPNN":
+            total_nodes = sum([len(d.y[0]) for (d,) in dataset])
+            total_graph = sum([1 for _ in dataset])
+            avg_num_nodes = total_nodes / total_graph
+            ratio_node_path = self.model_configs["ratio_node_path"]
+
+            print(f"Average num of nodes: {avg_num_nodes}")
+            print(f'Basic num of MPNN layers: {self.model_configs["basic_num_mpnn"]}')
+            print(f"Adaptive Repeats: {ceil(avg_num_nodes / ratio_node_path)}")
+
+            self.construct_adaptive_model(avg_num_nodes=total_nodes / total_graph)
+
+        else:
+            self.construct_model()
 
         self.optimizer = torch.optim.Adam(
             self.model.parameters(),

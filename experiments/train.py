@@ -15,12 +15,14 @@ Example:
         python train.py --model="DeepGCN" --wandb --project=PROJECT_NAME
         python train.py --model="GAT" --wandb --project=PROJECT_NAME
         python train.py --model="DeepCoGCN" --wandb --project=PROJECT_NAME
+        python train.py --model="AdaptiveMPNN" --wandb --project=PROJECT_NAME
 
     on local machine:
         python train.py --model="MPNN"
         python train.py --model="DeepGCN"
         python train.py --model="GAT"
         python train.py --model="DeepCoGCN"
+        python train.py --model="AdaptiveMPNN"
 
 @Time    : 10/27/2022 8:45 PM
 @Author  : Haodong Zhao
@@ -121,6 +123,11 @@ elif model == "GAT":
     )
     model_save_path = os.path.join(
         os.path.dirname(__file__), "graph_attention_network", "weights"
+    )
+elif model == "AdaptiveMPNN":
+    yaml_path = os.path.join(os.path.dirname(__file__), "adaptive_mpnn", "configs.yaml")
+    model_save_path = os.path.join(
+        os.path.dirname(__file__), "adaptive_mpnn", "weights"
     )
 else:
     print("Please check the model name. -h for more details.")

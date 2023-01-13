@@ -1,4 +1,7 @@
+from math import ceil
+
 from spreadnet.pyg_gnn.models import SPCoDeepGCNet, MPNN
+from spreadnet.pyg_gnn.models.adaptive_mpnn.sp_mpnn import AdaptiveMPNN
 from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 
@@ -60,5 +63,22 @@ def load_model(model_name, model_configs, device):
             gcn_layers=model_configs["gcn_layers"],
             decoder_hidden_channels=model_configs["decoder_hidden_channels"],
             decoder_layers=model_configs["decoder_layers"],
+        ).to(device)
+    raise Exception("Invalid model name")
+
+
+def load_adaptive_model(model_name, model_configs, avg_num_nodes, device):
+    if model_name == "AdaptiveMPNN":
+        ratio_node_path = model_configs["ratio_node_path"]
+        return AdaptiveMPNN(
+            node_in=model_configs["node_in"],
+            edge_in=model_configs["edge_in"],
+            node_out=model_configs["node_out"],
+            edge_out=model_configs["edge_out"],
+            latent_size=model_configs["latent_size"],
+            num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
+            mlp_hidden_size=model_configs["mlp_hidden_size"],
+            basic_num_layer=model_configs["basic_num_mpnn"],
+            repeat_times=ceil(avg_num_nodes / ratio_node_path),
         ).to(device)
     raise Exception("Invalid model name")

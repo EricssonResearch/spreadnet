@@ -1,0 +1,27 @@
+train:
+  weight_base_path: "./weights"
+  weight_save_freq: 10
+  best_weight_name: "model_weights_best.pth"
+
+  epochs: 300
+  batch_size: 64
+  train_ratio: 0.7
+  shuffle: False
+  plot_after_epochs: 100
+
+  adam_lr: !!float 1e-4
+  adam_weight_decay: !!float 5e-4
+  autocast: False
+
+model:
+  model_name: AdaptiveMPNN
+  node_in: 3
+  edge_in: 1
+  node_out: 2
+  edge_out: 2
+  latent_size: 128
+  num_mlp_hidden_layers: 2
+  mlp_hidden_size: 128
+
+  basic_num_mpnn: 12
+  ratio_node_path: 8
