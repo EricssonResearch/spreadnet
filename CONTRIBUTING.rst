@@ -262,4 +262,4 @@ General guidelines for making a good gallery plot:
 Bugs
 ----
 
-Please `report bugs on GitHub <https://github.com/theishita/internal-spreadnet>`_.
+Please `report bugs on GitHub <https://github.com/EricssonResearch/spreadnet>`_.
