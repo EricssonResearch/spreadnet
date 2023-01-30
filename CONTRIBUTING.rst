@@ -4,14 +4,14 @@ Development Workflow
 
 1. If you are a first-time contributor:
 
-   * Go to `https://github.com/theishita/internal-spreadnet/branches
-     <https://github.com/theishita/internal-spreadnet/branches>`_, create your
+   * Go to `https://github.com/EricssonResearch/spreadnet/branches
+     <https://github.com/EricssonResearch/spreadnet/branches>`_, create your
      branch. Since the branch name will appear in the merge message, use a
      sensible name such as 'bugfix-for-issue-1480'.
 
    * Clone the project to your local computer::
 
-      git clone git@github.com:theishita/internal-spreadnet.git
+      git clone git@github.com:EricssonResearch/spreadnet
 
    * Next, you need to set up your build environment.
      Here are instructions for two popular environment managers:
