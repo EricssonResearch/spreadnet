@@ -30,8 +30,7 @@ def undirected_linegraph_index(edge_index, edge_attr, num_nodes):
 
 
 class SPCGCNet(torch.nn.Module):
-    """Co-embedding  GENConv Network using Encode Process Decode
-    architecture.
+    """Co-embedding  GENConv Network using Encode Process Decode architecture.
 
     Add mechanisms in GCNLayer: normalize, residual, dropout, etc.
     """
