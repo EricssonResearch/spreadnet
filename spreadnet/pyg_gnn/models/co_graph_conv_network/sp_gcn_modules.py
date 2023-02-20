@@ -5,7 +5,7 @@
 """
 import torch
 from torch.nn import LayerNorm, ReLU, Linear
-from torch_geometric.nn import GENConv, DeepGCNLayer, MessagePassing
+from torch_geometric.nn import GENConv, GCNLayer, MessagePassing
 
 
 class SPGENLayer(MessagePassing):
@@ -44,7 +44,7 @@ class SPGENLayer(MessagePassing):
         if make_deep_layer:
             edge_norm = LayerNorm(edge_in_channels, elementwise_affine=True)
             edge_act = ReLU(inplace=True)
-            self.edge_fn = DeepGCNLayer(
+            self.edge_fn = GCNLayer(
                 edge_conv,
                 edge_norm,
                 edge_act,
@@ -70,7 +70,7 @@ class SPGENLayer(MessagePassing):
             node_norm = LayerNorm(node_in_channels, elementwise_affine=True)
             node_act = ReLU(inplace=True)
 
-            self.node_fn = DeepGCNLayer(
+            self.node_fn = GCNLayer(
                 node_conv,
                 node_norm,
                 node_act,

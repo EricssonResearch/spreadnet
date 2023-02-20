@@ -1,12 +1,12 @@
 import torch
 
-from torch_geometric.nn import DeepGCNLayer, GENConv
+from torch_geometric.nn import GCNLayer, GENConv
 from torch_geometric.nn import MLP
 from torch.nn import LayerNorm, ReLU
 import torch.nn.functional as F
 
 
-class SPDeepGCN(torch.nn.Module):
+class SPGCN(torch.nn.Module):
     def __init__(
         self,
         node_in: int,
@@ -18,7 +18,7 @@ class SPDeepGCN(torch.nn.Module):
         decoder_hidden_channels: int,
         decoder_layers: int,
     ):
-        super(SPDeepGCN, self).__init__()
+        super(SPGCN, self).__init__()
 
         self.node_encoder = MLP(
             in_channels=node_in,
@@ -51,7 +51,7 @@ class SPDeepGCN(torch.nn.Module):
             norm = LayerNorm(gcn_hidden_channels, elementwise_affine=True)
             act = ReLU(inplace=True)
 
-            layer = DeepGCNLayer(
+            layer = GCNLayer(
                 conv, norm, act, block="res+", dropout=0.1, ckpt_grad=i % 3
             )
             self.layers.append(layer)

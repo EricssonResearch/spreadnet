@@ -2,7 +2,7 @@
 
 Args:
     --mode "AUTO|DIJKSTRA|GNN", defaults: "AUTO"
-    --model "MPNN|DeepGCN|GAT|DeepCoGCN", defaults: "MPNN"
+    --model "MPNN|GCN|GAT|CGCN", defaults: "MPNN"
     --bidirectional "True|False", defaults: "False"
     --dijkstra-full "True|False", defaults: "False"
 
@@ -25,7 +25,7 @@ parser.add_argument(
 parser.add_argument(
     "--model",
     help="Specify GNN model AUTO|GNN mode is selected. "
-    + " Options: MPNN|DeepGCN|GAT|DeepCoGCN",
+    + " Options: MPNN|GCN|GAT|CGCN",
     default="MPNN",
 )
 parser.add_argument(

@@ -1,8 +1,8 @@
 from math import ceil
 
-from spreadnet.pyg_gnn.models import SPCoDeepGCNet, MPNN
+from spreadnet.pyg_gnn.models import SPCGCNet, MPNN
 from spreadnet.pyg_gnn.models.adaptive_mpnn.sp_mpnn import AdaptiveMPNN
-from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPDeepGCN
+from spreadnet.pyg_gnn.models.deepGCN.sp_deepGCN import SPGCN
 from spreadnet.pyg_gnn.models.graph_attention_network.sp_gat import SPGATNet
 
 
@@ -23,8 +23,8 @@ def load_model(model_name, model_configs, device):
             num_mlp_hidden_layers=model_configs["num_mlp_hidden_layers"],
             mlp_hidden_size=model_configs["mlp_hidden_size"],
         ).to(device)
-    if model_name == "DeepCoGCN":
-        return SPCoDeepGCNet(
+    if model_name == "CGCN":
+        return SPCGCNet(
             node_in=model_configs["node_in"],
             edge_in=model_configs["edge_in"],
             gcn_hidden_channels=model_configs["gcn_hidden_channels"],
@@ -53,8 +53,8 @@ def load_model(model_name, model_configs, device):
             encode_node_out=model_configs["encode_node_out"],
             encode_edge_out=model_configs["encode_edge_out"],
         ).to(device)
-    if model_name == "DeepGCN":
-        return SPDeepGCN(
+    if model_name == "GCN":
+        return SPGCN(
             node_in=model_configs["node_in"],
             edge_in=model_configs["edge_in"],
             encoder_hidden_channels=model_configs["encoder_hidden_channels"],

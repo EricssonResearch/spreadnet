@@ -1,7 +1,7 @@
 """Use the trained model to do the prediction.
 
 Args:
-    --model "MPNN|DeepGCN|GAT|DeepCoGCN"
+    --model "MPNN|GCN|GAT|CGCN"
     --dataset-config dataset_config_path, defaults: ./dataset_configs.yaml
     --weight weight_file_name, defaults: model_weights_best.pth
 """
@@ -60,9 +60,9 @@ which_weight = args.weight
 
 if which_model == "MPNN":
     folder = "message_passing_network"
-elif which_model == "DeepCoGCN":
+elif which_model == "CGCN":
     folder = "co_graph_conv_network"
-elif which_model == "DeepGCN":
+elif which_model == "GCN":
     folder = "deep_graph_conv_network"
 elif which_model == "GAT":
     folder = "graph_attention_network"

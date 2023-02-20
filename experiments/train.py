@@ -5,23 +5,23 @@ Usage:
 
     model_name:
         1. MPNN: Message Passing Network
-        2. DeepCoGCN: Co-embedding Deep GCN
-        3. DeepGCN: DeepGCN
+        2. CGCN: Co-embedding  GCN
+        3. GCN: GCN
         4. GAT: Graph Attention Network
 
 Example:
     use wandb:
         python train.py --model="MPNN" --wandb --project=PROJECT_NAME
-        python train.py --model="DeepGCN" --wandb --project=PROJECT_NAME
+        python train.py --model="GCN" --wandb --project=PROJECT_NAME
         python train.py --model="GAT" --wandb --project=PROJECT_NAME
-        python train.py --model="DeepCoGCN" --wandb --project=PROJECT_NAME
+        python train.py --model="CGCN" --wandb --project=PROJECT_NAME
         python train.py --model="AdaptiveMPNN" --wandb --project=PROJECT_NAME
 
     on local machine:
         python train.py --model="MPNN"
-        python train.py --model="DeepGCN"
+        python train.py --model="GCN"
         python train.py --model="GAT"
-        python train.py --model="DeepCoGCN"
+        python train.py --model="CGCN"
         python train.py --model="AdaptiveMPNN"
 
 @Time    : 10/27/2022 8:45 PM
@@ -103,14 +103,14 @@ if model == "MPNN":
     model_save_path = os.path.join(
         os.path.dirname(__file__), "message_passing_network", "weights"
     )
-elif model == "DeepCoGCN":
+elif model == "CGCN":
     yaml_path = os.path.join(
         os.path.dirname(__file__), "co_graph_conv_network", "configs.yaml"
     )
     model_save_path = os.path.join(
         os.path.dirname(__file__), "co_graph_conv_network", "weights"
     )
-elif model == "DeepGCN":
+elif model == "GCN":
     yaml_path = os.path.join(
         os.path.dirname(__file__), "deep_graph_conv_network", "configs.yaml"
     )

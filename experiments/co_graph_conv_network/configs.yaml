@@ -13,7 +13,7 @@ train:
   autocast: False
 
 model:
-  model_name: DeepCoGCN
+  model_name: CGCN
   node_in: 3
   edge_in: 1
   mlp_hidden_channels: 128

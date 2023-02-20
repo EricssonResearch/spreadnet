@@ -13,7 +13,7 @@ train:
   autocast: False
 
 model:
-  model_name: DeepGCN
+  model_name: GCN
   node_in: 3
   edge_in: 1
   encoder_hidden_channels: 128

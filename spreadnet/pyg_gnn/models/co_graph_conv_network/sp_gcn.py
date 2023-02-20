@@ -1,4 +1,4 @@
-"""Co-embedding Deep GENConv Networks.
+"""Co-embedding  GENConv Networks.
 
 @Time    : 10/19/2022 1:40 PM
 @Author  : Haodong Zhao
@@ -29,11 +29,11 @@ def undirected_linegraph_index(edge_index, edge_attr, num_nodes):
     return e_edge_index
 
 
-class SPCoDeepGCNet(torch.nn.Module):
-    """Co-embedding Deep GENConv Network using Encode Process Decode
+class SPCGCNet(torch.nn.Module):
+    """Co-embedding  GENConv Network using Encode Process Decode
     architecture.
 
-    Add mechanisms in DeepGCNLayer: normalize, residual, dropout, etc.
+    Add mechanisms in GCNLayer: normalize, residual, dropout, etc.
     """
 
     def __init__(
@@ -47,7 +47,7 @@ class SPCoDeepGCNet(torch.nn.Module):
         node_out: int = 2,
         edge_out: int = 2,
     ):
-        super(SPCoDeepGCNet, self).__init__()
+        super(SPCGCNet, self).__init__()
 
         self.node_encoder = MLP(
             in_channels=node_in,

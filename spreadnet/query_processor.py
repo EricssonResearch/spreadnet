@@ -52,14 +52,14 @@ class bcolors:
 
 class ModelFolders(enum.Enum):
     MPNN = "message_passing_network"
-    DeepCoGCN = "co_graph_conv_network"
-    DeepGCN = "deep_graph_conv_network"
+    CGCN = "co_graph_conv_network"
+    GCN = "deep_graph_conv_network"
     GAT = "graph_attention_network"
 
 
 class QueryProcessor:
     modes = ["AUTO", "DIJKSTRA", "GNN"]
-    models = ["MPNN", "DeepGCN", "GAT", "DeepCoGCN"]
+    models = ["MPNN", "GCN", "GAT", "CGCN"]
     use_gnn_if_nodes_above = 4000
     which_weight = "model_weights_best.pth"
     plot_size = 20
@@ -102,16 +102,16 @@ class QueryProcessor:
             self.qpl.info(f"{bcolors.OKGREEN}MPNN{bcolors.ENDC}")
         else:
             self.qpl.info(f"{bcolors.FAIL}MPNN{bcolors.ENDC}")
-        if self.get_weight(ModelFolders.DeepCoGCN.value):
-            self.models.append("DeepCoGCN")
-            self.qpl.info(f"{bcolors.OKGREEN}DeepCoGCN{bcolors.ENDC}")
+        if self.get_weight(ModelFolders.CGCN.value):
+            self.models.append("CGCN")
+            self.qpl.info(f"{bcolors.OKGREEN}CGCN{bcolors.ENDC}")
         else:
-            self.qpl.info(f"{bcolors.FAIL}DeepCoGCN{bcolors.ENDC}")
-        if self.get_weight(ModelFolders.DeepGCN.value):
-            self.models.append("DeepGCN")
-            self.qpl.info(f"{bcolors.OKGREEN}DeepGCN{bcolors.ENDC}")
+            self.qpl.info(f"{bcolors.FAIL}CGCN{bcolors.ENDC}")
+        if self.get_weight(ModelFolders.GCN.value):
+            self.models.append("GCN")
+            self.qpl.info(f"{bcolors.OKGREEN}GCN{bcolors.ENDC}")
         else:
-            self.qpl.info(f"{bcolors.FAIL}DeepGCN{bcolors.ENDC}")
+            self.qpl.info(f"{bcolors.FAIL}GCN{bcolors.ENDC}")
         if self.get_weight(ModelFolders.GAT.value):
             self.models.append("GAT")
             self.qpl.info(f"{bcolors.OKGREEN}GAT{bcolors.ENDC}")
