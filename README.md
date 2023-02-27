@@ -1,6 +1,7 @@
 # SpreadNet
 
-Uppsala Project CS 2022
+
+<img align="left" img src="./readme-images/UU-logo.jpg" width="100px"> **Uppsala Project CS 2022**
 
 ## Introduction
 
@@ -44,18 +45,18 @@ If we view the shortest path problem as a classification one we need to take int
 - Further explore the hybrid Dijkstra and GNN models.
 
 ## Contributors
-ChanVuth Chea
-Boli Gao
-Jennifer Gross
-Ishita Jaju
-Haouyuan Li
-Akanksha Makkar
-Mishkuat Sabir
-Paarth Sanhotra
-Gaurav Singh
-George Stoian
-Sofia Afnaan Syed
-Haodong Zhao
+- ChanVuth Chea
+- Boli Gao
+- Jennifer Gross
+- Haouyuan Li
+- George Stoian
+- Sofia Afnaan Syed
+- Ishita Jaju
+- Haodong Zhao
+- Mishkuat Sabir
+- Paarth Sanhotra
+- Gaurav Singh
+- Akanksha Makkar
 
 ## License
 [Apache License 2.0](LICENSE)<br />
