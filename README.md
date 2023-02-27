@@ -1,4 +1,4 @@
-# SreadNet
+# SpreadNet
 
 Uppsala Project CS 2022
 
@@ -42,3 +42,20 @@ If we view the shortest path problem as a classification one we need to take int
 - Create a loss function that takes into account alternative paths.
 - Explore GNN models that predict the next node until they reach the end node. These models would guarantee that a path exists.
 - Further explore the hybrid Dijkstra and GNN models.
+
+## Contributors
+ChanVuth Chea
+Boli Gao
+Jennifer Gross
+Ishita Jaju
+Haouyuan Li
+Akanksha Makkar
+Mishkuat Sabir
+Paarth Sanhotra
+Gaurav Singh
+George Stoian
+Sofia Afnaan Syed
+Haodong Zhao
+
+## License
+[Apache License 2.0](LICENSE)<br />
