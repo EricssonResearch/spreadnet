@@ -12,19 +12,21 @@ Applying GNN to problems where good algorithms already exist is not going to lea
 ## Installation
 ```
 pip install torch==1.13 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
-  pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
-  grep -v "spreadnet" /requirements.txt > tmpfile && mv tmpfile /requirements.txt
-  pip install -r /requirements.txt
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.13.0+cu117.html
+grep -v "spreadnet" /requirements.txt > tmpfile && mv tmpfile /requirements.txt
+pip install -r /requirements.txt
+pip install -e .
   ```
 
 ## Functionalities
-- Generate synthetic data using Dijkstra
-- Train a variety of Graph Neural Networks models
+- Generate synthetic data using Dijkstra, `experiments/generate_dataset.py`
+- Train a variety of Graph Neural Networks models, `experiments/train.py`
 - Evaluate them using Ecology related metrics
 - More accurate path prediction metrics
 - Memory consumption metrics
 - Dijkstra comparison metrics
-- Different plotting metrics that highlight different aspects of the Predictions
+- Different plotting metrics that highlight different aspects of the Predictions, `experiments/predict.py`
+- Query Processor, `experiments/qp.py`
 
 
 ## Key Points
