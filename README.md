@@ -1,7 +1,7 @@
-# SpreadNet
+# SpreadNet <img src="./readme-images/UU_logo.jpg" width="150px" img align="right"/>
 
 
-<img align="left" img src="./readme-images/UU-logo.jpg" width="100px"> **Uppsala Project CS 2022**
+ **Uppsala Project CS 2022**
 
 ## Introduction
 
