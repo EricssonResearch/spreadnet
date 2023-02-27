@@ -44,6 +44,7 @@ If we view the shortest path problem as a classification one we need to take int
 - Further explore the hybrid Dijkstra and GNN models.
 
 ## Contributors
+
 - ChanVuth Chea
 - Boli Gao
 - Jennifer Gross
@@ -58,4 +59,5 @@ If we view the shortest path problem as a classification one we need to take int
 - Akanksha Makkar
 
 ## License
+
 [Apache License 2.0](LICENSE)<br />
