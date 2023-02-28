@@ -1,4 +1,4 @@
-# SpreadNet <img src="./readme-images/UU_logo.jpg" width="150px" img align="right"/>
+# SpreadNet: Shortest Path Approximation Using Graph Neural Networks <img src="./readme-images/UU_logo.jpg" width="150px" img align="right"/>
 
 **Uppsala Project CS 2022**
 
